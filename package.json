@@ -1,0 +1,18 @@
+{
+  "name": "deterministic-agent-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic agent system with auditable and replayable execution",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "node -e \"console.log('Development entrypoint pending implementation')\"",
+    "test": "node -e \"console.log('Tests pending implementation')\"",
+    "verify": "node -e \"console.log('Verification pipeline pending implementation')\""
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}
