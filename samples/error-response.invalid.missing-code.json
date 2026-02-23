@@ -1,0 +1,10 @@
+{
+  "ok": false,
+  "error": {
+    "message": "Missing required field: input",
+    "retryable": false
+  },
+  "meta": {
+    "mode": "mock"
+  }
+}
