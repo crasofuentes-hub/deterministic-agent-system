@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite it."
+title: "Deterministic Agent System"
+type: software
+authors:
+  - family-names: "Fuentes Fernandez"
+    given-names: "Oscar"
+repository-code: "https://github.com/crasofuentes-hub/deterministic-agent-system"
+url: "https://github.com/crasofuentes-hub/deterministic-agent-system"
+license: "Apache-2.0"
+abstract: >
+  Deterministic Agent System is an autonomous agent system focused on deterministic
+  execution, auditable traces, bounded autonomous behavior, and reproducible
+  verification workflows.
+keywords:
+  - deterministic systems
+  - autonomous agents
+  - auditability
+  - reproducibility
+  - verification
