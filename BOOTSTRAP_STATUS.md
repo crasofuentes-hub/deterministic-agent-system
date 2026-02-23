@@ -2,22 +2,18 @@
 
 ## Deterministic Agent System Bootstrap Verification Status
 
-- Generated (UTC): 2026-02-23 10:55:43 UTC
-- Git commit: b2d244acd7be765e6726c496c7c24f0a1123abcd
+- Generated (UTC): 2026-02-23T11:34:06.316Z
+- Git commit: 88289f4a771be64dc26508d5e08e6d488d3dc211
 - Overall status: **PASS**
 
 ### Results
 
-#### PowerShell Parse Check: scripts\verify-bootstrap.ps1
+#### node dist/scripts/verify-bootstrap.js
 - Status: **PASS**
-- DurationMs: 9
-
-#### powershell -File scripts\verify-bootstrap.ps1
-- Status: **PASS**
-- DurationMs: 1937
+- DurationMs: 51
 
 ### Notes
 
-- Status generated with PowerShell 5.1-safe script.
-- Output encoded as UTF-8 without BOM.
-- Parse validation is performed before execution of the verification script.
+- Status generated with TypeScript cross-platform tooling.
+- Output encoded as UTF-8.
+- Suitable for CI usage on Windows, Linux, and macOS.

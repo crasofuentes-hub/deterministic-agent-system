@@ -2,13 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  build-and-bootstrap-check:
-    runs-on: windows-latest
+  build-test-verify:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ["22", "24"]
 
     steps:
       - name: Checkout
@@ -17,20 +23,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "npm"
+          node-version: ${{ matrix.node }}
+          cache: npm
 
       - name: Install dependencies
-        shell: pwsh
-        run: |
-          npm install
+        run: npm install
 
       - name: Build
-        shell: pwsh
-        run: |
-          npm run build
+        run: npm run build
 
-      - name: Bootstrap run
-        shell: pwsh
-        run: |
-          npm start
+      - name: Start demo
+        run: npm start
+
+      - name: Tests
+        run: npm test
+
+      - name: Verify contracts
+        run: npm run verify:contracts
+
+      - name: Generate status
+        run: npm run status:generate

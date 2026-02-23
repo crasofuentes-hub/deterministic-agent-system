@@ -1,18 +1,22 @@
 {
-  "name": "deterministic-agent-system",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Deterministic agent system with auditable and replayable execution",
-  "type": "commonjs",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "dev": "node -e \"console.log('Development entrypoint pending implementation')\"",
-    "test": "node -e \"console.log('Tests pending implementation')\"",
-    "verify": "node -e \"console.log('Verification pipeline pending implementation')\""
-  },
-  "devDependencies": {
-    "typescript": "^5.9.0"
-  }
+    "name":  "deterministic-agent-system",
+    "version":  "0.1.0",
+    "description":  "Deterministic agent system with auditable and replayable execution",
+    "main":  "dist/index.js",
+    "type":  "commonjs",
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.scripts.json",
+                    "test":  "node tests/core.bounded-loop.test.js \u0026\u0026 node tests/agent.executor.test.js",
+                    "start":  "node dist/src/index.js",
+                    "status:generate":  "node dist/scripts/generate-status.js",
+                    "verify":  "npm run verify:bootstrap \u0026\u0026 npm run verify:contracts",
+                    "verify:contracts":  "node dist/scripts/verify-contract.js",
+                    "verify:bootstrap":  "node dist/scripts/verify-bootstrap.js",
+                    "dev":  "node -e \"console.log(\u0027Development entrypoint pending implementation\u0027)\""
+                },
+    "devDependencies":  {
+                            "@types/node":  "^25.3.0",
+                            "typescript":  "^5.9.0"
+                        },
+    "private":  true
 }

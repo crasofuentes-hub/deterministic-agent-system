@@ -2,26 +2,50 @@
 
 ## Interface Contract Verification Status
 
-- Generated (UTC): 2026-02-23 10:59:07 UTC
-- Scope: Deterministic error response shape checks (PowerShell validator + JSON samples)
+- Generated (UTC): 2026-02-23T11:34:05.837Z
+- Scope: Deterministic error response shape checks (TypeScript validator + JSON samples)
 - Overall status: **PASS**
 
 ### Checks
 
+#### Required file exists: docs\error-codes.md
+- Status: **PASS**
+- DurationMs: 0
+
+#### Required file exists: schemas\error-response.schema.json
+- Status: **PASS**
+- DurationMs: 0
+
+#### Required file exists: samples\error-response.valid.json
+- Status: **PASS**
+- DurationMs: 0
+
+#### Required file exists: samples\error-response.invalid.missing-code.json
+- Status: **PASS**
+- DurationMs: 0
+
+#### Read valid sample JSON
+- Status: **PASS**
+- DurationMs: 0
+
+#### Read invalid sample JSON
+- Status: **PASS**
+- DurationMs: 0
+
 #### Valid sample passes shape validation
 - Status: **PASS**
-- Detail: PASS
+- DurationMs: 0
 
 #### Invalid sample fails shape validation
 - Status: **PASS**
-- Detail: Missing error.code
+- DurationMs: 0
 
 #### Invalid sample reports missing error.code
 - Status: **PASS**
-- Detail: Missing error.code detected
+- DurationMs: 0
 
 ### Notes
 
 - JSON Schema file is present and versioned.
-- Current validation script performs deterministic shape checks in PowerShell 5.1 without external schema validator dependencies.
-- This script is intended as a foundation for expanded contract verification and negative-path testing.
+- Validation is implemented in TypeScript for cross-platform execution.
+- This is a foundation for expanded contract and negative-path testing.
