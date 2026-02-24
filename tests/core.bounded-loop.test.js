@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { runBoundedLoop } = require("../dist/core");
+const { runBoundedLoop } = require("../dist/src/core");
 
 function testConverges() {
   const res = runBoundedLoop({
