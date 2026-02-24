@@ -21,6 +21,7 @@ Contributions should improve one or more of the following:
 Please read the README and existing documentation before proposing large changes.
 
 When in doubt, prefer:
+
 - explicit behavior over implicit behavior
 - stable interfaces over convenience abstractions
 - verifiable outcomes over subjective claims
@@ -34,27 +35,35 @@ When in doubt, prefer:
 ## Contribution Types
 
 ### 1) Documentation improvements
+
 Examples:
+
 - architecture clarifications
 - execution model explanations
 - better examples
 - verification workflow documentation
 
 ### 2) Testing and verification improvements
+
 Examples:
+
 - smoke tests
 - negative-path tests
 - deterministic regression checks
 - script hardening
 
 ### 3) Contract hardening
+
 Examples:
+
 - response schema validation
 - deterministic error payload improvements
 - adapter conformance checks
 
 ### 4) Implementation improvements
+
 Examples:
+
 - deterministic execution controls
 - trace tooling
 - replay support
@@ -83,6 +92,7 @@ A good pull request should include:
 ## Testing and Validation
 
 When adding behavior, include validation where possible:
+
 - build checks
 - tests
 - smoke checks
@@ -91,6 +101,7 @@ When adding behavior, include validation where possible:
 ## Documentation Standards
 
 Documentation should be:
+
 - technically precise
 - explicit about limitations
 - clear about guarantees vs goals
@@ -99,6 +110,7 @@ Documentation should be:
 ## Issues and Discussions
 
 Use issues for:
+
 - bugs
 - improvements
 - documentation problems
@@ -106,6 +118,7 @@ Use issues for:
 - verification failures
 
 When reporting a bug, include:
+
 - reproduction steps
 - environment details
 - expected result

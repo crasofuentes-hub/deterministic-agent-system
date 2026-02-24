@@ -3,7 +3,7 @@ import type {
   VectorDocument,
   VectorSearchRequest,
   VectorSearchResponse,
-  VectorSearchHit
+  VectorSearchHit,
 } from "./types";
 
 function score(query: string, content: string): number {

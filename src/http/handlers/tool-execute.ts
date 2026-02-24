@@ -17,10 +17,7 @@ type ToolExecuteHttpRequest = {
   requestId?: string;
 };
 
-const registry = new ToolRegistry([
-  new EchoToolAdapter(),
-  new SumToolAdapter(),
-]);
+const registry = new ToolRegistry([new EchoToolAdapter(), new SumToolAdapter()]);
 
 export async function handleToolExecute(
   res: ServerResponse,

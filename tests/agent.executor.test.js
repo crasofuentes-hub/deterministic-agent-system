@@ -3,7 +3,7 @@ const {
   executeDeterministicPlan,
   computeDeterministicPlanHash,
   canonicalizePlan,
-  toCanonicalPlanJson
+  toCanonicalPlanJson,
 } = require("../dist/src/agent");
 
 function testValidPlanExecutes() {
@@ -13,8 +13,8 @@ function testValidPlanExecutes() {
     steps: [
       { id: "a", kind: "set", key: "name", value: "oscar" },
       { id: "b", kind: "increment", key: "count", value: 2 },
-      { id: "c", kind: "append_log", value: "done" }
-    ]
+      { id: "c", kind: "append_log", value: "done" },
+    ],
   };
 
   const res = executeDeterministicPlan(plan, { mode: "mock", maxSteps: 10, traceId: "t1" });
@@ -36,8 +36,8 @@ function testDeterministicExecutionHashStable() {
     version: 1,
     steps: [
       { id: "b", kind: "increment", key: "n", value: 2 },
-      { id: "a", kind: "set", key: "mode", value: "x" }
-    ]
+      { id: "a", kind: "set", key: "mode", value: "x" },
+    ],
   };
 
   const r1 = executeDeterministicPlan(plan, { mode: "mock", maxSteps: 10, traceId: "x1" });
@@ -59,8 +59,8 @@ function testCanonicalEquivalentPlansHaveSameHash() {
     version: 1,
     steps: [
       { id: "b", kind: "increment", key: "count", value: 2 },
-      { id: "a", kind: "set", key: "name", value: "oscar" }
-    ]
+      { id: "a", kind: "set", key: "name", value: "oscar" },
+    ],
   };
 
   const planB = {
@@ -68,8 +68,8 @@ function testCanonicalEquivalentPlansHaveSameHash() {
     version: 1,
     steps: [
       { id: "a", kind: "set", key: "name", value: "oscar" },
-      { id: "b", kind: "increment", key: "count", value: 2 }
-    ]
+      { id: "b", kind: "increment", key: "count", value: 2 },
+    ],
   };
 
   const canonA = canonicalizePlan(planA);

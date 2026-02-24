@@ -9,6 +9,7 @@
 ### Results
 
 #### node dist/scripts/verify-bootstrap.js
+
 - Status: **PASS**
 - DurationMs: 51
 

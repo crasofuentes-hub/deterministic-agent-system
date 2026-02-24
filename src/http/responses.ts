@@ -84,7 +84,12 @@ export function sendMalformedRequest(res: ServerResponse): void {
   });
 }
 
-export function sendInvalidRequest(res: ServerResponse, message: string, mode?: ExecutionMode, traceId?: string): void {
+export function sendInvalidRequest(
+  res: ServerResponse,
+  message: string,
+  mode?: ExecutionMode,
+  traceId?: string
+): void {
   sendError(res, {
     statusCode: 400,
     code: ERROR_CODES.INVALID_REQUEST,

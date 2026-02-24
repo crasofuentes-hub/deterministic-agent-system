@@ -32,54 +32,70 @@ A deterministic agent system must expose stable and machine-parseable failure se
 ## Initial Error Code Catalog (v0 direction)
 
 ### INVALID_REQUEST
+
 Use when input is syntactically valid JSON but fails request validation rules.
 
 Examples:
+
 - missing required fields
 - invalid field types
 - unsupported enum values
 
 Retryable:
+
 - false (unless request is corrected by caller)
 
 ### MALFORMED_REQUEST
+
 Use when the request cannot be parsed or interpreted structurally.
 
 Examples:
+
 - malformed JSON
 - invalid content format
 
 Retryable:
+
 - false (unless request payload is corrected)
 
 ### METHOD_NOT_ALLOWED
+
 Use when a route exists but the HTTP method is not supported.
 
 Retryable:
+
 - false (caller must change method)
 
 ### NOT_FOUND
+
 Use when the requested route or resource does not exist.
 
 Retryable:
+
 - false (unless caller changes target)
 
 ### ADAPTER_CONTRACT_VIOLATION
+
 Use when an adapter returns data or behavior that violates the declared integration contract.
 
 Retryable:
+
 - depends on context; typically false unless transient adapter issue is explicitly identified
 
 ### EXECUTION_CONVERGENCE_FAILED
+
 Use when bounded execution terminates without reaching a valid convergence condition.
 
 Retryable:
+
 - context-dependent; often false without changed configuration/input
 
 ### INTERNAL_ERROR
+
 Use for unexpected internal failures that do not map to a more specific stable code.
 
 Retryable:
+
 - context-dependent (must be explicitly declared in payload)
 
 ## Compatibility Guidance

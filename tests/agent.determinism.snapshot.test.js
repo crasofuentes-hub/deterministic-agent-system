@@ -41,7 +41,7 @@ function main() {
     executionHash: r1.result.executionHash,
     finalTraceLinkHash: r1.result.finalTraceLinkHash,
     finalState: r1.result.finalState,
-    traceLength: r1.result.trace.length
+    traceLength: r1.result.trace.length,
   };
 
   const snapshotPath = path.join(__dirname, "..", "fixtures", "determinism", "snapshot.v1.json");
@@ -49,27 +49,37 @@ function main() {
   if (!fs.existsSync(snapshotPath)) {
     fs.writeFileSync(snapshotPath, JSON.stringify(actual, null, 2));
     console.log("determinism snapshot created:", snapshotPath);
-    console.log(JSON.stringify({
-      ok: true,
-      createdSnapshot: true,
-      runtime: { node: process.version, platform: process.platform, arch: process.arch },
-      actual
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          createdSnapshot: true,
+          runtime: { node: process.version, platform: process.platform, arch: process.arch },
+          actual,
+        },
+        null,
+        2
+      )
+    );
     return;
   }
 
   const expected = readJson(snapshotPath);
 
-  assert.equal(stableStringify(actual), stableStringify(expected), [
-    "Determinism snapshot mismatch.",
-    "Expected and actual differ.",
-    "Runtime:",
-    JSON.stringify({ node: process.version, platform: process.platform, arch: process.arch }),
-    "Actual:",
-    JSON.stringify(actual, null, 2),
-    "Expected:",
-    JSON.stringify(expected, null, 2)
-  ].join("\n"));
+  assert.equal(
+    stableStringify(actual),
+    stableStringify(expected),
+    [
+      "Determinism snapshot mismatch.",
+      "Expected and actual differ.",
+      "Runtime:",
+      JSON.stringify({ node: process.version, platform: process.platform, arch: process.arch }),
+      "Actual:",
+      JSON.stringify(actual, null, 2),
+      "Expected:",
+      JSON.stringify(expected, null, 2),
+    ].join("\n")
+  );
 
   const report = {
     ok: true,
@@ -78,7 +88,7 @@ function main() {
       node: process.version,
       platform: process.platform,
       arch: process.arch,
-      eol: JSON.stringify(os.EOL)
+      eol: JSON.stringify(os.EOL),
     },
     verified: {
       fixtureId: actual.fixtureId,
@@ -86,8 +96,8 @@ function main() {
       planHash: actual.planHash,
       executionHash: actual.executionHash,
       finalTraceLinkHash: actual.finalTraceLinkHash,
-      traceLength: actual.traceLength
-    }
+      traceLength: actual.traceLength,
+    },
   };
 
   const outDir = path.join(__dirname, "..", "artifacts");
@@ -95,7 +105,13 @@ function main() {
 
   const outPath = path.join(
     outDir,
-    "determinism-report-" + process.platform + "-" + process.arch + "-" + process.version.replace(/^v/, "") + ".json"
+    "determinism-report-" +
+      process.platform +
+      "-" +
+      process.arch +
+      "-" +
+      process.version.replace(/^v/, "") +
+      ".json"
   );
   fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
 

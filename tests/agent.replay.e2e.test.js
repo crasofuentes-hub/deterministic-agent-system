@@ -3,7 +3,7 @@ const {
   executeDeterministicPlan,
   verifyExecutionReplay,
   canonicalizePlan,
-  TRACE_SCHEMA_VERSION
+  TRACE_SCHEMA_VERSION,
 } = require("../dist/src/agent");
 
 function testExactSameInputProducesExactSameOutput() {
@@ -13,8 +13,8 @@ function testExactSameInputProducesExactSameOutput() {
     steps: [
       { id: "b", kind: "increment", key: "n", value: 2 },
       { id: "a", kind: "set", key: "mode", value: "demo" },
-      { id: "c", kind: "append_log", value: "done" }
-    ]
+      { id: "c", kind: "append_log", value: "done" },
+    ],
   };
 
   const r1 = executeDeterministicPlan(plan, { mode: "mock", maxSteps: 10, traceId: "t1" });
@@ -42,8 +42,8 @@ function testReplayVerificationEndToEnd() {
     version: 1,
     steps: [
       { id: "s2", kind: "increment", key: "iterations", value: 1 },
-      { id: "s1", kind: "set", key: "mode", value: "bootstrap" }
-    ]
+      { id: "s1", kind: "set", key: "mode", value: "bootstrap" },
+    ],
   };
 
   const first = executeDeterministicPlan(plan, { mode: "mock", maxSteps: 10 });
@@ -59,9 +59,7 @@ function testCanonicalizationRejectsExtraFields() {
   const bad = {
     planId: "bad-plan",
     version: 1,
-    steps: [
-      { id: "a", kind: "set", key: "mode", value: "x", extraField: "not-allowed" }
-    ]
+    steps: [{ id: "a", kind: "set", key: "mode", value: "x", extraField: "not-allowed" }],
   };
 
   assert.throws(() => canonicalizePlan(bad), /unsupported fields/i);
@@ -71,9 +69,7 @@ function testCanonicalizationRejectsInvalidNumbers() {
   const bad = {
     planId: "bad-plan",
     version: 1,
-    steps: [
-      { id: "a", kind: "increment", key: "n", value: 1.25 }
-    ]
+    steps: [{ id: "a", kind: "increment", key: "n", value: 1.25 }],
   };
 
   assert.throws(() => canonicalizePlan(bad), /finite integer/i);
@@ -86,13 +82,13 @@ function testUnicodeNormalizationStability() {
   const p1 = {
     planId: "unicode-plan",
     version: 1,
-    steps: [{ id: "a", kind: "set", key: "text", value: composed }]
+    steps: [{ id: "a", kind: "set", key: "text", value: composed }],
   };
 
   const p2 = {
     planId: "unicode-plan",
     version: 1,
-    steps: [{ id: "a", kind: "set", key: "text", value: decomposed }]
+    steps: [{ id: "a", kind: "set", key: "text", value: decomposed }],
   };
 
   const r1 = executeDeterministicPlan(p1, { mode: "mock", maxSteps: 10 });

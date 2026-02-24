@@ -9,7 +9,9 @@ async function post(url, body) {
   });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch {}
+  try {
+    json = JSON.parse(text);
+  } catch {}
   return { status: res.status, json, text };
 }
 
@@ -21,7 +23,7 @@ async function testSimulateModelMockSuccess() {
       prompt: "deterministic provider separation",
       maxTokens: 32,
       temperature: 0,
-      traceId: "sim-model-001"
+      traceId: "sim-model-001",
     });
 
     assert.equal(r.status, 200);
@@ -41,7 +43,7 @@ async function testSimulateModelInvalidRequest() {
     const r = await post("http://127.0.0.1:" + running.port + "/simulate-model", {
       provider: "invalid",
       prompt: "",
-      maxTokens: 0
+      maxTokens: 0,
     });
 
     assert.equal(r.status, 400);

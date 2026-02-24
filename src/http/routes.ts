@@ -52,7 +52,9 @@ function readRequestBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-function validateSimulateRequest(input: unknown):
+function validateSimulateRequest(
+  input: unknown
+):
   | { ok: true; value: { prompt: string; topK: number; maxTokens: number; traceId?: string } }
   | { ok: false; error: string } {
   if (!isObject(input)) {
@@ -67,7 +69,11 @@ function validateSimulateRequest(input: unknown):
     return { ok: false, error: "topK must be a positive integer" };
   }
 
-  if (typeof input.maxTokens !== "number" || !Number.isInteger(input.maxTokens) || input.maxTokens <= 0) {
+  if (
+    typeof input.maxTokens !== "number" ||
+    !Number.isInteger(input.maxTokens) ||
+    input.maxTokens <= 0
+  ) {
     return { ok: false, error: "maxTokens must be a positive integer" };
   }
 
@@ -89,7 +95,16 @@ function validateSimulateRequest(input: unknown):
 }
 
 function validateSimulateModelRequest(input: unknown):
-  | { ok: true; value: { provider: "mock" | "openai-compatible"; prompt: string; maxTokens: number; temperature?: number; traceId?: string } }
+  | {
+      ok: true;
+      value: {
+        provider: "mock" | "openai-compatible";
+        prompt: string;
+        maxTokens: number;
+        temperature?: number;
+        traceId?: string;
+      };
+    }
   | { ok: false; error: string } {
   if (!isObject(input)) {
     return { ok: false, error: "Request body must be a JSON object" };
@@ -103,7 +118,11 @@ function validateSimulateModelRequest(input: unknown):
     return { ok: false, error: "prompt must be a non-empty string" };
   }
 
-  if (typeof input.maxTokens !== "number" || !Number.isInteger(input.maxTokens) || input.maxTokens <= 0) {
+  if (
+    typeof input.maxTokens !== "number" ||
+    !Number.isInteger(input.maxTokens) ||
+    input.maxTokens <= 0
+  ) {
     return { ok: false, error: "maxTokens must be a positive integer" };
   }
 
@@ -131,9 +150,11 @@ function validateSimulateModelRequest(input: unknown):
   };
 }
 
-
 function validateToolExecuteRequest(input: unknown):
-  | { ok: true; value: { toolName: string; input: JsonObject; timeoutMs?: number; traceId?: string } }
+  | {
+      ok: true;
+      value: { toolName: string; input: JsonObject; timeoutMs?: number; traceId?: string };
+    }
   | { ok: false; error: string } {
   if (!isObject(input)) {
     return { ok: false, error: "Request body must be a JSON object" };
@@ -148,7 +169,11 @@ function validateToolExecuteRequest(input: unknown):
   }
 
   if (typeof input.timeoutMs !== "undefined") {
-    if (typeof input.timeoutMs !== "number" || !Number.isFinite(input.timeoutMs) || input.timeoutMs <= 0) {
+    if (
+      typeof input.timeoutMs !== "number" ||
+      !Number.isFinite(input.timeoutMs) ||
+      input.timeoutMs <= 0
+    ) {
       return { ok: false, error: "timeoutMs must be a positive finite number when provided" };
     }
   }
@@ -231,7 +256,12 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
       return;
     }
 
-    if (url !== "/execute" && url !== "/simulate" && url !== "/simulate-model" && url !== "/tool/execute") {
+    if (
+      url !== "/execute" &&
+      url !== "/simulate" &&
+      url !== "/simulate-model" &&
+      url !== "/tool/execute"
+    ) {
       withRequestId(res, requestId);
       sendNotFound(res);
       logEnd(req, res, requestId, startedAt);

@@ -15,6 +15,7 @@ This project is built around deterministic execution, auditable behavior, and ex
 Please report security issues privately before public disclosure.
 
 ### Preferred contact
+
 - Open a private security advisory on GitHub (if enabled), or
 - Contact the maintainer directly through the contact information listed on the project profile
 

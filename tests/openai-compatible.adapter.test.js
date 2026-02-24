@@ -21,17 +21,21 @@ async function testOpenAICompatibleSuccess() {
       id: "chatcmpl-test",
       model: "gpt-test-compatible",
       choices: [
-        { index: 0, message: { role: "assistant", content: "hello deterministic world" }, finish_reason: "stop" }
+        {
+          index: 0,
+          message: { role: "assistant", content: "hello deterministic world" },
+          finish_reason: "stop",
+        },
       ],
-      usage: { total_tokens: 12, prompt_tokens: 5, completion_tokens: 7 }
-    })
+      usage: { total_tokens: 12, prompt_tokens: 5, completion_tokens: 7 },
+    }),
   }));
 
   const adapter = new OpenAICompatibleModelAdapter(
     {
       baseUrl: "https://example.test/v1",
       apiKey: "secret",
-      model: "gpt-test-compatible"
+      model: "gpt-test-compatible",
     },
     transport
   );
@@ -39,7 +43,7 @@ async function testOpenAICompatibleSuccess() {
   const out = await adapter.generateAsync({
     prompt: "hi",
     maxTokens: 32,
-    temperature: 0
+    temperature: 0,
   });
 
   assert.equal(out.deterministic, false);
@@ -60,14 +64,14 @@ async function testOpenAICompatibleProviderHttpError() {
   const transport = new MockTransport(() => ({
     status: 401,
     headers: { "content-type": "application/json" },
-    bodyText: JSON.stringify({ error: { message: "Unauthorized" } })
+    bodyText: JSON.stringify({ error: { message: "Unauthorized" } }),
   }));
 
   const adapter = new OpenAICompatibleModelAdapter(
     {
       baseUrl: "https://example.test/v1",
       apiKey: "bad",
-      model: "gpt-test-compatible"
+      model: "gpt-test-compatible",
     },
     transport
   );

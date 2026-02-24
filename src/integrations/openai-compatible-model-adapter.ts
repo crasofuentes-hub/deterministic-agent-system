@@ -37,8 +37,14 @@ function extractFirstAssistantText(payload: OpenAICompatibleChatCompletionsRespo
   return content;
 }
 
-function safeProviderTokenCount(payload: OpenAICompatibleChatCompletionsResponse, fallbackText: string): number {
-  const total = payload.usage && typeof payload.usage.total_tokens === "number" ? payload.usage.total_tokens : undefined;
+function safeProviderTokenCount(
+  payload: OpenAICompatibleChatCompletionsResponse,
+  fallbackText: string
+): number {
+  const total =
+    payload.usage && typeof payload.usage.total_tokens === "number"
+      ? payload.usage.total_tokens
+      : undefined;
   if (typeof total === "number" && Number.isFinite(total) && total >= 0) {
     return Math.floor(total);
   }
@@ -47,7 +53,9 @@ function safeProviderTokenCount(payload: OpenAICompatibleChatCompletionsResponse
 
 export class OpenAICompatibleModelAdapter implements AsyncModelAdapter {
   public readonly adapterId: string;
-  private readonly cfg: Required<Omit<OpenAICompatibleAdapterConfig, "timeoutMs" | "defaultTemperature" | "maxInputChars">> & {
+  private readonly cfg: Required<
+    Omit<OpenAICompatibleAdapterConfig, "timeoutMs" | "defaultTemperature" | "maxInputChars">
+  > & {
     timeoutMs: number;
     defaultTemperature: number;
     maxInputChars: number;
@@ -59,18 +67,26 @@ export class OpenAICompatibleModelAdapter implements AsyncModelAdapter {
       baseUrl: trimTrailingSlash(requireNonEmpty(config.baseUrl, "baseUrl")),
       apiKey: requireNonEmpty(config.apiKey, "apiKey"),
       model: requireNonEmpty(config.model, "model"),
-      timeoutMs: typeof config.timeoutMs === "number" && config.timeoutMs > 0 ? Math.floor(config.timeoutMs) : 30000,
+      timeoutMs:
+        typeof config.timeoutMs === "number" && config.timeoutMs > 0
+          ? Math.floor(config.timeoutMs)
+          : 30000,
       defaultTemperature:
         typeof config.defaultTemperature === "number" && Number.isFinite(config.defaultTemperature)
           ? config.defaultTemperature
           : 0,
-      maxInputChars: typeof config.maxInputChars === "number" && config.maxInputChars > 0 ? Math.floor(config.maxInputChars) : 20000,
+      maxInputChars:
+        typeof config.maxInputChars === "number" && config.maxInputChars > 0
+          ? Math.floor(config.maxInputChars)
+          : 20000,
     };
     this.transport = transport;
     this.adapterId = "openai-compatible:" + this.cfg.model;
   }
 
-  public async generateAsync(request: ModelGenerateRequest): Promise<ProviderModelGenerateResponse> {
+  public async generateAsync(
+    request: ModelGenerateRequest
+  ): Promise<ProviderModelGenerateResponse> {
     const prompt = String(request.prompt ?? "").normalize("NFC");
     if (prompt.trim().length === 0) {
       throw new Error("prompt must be non-empty");
@@ -79,7 +95,8 @@ export class OpenAICompatibleModelAdapter implements AsyncModelAdapter {
       throw new Error("prompt exceeds maxInputChars");
     }
 
-    const maxTokens = Number.isInteger(request.maxTokens) && request.maxTokens > 0 ? request.maxTokens : 256;
+    const maxTokens =
+      Number.isInteger(request.maxTokens) && request.maxTokens > 0 ? request.maxTokens : 256;
     const temperature =
       typeof request.temperature === "number" && Number.isFinite(request.temperature)
         ? request.temperature
@@ -103,7 +120,7 @@ export class OpenAICompatibleModelAdapter implements AsyncModelAdapter {
       url: this.cfg.baseUrl + "/chat/completions",
       headers: {
         "content-type": "application/json",
-        "authorization": "Bearer " + this.cfg.apiKey,
+        authorization: "Bearer " + this.cfg.apiKey,
       },
       body: bodyText,
       timeoutMs: this.cfg.timeoutMs,
@@ -120,7 +137,8 @@ export class OpenAICompatibleModelAdapter implements AsyncModelAdapter {
 
     return {
       text,
-      modelId: typeof parsed.model === "string" && parsed.model.length > 0 ? parsed.model : this.cfg.model,
+      modelId:
+        typeof parsed.model === "string" && parsed.model.length > 0 ? parsed.model : this.cfg.model,
       tokenCount,
       deterministic: false,
       evidence: {

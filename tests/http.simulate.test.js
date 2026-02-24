@@ -9,7 +9,9 @@ async function post(url, body) {
   });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch {}
+  try {
+    json = JSON.parse(text);
+  } catch {}
   return { status: res.status, json, text };
 }
 
@@ -21,7 +23,7 @@ async function testSimulateSuccess() {
       prompt: "deterministic execution trace",
       topK: 2,
       maxTokens: 32,
-      traceId: "sim-001"
+      traceId: "sim-001",
     };
 
     const r = await post(url, body);
@@ -44,7 +46,7 @@ async function testSimulateDeterministic() {
     const body = {
       prompt: "vector adapter portable integration contracts",
       topK: 2,
-      maxTokens: 16
+      maxTokens: 16,
     };
 
     const r1 = await post(url, body);

@@ -18,6 +18,7 @@ The goal is to support deterministic automation and reproducible verification by
 ## Response Shape Principles
 
 Responses should be:
+
 - machine-parseable
 - explicit about success or failure
 - stable across equivalent conditions
@@ -26,6 +27,7 @@ Responses should be:
 ## Success Response Direction (Conceptual)
 
 A success response should include:
+
 - explicit success indicator
 - result payload
 - metadata fields (as needed)
@@ -44,12 +46,14 @@ Example conceptual shape:
 ## Error Response Direction (Conceptual)
 
 Error behavior should be deterministic enough to support:
+
 - retry logic
 - test assertions
 - operational diagnostics
 - cross-environment comparisons
 
 Target properties:
+
 - stable error code
 - explicit retryability
 - consistent top-level shape
@@ -73,6 +77,7 @@ Example conceptual shape:
 ## Negative-Path Validation Priorities
 
 Examples of cases to validate:
+
 - missing required fields
 - malformed JSON
 - unsupported method

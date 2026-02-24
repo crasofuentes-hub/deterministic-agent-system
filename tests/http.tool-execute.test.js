@@ -23,8 +23,8 @@ async function testEchoHttpSuccess() {
         toolName: "echo",
         input: { message: "hello-tool" },
         timeoutMs: 500,
-        traceId: "http-tool-001"
-      })
+        traceId: "http-tool-001",
+      }),
     });
 
     assert.equal(r.status, 200);
@@ -53,8 +53,8 @@ async function testSumHttpSuccess() {
         toolName: "sum",
         input: { values: [10, 20, 30] },
         timeoutMs: 500,
-        traceId: "http-tool-002"
-      })
+        traceId: "http-tool-002",
+      }),
     });
 
     assert.equal(r.status, 200);
@@ -76,8 +76,8 @@ async function testToolNotFoundHttp() {
       body: JSON.stringify({
         toolName: "does-not-exist",
         input: {},
-        timeoutMs: 500
-      })
+        timeoutMs: 500,
+      }),
     });
 
     assert.equal(r.status, 400);
@@ -98,8 +98,8 @@ async function testInvalidToolInputHttp() {
       body: JSON.stringify({
         toolName: "sum",
         input: { values: [1, "bad", 3] },
-        timeoutMs: 500
-      })
+        timeoutMs: 500,
+      }),
     });
 
     assert.equal(r.status, 400);
@@ -119,8 +119,8 @@ async function testHttpValidationError() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         toolName: "",
-        input: {}
-      })
+        input: {},
+      }),
     });
 
     assert.equal(r.status, 400);

@@ -10,7 +10,10 @@ export interface ProviderInvocationEvidence {
   providerDeterminism: "unknown";
 }
 
-export interface ProviderModelGenerateResponse extends Omit<ModelGenerateResponse, "deterministic"> {
+export interface ProviderModelGenerateResponse extends Omit<
+  ModelGenerateResponse,
+  "deterministic"
+> {
   deterministic: false;
   evidence: ProviderInvocationEvidence;
 }

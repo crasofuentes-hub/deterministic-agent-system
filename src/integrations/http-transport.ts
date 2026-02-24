@@ -27,7 +27,8 @@ function normalizeHeaders(input: Headers): Record<string, string> {
 export class FetchHttpTransport implements HttpTransport {
   public async request(req: HttpRequest): Promise<HttpResponse> {
     const controller = new AbortController();
-    const timeoutMs = typeof req.timeoutMs === "number" && req.timeoutMs > 0 ? req.timeoutMs : 30000;
+    const timeoutMs =
+      typeof req.timeoutMs === "number" && req.timeoutMs > 0 ? req.timeoutMs : 30000;
 
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 

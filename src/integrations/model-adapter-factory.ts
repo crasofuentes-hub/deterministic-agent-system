@@ -15,7 +15,9 @@ export interface ModelAdapterFactoryInput {
   };
 }
 
-export function createModelAdapterSelection(input: ModelAdapterFactoryInput): ModelAdapterSelection {
+export function createModelAdapterSelection(
+  input: ModelAdapterFactoryInput
+): ModelAdapterSelection {
   if (input.provider === "mock") {
     return {
       syncAdapter: new MockModelAdapter(),
@@ -28,7 +30,10 @@ export function createModelAdapterSelection(input: ModelAdapterFactoryInput): Mo
     }
 
     return {
-      asyncAdapter: new OpenAICompatibleModelAdapter(input.openaiCompatible, new FetchHttpTransport()),
+      asyncAdapter: new OpenAICompatibleModelAdapter(
+        input.openaiCompatible,
+        new FetchHttpTransport()
+      ),
     };
   }
 

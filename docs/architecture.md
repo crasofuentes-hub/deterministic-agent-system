@@ -20,6 +20,7 @@ The system is designed around one central goal: a deterministic autonomous agent
 This is the product-level behavior layer.
 
 Responsibilities:
+
 - planning and action selection
 - bounded iterative behavior
 - policy-controlled execution
@@ -32,6 +33,7 @@ This layer should not bypass lower-layer execution controls.
 This layer enforces operational discipline.
 
 Responsibilities:
+
 - step sequencing
 - state transition control
 - convergence checks
@@ -45,6 +47,7 @@ This layer exists to keep execution behavior explicit and inspectable.
 This layer handles local, mock, and external integrations.
 
 Responsibilities:
+
 - integration normalization
 - mode-specific execution behavior
 - adapter contract enforcement
@@ -58,6 +61,7 @@ This layer is treated as a contract boundary, not as trusted internal logic.
 This layer provides evidence and validation workflows.
 
 Responsibilities:
+
 - smoke testing
 - script-based verification
 - status artifact generation

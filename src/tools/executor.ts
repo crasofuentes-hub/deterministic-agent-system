@@ -1,9 +1,5 @@
 import { ToolRegistry } from "./registry";
-import type {
-  ToolExecutionRequest,
-  ToolExecutionResult,
-  ToolExecutionContext,
-} from "./types";
+import type { ToolExecutionRequest, ToolExecutionResult, ToolExecutionContext } from "./types";
 
 export interface ExecuteToolOptions {
   timeoutMs?: number;
@@ -66,9 +62,10 @@ export async function executeToolRequest(
   options: ExecuteToolOptions = {}
 ): Promise<ToolExecutionResult> {
   const started = Date.now();
-  const timeoutMs = typeof options.timeoutMs === "number" && options.timeoutMs > 0
-    ? Math.floor(options.timeoutMs)
-    : 1000;
+  const timeoutMs =
+    typeof options.timeoutMs === "number" && options.timeoutMs > 0
+      ? Math.floor(options.timeoutMs)
+      : 1000;
 
   const nowFn = options.now ?? (() => new Date());
 
@@ -104,14 +101,12 @@ export async function executeToolRequest(
 
     if (timer) {
       clearTimeout(timer);
-      timer = null;
     }
 
     return result;
   } catch (err) {
     if (timer) {
       clearTimeout(timer);
-      timer = null;
     }
 
     const message = err instanceof Error ? err.message : String(err);

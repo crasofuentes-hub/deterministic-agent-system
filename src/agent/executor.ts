@@ -1,5 +1,10 @@
 import { ERROR_CODES } from "../core/error-codes";
-import { failure, success, type DeterministicResponse, type ExecutionMode } from "../core/contracts";
+import {
+  failure,
+  success,
+  type DeterministicResponse,
+  type ExecutionMode,
+} from "../core/contracts";
 import type { DeterministicAgentPlan, AgentExecutionResult, StepTrace } from "./plan-types";
 import { validatePlan } from "./policies";
 import { applyMockStep, createInitialAgentState, getStateHashLike } from "./mock-adapter";
@@ -19,7 +24,11 @@ export function executeDeterministicPlan(
 ): DeterministicResponse<AgentExecutionResult> {
   if (!Number.isInteger(options.maxSteps) || options.maxSteps <= 0) {
     return failure(
-      { code: ERROR_CODES.INVALID_REQUEST, message: "maxSteps must be a positive integer", retryable: false },
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: "maxSteps must be a positive integer",
+        retryable: false,
+      },
       { mode: options.mode, traceId: options.traceId }
     );
   }
@@ -55,7 +64,11 @@ export function executeDeterministicPlan(
 
   if (canonicalPlan.steps.length > options.maxSteps) {
     return failure(
-      { code: ERROR_CODES.EXECUTION_CONVERGENCE_FAILED, message: "Plan exceeds maxSteps bound", retryable: false },
+      {
+        code: ERROR_CODES.EXECUTION_CONVERGENCE_FAILED,
+        message: "Plan exceeds maxSteps bound",
+        retryable: false,
+      },
       { mode: options.mode, stepCount: 0, traceId: options.traceId }
     );
   }
@@ -68,7 +81,11 @@ export function executeDeterministicPlan(
     const step = canonicalPlan.steps[i];
     if (!step) {
       return failure(
-        { code: ERROR_CODES.INTERNAL_ERROR, message: "Undefined step encountered after validation", retryable: false },
+        {
+          code: ERROR_CODES.INTERNAL_ERROR,
+          message: "Undefined step encountered after validation",
+          retryable: false,
+        },
         { mode: options.mode, stepCount: i, traceId: options.traceId }
       );
     }

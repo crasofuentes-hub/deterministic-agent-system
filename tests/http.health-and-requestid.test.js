@@ -64,7 +64,7 @@ async function testKnownEndpointHasRequestId() {
         prompt: "health-request-id-check",
         topK: 2,
         maxTokens: 16,
-        traceId: "health-reqid-001"
+        traceId: "health-reqid-001",
       }),
     });
 

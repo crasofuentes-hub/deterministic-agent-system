@@ -7,13 +7,19 @@ function isObject(value: unknown): value is UnknownRecord {
 }
 
 function assertNoExtraKeys(obj: UnknownRecord, allowed: string[], context: string): void {
-  const extras = Object.keys(obj).filter((k) => !allowed.includes(k)).sort();
+  const extras = Object.keys(obj)
+    .filter((k) => !allowed.includes(k))
+    .sort();
   if (extras.length > 0) {
     throw new Error(context + " contains unsupported fields: " + extras.join(", "));
   }
 }
 
-function normalizeStringStrict(value: unknown, context: string, opts?: { maxLen?: number }): string {
+function normalizeStringStrict(
+  value: unknown,
+  context: string,
+  opts?: { maxLen?: number }
+): string {
   if (typeof value !== "string") {
     throw new Error(context + " must be a string");
   }
@@ -44,7 +50,11 @@ function normalizeStepKind(value: unknown, context: string): AgentStepKind {
   throw new Error(context + " must be one of: set, increment, append_log");
 }
 
-function normalizeStepValue(stepKind: AgentStepKind, value: unknown, context: string): number | string | undefined {
+function normalizeStepValue(
+  stepKind: AgentStepKind,
+  value: unknown,
+  context: string
+): number | string | undefined {
   if (typeof value === "undefined") {
     return undefined;
   }
@@ -60,7 +70,11 @@ function normalizeStepValue(stepKind: AgentStepKind, value: unknown, context: st
   throw new Error(context + " unsupported step kind");
 }
 
-function normalizeOptionalKey(stepKind: AgentStepKind, key: unknown, context: string): string | undefined {
+function normalizeOptionalKey(
+  stepKind: AgentStepKind,
+  key: unknown,
+  context: string
+): string | undefined {
   if (stepKind === "append_log") {
     if (typeof key !== "undefined") {
       throw new Error(context + " must not contain key for append_log");
@@ -110,8 +124,10 @@ function compareSteps(a: AgentStep, b: AgentStep): number {
   if (aKey < bKey) return -1;
   if (aKey > bKey) return 1;
 
-  const aValueType = typeof a.value === "number" ? "number" : typeof a.value === "string" ? "string" : "undefined";
-  const bValueType = typeof b.value === "number" ? "number" : typeof b.value === "string" ? "string" : "undefined";
+  const aValueType =
+    typeof a.value === "number" ? "number" : typeof a.value === "string" ? "string" : "undefined";
+  const bValueType =
+    typeof b.value === "number" ? "number" : typeof b.value === "string" ? "string" : "undefined";
   if (aValueType < bValueType) return -1;
   if (aValueType > bValueType) return 1;
 
@@ -140,7 +156,10 @@ export function canonicalizePlan(plan: DeterministicAgentPlan): DeterministicAge
     throw new Error("plan.steps must be an array");
   }
 
-  const normalizedSteps = plan.steps.map((s, i) => normalizeStepRaw(s, i)).slice().sort(compareSteps);
+  const normalizedSteps = plan.steps
+    .map((s, i) => normalizeStepRaw(s, i))
+    .slice()
+    .sort(compareSteps);
 
   const seen = new Set<string>();
   for (const s of normalizedSteps) {

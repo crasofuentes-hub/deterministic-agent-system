@@ -43,7 +43,7 @@ async function testMalformedJson() {
     const r = await req("http://127.0.0.1:" + running.port + "/execute", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: "{ bad json"
+      body: "{ bad json",
     });
     assert.equal(r.status, 400);
     assert.equal(r.json.ok, false);
@@ -59,7 +59,7 @@ async function testInvalidRequest() {
     const r = await req("http://127.0.0.1:" + running.port + "/execute", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "mock", maxSteps: 0 })
+      body: JSON.stringify({ mode: "mock", maxSteps: 0 }),
     });
     assert.equal(r.status, 400);
     assert.equal(r.json.ok, false);

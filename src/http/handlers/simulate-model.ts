@@ -19,7 +19,10 @@ function getEnvRequired(name: string): string {
   return v;
 }
 
-export async function handleSimulateModel(res: ServerResponse, body: SimModelRequest): Promise<void> {
+export async function handleSimulateModel(
+  res: ServerResponse,
+  body: SimModelRequest
+): Promise<void> {
   try {
     const provider = body.provider;
     const prompt = String(body.prompt ?? "");
@@ -45,7 +48,9 @@ export async function handleSimulateModel(res: ServerResponse, body: SimModelReq
               baseUrl: getEnvRequired("OPENAI_COMPAT_BASE_URL"),
               apiKey: getEnvRequired("OPENAI_COMPAT_API_KEY"),
               model: getEnvRequired("OPENAI_COMPAT_MODEL"),
-              timeoutMs: process.env.OPENAI_COMPAT_TIMEOUT_MS ? Number(process.env.OPENAI_COMPAT_TIMEOUT_MS) : 30000,
+              timeoutMs: process.env.OPENAI_COMPAT_TIMEOUT_MS
+                ? Number(process.env.OPENAI_COMPAT_TIMEOUT_MS)
+                : 30000,
             },
           });
 

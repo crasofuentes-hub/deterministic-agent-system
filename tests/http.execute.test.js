@@ -33,9 +33,9 @@ async function testExecuteSuccess() {
         version: 1,
         steps: [
           { id: "a", kind: "set", key: "mode", value: "x" },
-          { id: "b", kind: "increment", key: "n", value: 1 }
-        ]
-      }
+          { id: "b", kind: "increment", key: "n", value: 1 },
+        ],
+      },
     };
 
     const res = await postJson(url, body);
@@ -62,9 +62,9 @@ async function testSameRequestSameHashes() {
         version: 1,
         steps: [
           { id: "b", kind: "increment", key: "n", value: 2 },
-          { id: "a", kind: "set", key: "k", value: "v" }
-        ]
-      }
+          { id: "a", kind: "set", key: "k", value: "v" },
+        ],
+      },
     };
 
     const r1 = await postJson(url, body);
