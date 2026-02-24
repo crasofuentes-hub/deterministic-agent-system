@@ -5,14 +5,21 @@
     "main":  "dist/index.js",
     "type":  "commonjs",
     "scripts":  {
-                    "build":  "tsc -p tsconfig.scripts.json",
-                    "test":  "node tests/core.bounded-loop.test.js \u0026\u0026 node tests/agent.executor.test.js",
-                    "start":  "node dist/src/index.js",
                     "status:generate":  "node dist/scripts/generate-status.js",
-                    "verify":  "npm run verify:bootstrap \u0026\u0026 npm run verify:contracts",
-                    "verify:contracts":  "node dist/scripts/verify-contract.js",
+                    "start":  "node dist/src/index.js",
+                    "test:integrations":  "node tests/http.simulate.test.js",
                     "verify:bootstrap":  "node dist/scripts/verify-bootstrap.js",
-                    "dev":  "node -e \"console.log(\u0027Development entrypoint pending implementation\u0027)\""
+                    "test:provider":  "node tests/openai-compatible.adapter.test.js \u0026\u0026 node tests/http.simulate-model.test.js",
+                    "test:tools":  "node tests/tool.executor.test.js \u0026\u0026 node tests/http.tool-execute.test.js",
+                    "test:determinism":  "node tests/agent.determinism.snapshot.test.js",
+                    "build":  "tsc -p tsconfig.scripts.json",
+                    "start:api":  "node dist/src/http/server.js",
+                    "test:http":  "node tests/http.execute.test.js \u0026\u0026 node tests/http.negative.test.js \u0026\u0026 node tests/http.simulate.test.js \u0026\u0026 node tests/http.simulate-model.test.js \u0026\u0026 node tests/http.health-and-requestid.test.js \u0026\u0026 node tests/http.tool-execute.test.js",
+                    "dev":  "node -e \"console.log(\u0027Development entrypoint pending implementation\u0027)\"",
+                    "verify":  "npm run verify:bootstrap \u0026\u0026 npm run verify:contracts",
+                    "test":  "node tests/core.bounded-loop.test.js \u0026\u0026 node tests/agent.executor.test.js \u0026\u0026 node tests/agent.replay.e2e.test.js \u0026\u0026 node tests/agent.determinism.snapshot.test.js \u0026\u0026 node tests/tool.executor.test.js \u0026\u0026 node tests/http.execute.test.js \u0026\u0026 node tests/http.negative.test.js \u0026\u0026 node tests/http.simulate.test.js \u0026\u0026 node tests/http.simulate-model.test.js \u0026\u0026 node tests/http.health-and-requestid.test.js \u0026\u0026 node tests/http.tool-execute.test.js \u0026\u0026 node tests/openai-compatible.adapter.test.js",
+                    "test:replay":  "node tests/agent.replay.e2e.test.js",
+                    "verify:contracts":  "node dist/scripts/verify-contract.js"
                 },
     "devDependencies":  {
                             "@types/node":  "^25.3.0",

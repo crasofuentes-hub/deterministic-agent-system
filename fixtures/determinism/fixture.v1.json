@@ -1,0 +1,18 @@
+{
+  "fixtureId": "determinism-fixture-v1",
+  "description": "Canonical deterministic execution fixture for cross-runtime verification",
+  "plan": {
+    "planId": "determinism-fixture-plan-001",
+    "version": 1,
+    "steps": [
+      { "id": "s3", "kind": "append_log", "value": "fin" },
+      { "id": "s1", "kind": "set", "key": "mode", "value": "demo" },
+      { "id": "s2", "kind": "increment", "key": "iterations", "value": 2 }
+    ]
+  },
+  "options": {
+    "mode": "mock",
+    "maxSteps": 10,
+    "traceId": "determinism-matrix-check"
+  }
+}

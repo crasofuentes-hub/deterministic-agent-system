@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "createdSnapshot": false,
+  "runtime": {
+    "node": "v24.11.0",
+    "platform": "win32",
+    "arch": "x64",
+    "eol": "\"\\r\\n\""
+  },
+  "verified": {
+    "fixtureId": "determinism-fixture-v1",
+    "traceSchemaVersion": 1,
+    "planHash": "ph52e5e709145938009dee903e25dad592056227484443dcb7daead8b3b078727a",
+    "executionHash": "eh81003870acae9a53c083cb108f86e5f896e2e0d3abe1f72314c61fc926a1eb5a",
+    "finalTraceLinkHash": "tl97d379a1b275638d7d6a2a0fccc90955c20959aec2395ce67315aedd25f89366",
+    "traceLength": 3
+  }
+}
