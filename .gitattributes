@@ -1,0 +1,2 @@
+﻿# GitHub Linguist: no contar tests JS en porcentaje de lenguaje
+tests/*.js linguist-detectable=false
