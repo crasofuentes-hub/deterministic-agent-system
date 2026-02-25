@@ -51,3 +51,4 @@ main().catch((err: unknown) => {
   process.stderr.write("Fatal error: " + message + "\n");
   process.exitCode = 1;
 });
+export * from "./agent-run";
