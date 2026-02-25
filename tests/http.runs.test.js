@@ -137,3 +137,32 @@ test("http /runs lifecycle returns 409 on invalid transition", async () => {
     await running.close();
   }
 });
+
+test("http /runs/:id/complete rejects GET with 405", async () => {
+  const running = await startServer({ port: 0 });
+
+  try {
+    const base = "http://127.0.0.1:" + running.port;
+
+    const created = await requestJson(base + "/runs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        agentId: "agent-method-check",
+      }),
+    });
+
+    assert.equal(created.status, 201);
+    const runId = created.body.result.runId;
+
+    const r = await requestJson(base + "/runs/" + runId + "/complete", {
+      method: "GET",
+    });
+
+    assert.equal(r.status, 405);
+    assert.equal(r.body.ok, false);
+    assert.equal(typeof r.body.error.code, "string");
+  } finally {
+    await running.close();
+  }
+});
