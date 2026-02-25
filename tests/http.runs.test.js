@@ -89,3 +89,51 @@ test("http /runs/:id returns 404 for unknown run", async () => {
     await running.close();
   }
 });
+
+test("http /runs lifecycle returns 409 on invalid transition", async () => {
+  const running = await startServer({ port: 0 });
+
+  try {
+    const base = "http://127.0.0.1:" + running.port;
+
+    const created = await requestJson(base + "/runs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        agentId: "agent-invalid-transition",
+      }),
+    });
+
+    assert.equal(created.status, 201);
+    const runId = created.body.result.runId;
+
+    const started = await requestJson(base + "/runs/" + runId + "/start", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(started.status, 200);
+    assert.equal(started.body.result.status, "running");
+
+    const completed = await requestJson(base + "/runs/" + runId + "/complete", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ output: { done: true } }),
+    });
+    assert.equal(completed.status, 200);
+    assert.equal(completed.body.result.status, "completed");
+
+    const cancelled = await requestJson(base + "/runs/" + runId + "/cancel", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason: "too late" }),
+    });
+
+    assert.equal(cancelled.status, 409);
+    assert.equal(cancelled.body.ok, false);
+    assert.equal(cancelled.body.error.code, "INVALID_RUN_TRANSITION");
+    assert.match(cancelled.body.error.message, /Invalid transition:/);
+  } finally {
+    await running.close();
+  }
+});
