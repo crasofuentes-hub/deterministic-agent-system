@@ -1,5 +1,6 @@
 ﻿import type { ExecuteRequest } from "../request-types";
 import { executeWithFixpoint } from "../../enterprise/agent-executor";
+import { getCheckpointStore } from "../../enterprise/state-manager";
 import { getAgentRunRegistry } from "../runs/registry";
 import type { HttpJsonResult } from "../runs/types";
 
@@ -102,11 +103,24 @@ export function handleExecuteRun(runId: string, request: ExecuteRequest): HttpJs
     return mapRegistryError(err);
   }
 
+  const store = getCheckpointStore();
+  const runningSnapshot = registry.get(runId);
+  if (!runningSnapshot) {
+    return internalError();
+  }
+  store.saveValid(runId, runningSnapshot);
+
   try {
     const outcome = executeWithFixpoint(request, {
       maxIterations: 20,
       baseBackoffMs: 25,
       maxBackoffMs: 1000,
+      onRetry: () => {
+        const snap = store.loadLatestValid(runId);
+        if (snap) {
+          registry.restore(snap);
+        }
+      },
     });
 
     if (outcome.status === "completed") {
@@ -133,3 +147,4 @@ export function handleExecuteRun(runId: string, request: ExecuteRequest): HttpJs
     }
   }
 }
+

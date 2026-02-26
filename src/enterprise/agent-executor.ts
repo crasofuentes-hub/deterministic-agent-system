@@ -33,6 +33,7 @@ function backoffMs(attempt: number, baseMs: number, capMs: number): number {
 export function executeWithFixpoint(
   request: ExecuteRequest,
   params?: {
+    onRetry?: (info: { iter: number; backoffMs: number; errorCode: string; errorMessage: string }) => void;
     maxIterations?: number; // default 20
     baseBackoffMs?: number; // default 25
     maxBackoffMs?: number; // default 1000
@@ -75,6 +76,14 @@ export function executeWithFixpoint(
 
     // Determinista: registramos el backoff (no dormimos aquí)
     schedule.push(backoffMs(iter, baseBackoffMs, maxBackoffMs));
+    if (typeof params?.onRetry === "function") {
+      params.onRetry({
+        iter,
+        backoffMs: schedule[schedule.length - 1] ?? 0,
+        errorCode: code,
+        errorMessage: msg,
+      });
+    }
     // loop continues -> retry
   }
 
@@ -86,3 +95,4 @@ export function executeWithFixpoint(
     lastErrorMessage: "Fixpoint did not converge within max iterations",
   };
 }
+

@@ -62,6 +62,22 @@ export class AgentRunRegistry {
     return found ? cloneRun(found) : undefined;
   }
 
+  restore(snapshot: RunRecord): RunRecord {
+    if (typeof snapshot.runId !== "string" || snapshot.runId.length === 0) {
+      throw new Error("Run not found: " + String(snapshot.runId));
+    }
+
+    // restore determinista: aplicamos el snapshot exactamente, sin tocar timestamps.
+    this.runs.set(snapshot.runId, {
+      ...snapshot,
+      input: snapshot.input ? { ...snapshot.input } : undefined,
+      output: snapshot.output ? { ...snapshot.output } : undefined,
+      error: snapshot.error ? { ...snapshot.error } : undefined,
+    });
+
+    return cloneRun(snapshot);
+  }
+
   start(runId: string): RunRecord {
     return this.transition(runId, "running");
   }
