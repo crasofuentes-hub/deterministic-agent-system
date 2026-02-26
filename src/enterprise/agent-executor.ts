@@ -30,6 +30,14 @@ function backoffMs(attempt: number, baseMs: number, capMs: number): number {
   return raw > capMs ? capMs : raw;
 }
 
+function parseFailNTimes(traceId?: string): number {
+  if (typeof traceId !== "string") return 0;
+  const m = /^FAIL_N_TIMES:(\d+)(?:$|:)/.exec(traceId);
+  if (!m) return 0;
+  const n = Number(m[1]);
+  return Number.isInteger(n) && n > 0 ? n : 0;
+}
+
 export function executeWithFixpoint(
   request: ExecuteRequest,
   params?: {
@@ -46,6 +54,22 @@ export function executeWithFixpoint(
   const schedule: number[] = [];
 
   for (let iter = 0; iter < maxIterations; iter++) {
+    const injectedFails = parseFailNTimes(request.traceId);
+    if (injectedFails > 0 && iter < injectedFails) {
+      const code = "NETWORK_ERROR";
+      const msg = "Injected fault: NETWORK_ERROR";
+
+      schedule.push(backoffMs(iter, baseBackoffMs, maxBackoffMs));
+      if (typeof params?.onRetry === "function") {
+        params.onRetry({
+          iter,
+          backoffMs: schedule[schedule.length - 1] ?? 0,
+          errorCode: code,
+          errorMessage: msg,
+        });
+      }
+      continue;
+    }
     const result = executeDeterministicPlan(request.plan, {
       mode: request.mode,
       maxSteps: request.maxSteps,
@@ -95,4 +119,5 @@ export function executeWithFixpoint(
     lastErrorMessage: "Fixpoint did not converge within max iterations",
   };
 }
+
 
