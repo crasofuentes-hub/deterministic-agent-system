@@ -1,5 +1,5 @@
-﻿import { executeDeterministicPlan } from "../../agent";
-import type { ExecuteRequest } from "../request-types";
+﻿import type { ExecuteRequest } from "../request-types";
+import { executeWithFixpoint } from "../../enterprise/agent-executor";
 import { getAgentRunRegistry } from "../runs/registry";
 import type { HttpJsonResult } from "../runs/types";
 
@@ -103,20 +103,26 @@ export function handleExecuteRun(runId: string, request: ExecuteRequest): HttpJs
   }
 
   try {
-    const result = executeDeterministicPlan(request.plan, {
-      mode: request.mode,
-      maxSteps: request.maxSteps,
-      traceId: request.traceId,
+    const outcome = executeWithFixpoint(request, {
+      maxIterations: 20,
+      baseBackoffMs: 25,
+      maxBackoffMs: 1000,
     });
 
-    if (result.ok) {
+    if (outcome.status === "completed") {
       const run = registry.complete(runId, {
-        execution: result as unknown as Record<string, unknown>,
+        execution: outcome.execution as unknown as Record<string, unknown>,
+        metrics: {
+          fixpointIterations: outcome.iterationsUsed,
+          backoffScheduleMs: outcome.backoffScheduleMs,
+        },
       });
       return ok(200, run);
     }
 
-    const failedRun = registry.fail(runId, result.error.code, result.error.message);
+    const code = outcome.lastErrorCode ?? "INTERNAL_ERROR";
+    const message = outcome.lastErrorMessage ?? "Execution failed";
+    const failedRun = registry.fail(runId, code, message);
     return ok(200, failedRun);
   } catch {
     try {
