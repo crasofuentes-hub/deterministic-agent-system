@@ -3,6 +3,7 @@ import { handleExecute } from "./handlers/execute";
 import { handleSimulate } from "./handlers/simulate";
 import { handleSimulateModel } from "./handlers/simulate-model";
 import { handleToolExecute } from "./handlers/tool-execute";
+import { handleExecuteRunAsync } from "./handlers/run-execute";
 import { handleExecuteRun } from "./handlers/run-execute";
 import {
   handleCancelRun,
@@ -403,7 +404,11 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
           return;
         }
 
-        result = handleExecuteRun(runRoute.runId, validation.value);
+        if (validation.value.mode === "local") {
+          result = await handleExecuteRunAsync(runRoute.runId, validation.value);
+        } else {
+          result = handleExecuteRun(runRoute.runId, validation.value);
+        }
       } else {
         withRequestId(res, requestId);
         sendMethodNotAllowed(res);
@@ -494,6 +499,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
     });
   }
 }
+
 
 
 

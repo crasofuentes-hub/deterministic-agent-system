@@ -3,6 +3,8 @@ import { executeWithFixpoint } from "../../enterprise/agent-executor";
 import { getCheckpointStore } from "../../enterprise/state-manager";
 import { getAgentRunRegistry } from "../runs/registry";
 import type { HttpJsonResult } from "../runs/types";
+import { executeDeterministicPlanAsync } from "../../agent/executor-async";
+import type { DeterministicResponse } from "../../core/contracts";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -86,6 +88,20 @@ function mapRegistryError(err: unknown): HttpJsonResult {
   return internalError();
 }
 
+function isRetryableErrorCode(code: string): boolean {
+  return (
+    code === "NETWORK_ERROR" ||
+    code === "TIMEOUT" ||
+    code === "OVERLOADED" ||
+    code === "INTERNAL_ERROR"
+  );
+}
+
+function backoffMs(attempt: number, baseMs: number, capMs: number): number {
+  const raw = baseMs * Math.pow(2, attempt);
+  return raw > capMs ? capMs : raw;
+}
+
 export function handleExecuteRun(runId: string, request: ExecuteRequest): HttpJsonResult {
   if (typeof runId !== "string" || runId.trim().length === 0) {
     return badRequest("runId must be a non-empty string");
@@ -148,3 +164,84 @@ export function handleExecuteRun(runId: string, request: ExecuteRequest): HttpJs
   }
 }
 
+export async function handleExecuteRunAsync(runId: string, request: ExecuteRequest): Promise<HttpJsonResult> {
+  if (typeof runId !== "string" || runId.trim().length === 0) {
+    return badRequest("runId must be a non-empty string");
+  }
+
+  if (!isObject(request)) {
+    return badRequest("Request body must be a JSON object");
+  }
+
+  const registry = getAgentRunRegistry();
+
+  try {
+    registry.start(runId);
+  } catch (err) {
+    return mapRegistryError(err);
+  }
+
+  const store = getCheckpointStore();
+  const runningSnapshot = registry.get(runId);
+  if (!runningSnapshot) {
+    return internalError();
+  }
+  store.saveValid(runId, runningSnapshot);
+
+  const maxIterations = 20;
+  const baseBackoffMs = 25;
+  const maxBackoffMs = 1000;
+  const schedule: number[] = [];
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    try {
+      const result: DeterministicResponse<any> = await executeDeterministicPlanAsync(request.plan, {
+        mode: request.mode,
+        maxSteps: request.maxSteps,
+        traceId: request.traceId,
+      });
+
+      if (result.ok) {
+        const run = registry.complete(runId, {
+          execution: result as unknown as Record<string, unknown>,
+          metrics: {
+            fixpointIterations: iter + 1,
+            backoffScheduleMs: schedule,
+          },
+        });
+        return ok(200, run);
+      }
+
+      const code = result.error.code;
+      const msg = result.error.message;
+
+      if (!isRetryableErrorCode(code)) {
+        const failedRun = registry.fail(runId, code, msg);
+        return ok(200, failedRun);
+      }
+
+      schedule.push(backoffMs(iter, baseBackoffMs, maxBackoffMs));
+      const snap = store.loadLatestValid(runId);
+      if (snap) {
+        registry.restore(snap);
+      }
+      // determinista: no sleep real
+      continue;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      schedule.push(backoffMs(iter, baseBackoffMs, maxBackoffMs));
+      const snap = store.loadLatestValid(runId);
+      if (snap) {
+        registry.restore(snap);
+      }
+      if (!isRetryableErrorCode("INTERNAL_ERROR")) {
+        const failedRun = registry.fail(runId, "INTERNAL_ERROR", msg);
+        return ok(200, failedRun);
+      }
+      continue;
+    }
+  }
+
+  const failedRun = registry.fail(runId, "FIXPOINT_MAX_ITER", "Fixpoint did not converge within max iterations");
+  return ok(200, failedRun);
+}
