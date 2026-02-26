@@ -3,6 +3,7 @@ import { handleExecute } from "./handlers/execute";
 import { handleSimulate } from "./handlers/simulate";
 import { handleSimulateModel } from "./handlers/simulate-model";
 import { handleToolExecute } from "./handlers/tool-execute";
+import { handleExecuteRun } from "./handlers/run-execute";
 import {
   handleCancelRun,
   handleCompleteRun,
@@ -48,7 +49,7 @@ function isRunsCollectionPath(url: string): boolean {
 
 function getRunRouteParts(
   url: string
-): { runId: string; action?: "start" | "complete" | "fail" | "cancel" } | undefined {
+): { runId: string; action?: "start" | "complete" | "fail" | "cancel" | "execute" } | undefined {
   if (!url.startsWith("/runs/")) {
     return undefined;
   }
@@ -75,7 +76,8 @@ function getRunRouteParts(
     (action === "start" ||
       action === "complete" ||
       action === "fail" ||
-      action === "cancel")
+      action === "cancel" ||
+      action === "execute")
   ) {
     return {
       runId,
@@ -392,6 +394,16 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
         result = handleFailRun(runRoute.runId, parsed);
       } else if (runRoute.action === "cancel") {
         result = handleCancelRun(runRoute.runId, parsed);
+      } else if (runRoute.action === "execute") {
+        const validation = validateExecuteRequest(parsed);
+        if (!validation.ok) {
+          withRequestId(res, requestId);
+          sendInvalidRequest(res, "Request validation failed: " + validation.error);
+          logEnd(req, res, requestId, startedAt, { error: validation.error });
+          return;
+        }
+
+        result = handleExecuteRun(runRoute.runId, validation.value);
       } else {
         withRequestId(res, requestId);
         sendMethodNotAllowed(res);
@@ -482,6 +494,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
     });
   }
 }
+
 
 
 
