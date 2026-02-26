@@ -1,4 +1,4 @@
-import type { DeterministicAgentPlan, AgentStep } from "./plan-types";
+﻿import type { DeterministicAgentPlan, AgentStep } from "./plan-types";
 
 export interface PolicyValidationIssue {
   code: string;
@@ -12,6 +12,11 @@ export interface PolicyValidationResult {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isHttpUrl(value: unknown): value is string {
+  if (!isNonEmptyString(value)) return false;
+  return value.startsWith("http://") || value.startsWith("https://");
 }
 
 function validateStep(step: AgentStep, index: number): PolicyValidationIssue[] {
@@ -59,6 +64,79 @@ function validateStep(step: AgentStep, index: number): PolicyValidationIssue[] {
       issues.push({
         code: "INVALID_STEP_VALUE",
         message: "Step '" + step.id + "' (append_log) requires string value",
+      });
+    }
+  }
+
+  // Enterprise sandbox steps (deterministic validation)
+  if (step.kind === "sandbox.open") {
+    if (!isNonEmptyString(step.sessionId)) {
+      issues.push({
+        code: "INVALID_SANDBOX_SESSION",
+        message: "Step '" + step.id + "' (sandbox.open) requires non-empty sessionId",
+      });
+    }
+    if (!isHttpUrl(step.url)) {
+      issues.push({
+        code: "INVALID_SANDBOX_URL",
+        message: "Step '" + step.id + "' (sandbox.open) requires url starting with http:// or https://",
+      });
+    }
+  }
+
+  if (step.kind === "sandbox.click") {
+    if (!isNonEmptyString(step.sessionId)) {
+      issues.push({
+        code: "INVALID_SANDBOX_SESSION",
+        message: "Step '" + step.id + "' (sandbox.click) requires non-empty sessionId",
+      });
+    }
+    if (!isNonEmptyString(step.selector)) {
+      issues.push({
+        code: "INVALID_SANDBOX_SELECTOR",
+        message: "Step '" + step.id + "' (sandbox.click) requires non-empty selector",
+      });
+    }
+  }
+
+  if (step.kind === "sandbox.type") {
+    if (!isNonEmptyString(step.sessionId)) {
+      issues.push({
+        code: "INVALID_SANDBOX_SESSION",
+        message: "Step '" + step.id + "' (sandbox.type) requires non-empty sessionId",
+      });
+    }
+    if (!isNonEmptyString(step.selector)) {
+      issues.push({
+        code: "INVALID_SANDBOX_SELECTOR",
+        message: "Step '" + step.id + "' (sandbox.type) requires non-empty selector",
+      });
+    }
+    if (!isNonEmptyString(step.text)) {
+      issues.push({
+        code: "INVALID_SANDBOX_TEXT",
+        message: "Step '" + step.id + "' (sandbox.type) requires non-empty text",
+      });
+    }
+  }
+
+  if (step.kind === "sandbox.extract") {
+    if (!isNonEmptyString(step.sessionId)) {
+      issues.push({
+        code: "INVALID_SANDBOX_SESSION",
+        message: "Step '" + step.id + "' (sandbox.extract) requires non-empty sessionId",
+      });
+    }
+    if (!isNonEmptyString(step.selector)) {
+      issues.push({
+        code: "INVALID_SANDBOX_SELECTOR",
+        message: "Step '" + step.id + "' (sandbox.extract) requires non-empty selector",
+      });
+    }
+    if (!isNonEmptyString(step.outputKey)) {
+      issues.push({
+        code: "INVALID_SANDBOX_OUTPUT_KEY",
+        message: "Step '" + step.id + "' (sandbox.extract) requires non-empty outputKey",
       });
     }
   }

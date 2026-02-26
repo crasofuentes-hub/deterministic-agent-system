@@ -1,10 +1,26 @@
-export type AgentStepKind = "set" | "increment" | "append_log";
+﻿export type AgentStepKind =
+  | "set"
+  | "increment"
+  | "append_log"
+  | "sandbox.open"
+  | "sandbox.click"
+  | "sandbox.type"
+  | "sandbox.extract";
 
 export interface AgentStep {
   id: string;
   kind: AgentStepKind;
+
+  // Legacy (v1 core)
   key?: string;
   value?: number | string;
+
+  // Sandbox (enterprise)
+  sessionId?: string;
+  url?: string;
+  selector?: string;
+  text?: string;
+  outputKey?: string;
 }
 
 export interface DeterministicAgentPlan {
