@@ -14,7 +14,7 @@ function fail(
 }
 
 function debugLog(sessionId: string, msg: string, extra?: Record<string, unknown>): void {
-  if (sessionId.includes("sess") || sessionId.includes("demo")) {
+  if ((options.traceId ?? "").includes("DEBUG_SANDBOX")) {
     const payload = { ts: new Date().toISOString(), subsystem: "sandbox", sessionId, msg, ...(extra ?? {}) };
     console.log(JSON.stringify(payload));
   }
@@ -148,5 +148,6 @@ export class PlaywrightSandbox implements SandboxFactory {
     }
   }
 }
+
 
 
