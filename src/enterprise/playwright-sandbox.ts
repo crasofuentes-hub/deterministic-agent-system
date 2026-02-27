@@ -13,8 +13,8 @@ function fail(
   return { ok: false, error: { code, message, retryable } };
 }
 
-function debugLog(sessionId: string, msg: string, extra?: Record<string, unknown>): void {
-  if ((options.traceId ?? "").includes("DEBUG_SANDBOX")) {
+function debugLog(traceId: string | undefined, sessionId: string, msg: string, extra?: Record<string, unknown>): void {
+  if ((traceId ?? "").includes("DEBUG_SANDBOX")) {
     const payload = { ts: new Date().toISOString(), subsystem: "sandbox", sessionId, msg, ...(extra ?? {}) };
     console.log(JSON.stringify(payload));
   }
@@ -82,7 +82,7 @@ export class PlaywrightSandbox implements SandboxFactory {
           await rt.page.goto(url, { waitUntil: "domcontentloaded", timeout: 10000 });
           const finalUrl = rt.page.url();
           const title = await rt.page.title();
-          debugLog(sessionId, "open.done", { requestedUrl: url, finalUrl, title });
+          debugLog(options.traceId, sessionId, "open.done", { requestedUrl: url, finalUrl, title });
           return ok({ url });
         } catch (err) {
           return mapError(err);
@@ -112,7 +112,7 @@ export class PlaywrightSandbox implements SandboxFactory {
       extract: async (selector: string) => {
         try {
           const rt = await this.getOrCreateSession(sessionId, options);
-          debugLog(sessionId, "extract.start", { selector, url: rt.page.url(), title: await rt.page.title() });
+          debugLog(options.traceId, sessionId, "extract.start", { selector, url: rt.page.url(), title: await rt.page.title() });
           await rt.page.waitForSelector(selector, { timeout: 15000, state: "attached" });
           const text = await rt.page.textContent(selector);
           if (text === null) {
@@ -148,6 +148,7 @@ export class PlaywrightSandbox implements SandboxFactory {
     }
   }
 }
+
 
 
 
