@@ -4,9 +4,12 @@ import { getCheckpointStore } from "../../enterprise/state-manager";
 import { getAgentRunRegistry } from "../runs/registry";
 import type { HttpJsonResult } from "../runs/types";
 import { executeDeterministicPlanAsync } from "../../agent/executor-async";
+import { PlaywrightSandbox } from "../../enterprise/playwright-sandbox";
 import type { DeterministicResponse } from "../../core/contracts";
 
 type UnknownRecord = Record<string, unknown>;
+
+const localPlaywrightSandbox = new PlaywrightSandbox({ headless: true });
 
 function isObject(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -192,14 +195,13 @@ export async function handleExecuteRunAsync(runId: string, request: ExecuteReque
   const baseBackoffMs = 25;
   const maxBackoffMs = 1000;
   const schedule: number[] = [];
+  let lastErrorCode: string | undefined;
+  let lastErrorMessage: string | undefined;
+
 
   for (let iter = 0; iter < maxIterations; iter++) {
     try {
-      const result: DeterministicResponse<any> = await executeDeterministicPlanAsync(request.plan, {
-        mode: request.mode,
-        maxSteps: request.maxSteps,
-        traceId: request.traceId,
-      });
+      const result: DeterministicResponse<any> = await executeDeterministicPlanAsync(request.plan, { mode: request.mode, maxSteps: request.maxSteps, traceId: request.traceId }, { sandboxFactory: localPlaywrightSandbox });
 
       if (result.ok) {
         const run = registry.complete(runId, {
@@ -214,6 +216,8 @@ export async function handleExecuteRunAsync(runId: string, request: ExecuteReque
 
       const code = result.error.code;
       const msg = result.error.message;
+      lastErrorCode = code;
+      lastErrorMessage = msg;
 
       if (!isRetryableErrorCode(code)) {
         const failedRun = registry.fail(runId, code, msg);
@@ -229,6 +233,8 @@ export async function handleExecuteRunAsync(runId: string, request: ExecuteReque
       continue;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      lastErrorCode = "INTERNAL_ERROR";
+      lastErrorMessage = msg;
       schedule.push(backoffMs(iter, baseBackoffMs, maxBackoffMs));
       const snap = store.loadLatestValid(runId);
       if (snap) {
@@ -242,6 +248,11 @@ export async function handleExecuteRunAsync(runId: string, request: ExecuteReque
     }
   }
 
-  const failedRun = registry.fail(runId, "FIXPOINT_MAX_ITER", "Fixpoint did not converge within max iterations");
+  const code = lastErrorCode ?? "FIXPOINT_MAX_ITER";
+  const message = lastErrorMessage ?? "Fixpoint did not converge within max iterations";
+  const failedRun = registry.fail(runId, code, message);
   return ok(200, failedRun);
 }
+
+
+
