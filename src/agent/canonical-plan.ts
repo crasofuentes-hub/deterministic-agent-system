@@ -255,9 +255,7 @@ export function canonicalizePlan(plan: DeterministicAgentPlan): DeterministicAge
   }
 
   const normalizedSteps = plan.steps
-    .map((s, i) => normalizeStepRaw(s, i))
-    .slice()
-    .sort(compareSteps);
+    .map((s, i) => normalizeStepRaw(s, i));
 
   const seen = new Set<string>();
   for (const s of normalizedSteps) {
@@ -278,3 +276,4 @@ export function toCanonicalPlanJson(plan: DeterministicAgentPlan): string {
   const canon = canonicalizePlan(plan);
   return JSON.stringify(canon);
 }
+
