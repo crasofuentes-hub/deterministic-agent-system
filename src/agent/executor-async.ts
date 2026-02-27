@@ -81,6 +81,38 @@ async function applySandboxStepLocal(
   return next;
 }
 
+
+function logStepEnd(params: {
+  traceId?: string;
+  planId: string;
+  stepIndex: number;
+  stepId: string;
+  kind: string;
+  durationMs: number;
+  ok: boolean;
+  errorCode?: string;
+  errorMessage?: string;
+}): void {
+  if (!params.traceId) return;
+  const payload: Record<string, unknown> = {
+    ts: new Date().toISOString(),
+    subsystem: "agent",
+    event: "step.end",
+    traceId: params.traceId,
+    planId: params.planId,
+    stepIndex: params.stepIndex,
+    stepId: params.stepId,
+    kind: params.kind,
+    durationMs: params.durationMs,
+    ok: params.ok,
+  };
+  if (!params.ok) {
+    payload.errorCode = params.errorCode ?? "INTERNAL_ERROR";
+    payload.errorMessage = params.errorMessage ?? "step failed";
+  }
+  console.log(JSON.stringify(payload));
+}
+
 export async function executeDeterministicPlanAsync(
   plan: DeterministicAgentPlan,
   options: ExecutePlanOptionsAsync,
@@ -150,6 +182,7 @@ export async function executeDeterministicPlanAsync(
   try {
     for (let i = 0; i < canonicalPlan.steps.length; i += 1) {
       const step = canonicalPlan.steps[i];
+      const stepStartedAt = Date.now();
       if (!step) {
         return failure(
           {
@@ -177,6 +210,17 @@ export async function executeDeterministicPlanAsync(
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
+        logStepEnd({
+          traceId: options.traceId,
+          planId: canonicalPlan.planId,
+          stepIndex: i,
+          stepId: step.id,
+          kind: step.kind,
+          durationMs: Date.now() - stepStartedAt,
+          ok: false,
+          errorCode: "INTERNAL_ERROR",
+          errorMessage: msg,
+        });
         return failure(
           { code: ERROR_CODES.INTERNAL_ERROR, message: msg, retryable: true },
           { mode: options.mode, stepCount: i, traceId: options.traceId }
@@ -213,6 +257,15 @@ export async function executeDeterministicPlanAsync(
       });
 
       previousTraceLinkHash = traceLinkHash;
+      logStepEnd({
+        traceId: options.traceId,
+        planId: canonicalPlan.planId,
+        stepIndex: i,
+        stepId: step.id,
+        kind: step.kind,
+        durationMs: Date.now() - stepStartedAt,
+        ok: true,
+      });
       state = nextState;
     }
 
