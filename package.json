@@ -1,4 +1,4 @@
-﻿{
+{
     "name": "deterministic-agent-system",
     "version": "0.2.0",
     "description": "Deterministic agent system with auditable and replayable execution",
@@ -24,7 +24,8 @@
         "test:replay": "node tests/agent.replay.e2e.test.js",
         "verify": "npm run verify:bootstrap && npm run verify:contracts",
         "build": "tsc -p tsconfig.scripts.json",
-        "verify:contracts": "node dist/scripts/verify-contract.js"
+        "verify:contracts": "node dist/scripts/verify-contract.js",
+        "demo:determinism": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\demo-determinism.ps1 -Runs 5"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
@@ -40,4 +41,3 @@
         "playwright": "^1.58.2"
     }
 }
-
