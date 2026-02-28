@@ -1,9 +1,9 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 param(
   [int]$Runs = 5
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 function Get-Sha256Hex([string]$text) {
   $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -69,7 +69,7 @@ $bad = $results | Where-Object { $_.Hash -ne $baseline }
 Write-Host "`n== Summary ==" -ForegroundColor Cyan
 $results | Format-Table -AutoSize | Out-String | Write-Host
 
-if ($bad.Count -gt 0) {
+if (@($bad).Count -gt 0) {
   Write-Host "`nFAIL: determinism mismatch detected." -ForegroundColor Red
   Write-Host ("Baseline: {0}" -f $baseline) -ForegroundColor Red
   $bad | ForEach-Object { Write-Host ("Run {0} hash {1}" -f $_.Run, $_.Hash) -ForegroundColor Red }
