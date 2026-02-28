@@ -14,7 +14,7 @@
         "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.js\" \"docs/**/*.md\" \"*.json\" \"*.md\"",
         "start": "node dist/src/index.js",
         "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.js\" \"docs/**/*.md\" \"*.json\" \"*.md\"",
-        "start:api": "node dist/src/http/server.js",
+        "start:api": "node dist/src/index.js serve",
         "lint": "eslint --config eslint.config.js src",
         "test:http": "node tests/http.execute.test.js && node tests/http.negative.test.js && node tests/http.simulate.test.js && node tests/http.simulate-model.test.js && node tests/http.health-and-requestid.test.js && node tests/http.tool-execute.test.js",
         "dev": "node -e \"console.log('Development entrypoint pending implementation')\"",
