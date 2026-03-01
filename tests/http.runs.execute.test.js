@@ -1,4 +1,4 @@
-﻿const test = require("node:test");
+const test = require("node:test");
 const assert = require("node:assert/strict");
 const { startServer } = require("../dist/src/http/server");
 
@@ -124,5 +124,71 @@ test("http /runs/:id/execute returns 409 when run is already finalized", async (
     await running.close();
   }
 });
+test("http /runs/:id/execute returns 400 INVALID_REQUEST with issues on bad body", async () => {
+  const running = await startServer({ port: 0 });
 
+  try {
+    const base = "http://127.0.0.1:" + running.port;
 
+    const created = await requestJson(base + "/runs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ agentId: "agent-g3-execute-badbody" })
+    });
+
+    assert.equal(created.status, 201);
+    const runId = created.body.result.runId;
+
+    const r = await requestJson(base + "/runs/" + runId + "/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        mode: "mock",
+        maxSteps: 0,
+        plan: makePlan()
+      })
+    });
+
+    assert.equal(r.status, 400);
+    assert.equal(r.body.ok, false);
+    assert.equal(r.body.error.code, "INVALID_REQUEST");
+
+    const rid = r.headers.get("x-request-id");
+    assert.equal(typeof rid, "string");
+    assert.equal(r.body.meta.requestId, rid);
+
+    assert.ok(Array.isArray(r.body.meta.issues));
+    assert.equal(r.body.meta.issues.length, 1);
+    assert.equal(r.body.meta.issues[0].field, "maxSteps");
+  } finally {
+    await running.close();
+  }
+});
+
+test("http /runs/:id/execute returns 404 NOT_FOUND for unknown runId", async () => {
+  const running = await startServer({ port: 0 });
+
+  try {
+    const base = "http://127.0.0.1:" + running.port;
+
+    const r = await requestJson(base + "/runs/run_DOES_NOT_EXIST/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        mode: "mock",
+        maxSteps: 4,
+        plan: makePlan()
+      })
+    });
+
+    assert.equal(r.status, 404);
+    assert.equal(r.body.ok, false);
+    assert.equal(r.body.error.code, "NOT_FOUND");
+
+    const rid = r.headers.get("x-request-id");
+    assert.equal(typeof rid, "string");
+    assert.equal(r.body.meta.requestId, rid);
+  } finally {
+    await running.close();
+  }
+});
