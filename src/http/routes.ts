@@ -1,4 +1,4 @@
-﻿import type { IncomingMessage, ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { handleExecute } from "./handlers/execute";
 import { handleSimulate } from "./handlers/simulate";
 import { handleSimulateModel } from "./handlers/simulate-model";
@@ -399,7 +399,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
         const validation = validateExecuteRequest(parsed);
         if (!validation.ok) {
           withRequestId(res, requestId);
-          sendInvalidRequest(res, "Request validation failed: " + validation.error);
+          sendInvalidRequest(res, "Request validation failed: " + validation.error, undefined, undefined, validation.issues);
           logEnd(req, res, requestId, startedAt, { error: validation.error });
           return;
         }
@@ -426,7 +426,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
       const validation = validateExecuteRequest(parsed);
       if (!validation.ok) {
         withRequestId(res, requestId);
-        sendInvalidRequest(res, "Request validation failed: " + validation.error);
+        sendInvalidRequest(res, "Request validation failed: " + validation.error, undefined, undefined, validation.issues);
         logEnd(req, res, requestId, startedAt, { error: validation.error });
         return;
       }

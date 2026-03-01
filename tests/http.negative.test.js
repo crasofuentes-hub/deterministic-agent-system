@@ -68,6 +68,10 @@ async function testInvalidRequest() {
     assert.equal(r.status, 400);
     assert.equal(r.json.ok, false);
     assert.equal(r.json.error.code, "INVALID_REQUEST");
+    assert.ok(Array.isArray(r.json.meta.issues));
+    assert.equal(r.json.meta.issues.length, 1);
+    assert.equal(r.json.meta.issues[0].field, "maxSteps");
+
     assert.equal(r.json.meta.requestId, r.requestId);
   } finally {
     await running.close();
