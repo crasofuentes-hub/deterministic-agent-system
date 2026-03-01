@@ -39,9 +39,16 @@ function withRequestId(res: ServerResponse, requestId: string): void {
 
 function sendHttpJsonResult(
   res: ServerResponse,
-  result: { statusCode: number; body: unknown }
+  result: { statusCode: number; body: unknown },
+  requestId: string
 ): void {
-  sendJson(res, result.statusCode, result.body);
+  const body = result.body;
+  if (isObject(body) && body.ok === false) {
+    if (!isObject(body.meta)) body.meta = {};
+    const meta = body.meta as UnknownRecord;
+    if (typeof meta.requestId !== "string") meta.requestId = requestId;
+  }
+  sendJson(res, result.statusCode, body);
 }
 
 function isRunsCollectionPath(url: string): boolean {
@@ -344,7 +351,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
 
       const result = handleGetRun(runRoute.runId);
       withRequestId(res, requestId);
-      sendHttpJsonResult(res, result);
+      sendHttpJsonResult(res, result, requestId);
       logEnd(req, res, requestId, startedAt);
       return;
     }
@@ -380,7 +387,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
     if (isRunsCollection) {
       const result = handleCreateRun(parsed);
       withRequestId(res, requestId);
-      sendHttpJsonResult(res, result);
+      sendHttpJsonResult(res, result, requestId);
       logEnd(req, res, requestId, startedAt);
       return;
     }
@@ -417,7 +424,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
       }
 
       withRequestId(res, requestId);
-      sendHttpJsonResult(res, result);
+      sendHttpJsonResult(res, result, requestId);
       logEnd(req, res, requestId, startedAt);
       return;
     }
