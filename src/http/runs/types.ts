@@ -1,4 +1,4 @@
-﻿export type RunStatus =
+export type RunStatus =
   | "created"
   | "running"
   | "completed"
@@ -49,6 +49,7 @@ export interface HttpJsonResult {
     error?: {
       code: string;
       message: string;
+      retryable?: boolean;
     };
     meta?: Record<string, unknown>;
   };

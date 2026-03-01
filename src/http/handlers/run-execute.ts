@@ -1,4 +1,4 @@
-﻿import type { ExecuteRequest } from "../request-types";
+import type { ExecuteRequest } from "../request-types";
 import { executeWithFixpoint } from "../../enterprise/agent-executor";
 import { getCheckpointStore } from "../../enterprise/state-manager";
 import { getAgentRunRegistry } from "../runs/registry";
@@ -33,7 +33,9 @@ function badRequest(message: string): HttpJsonResult {
       error: {
         code: "INVALID_REQUEST",
         message,
+        retryable: false,
       },
+      meta: {},
     },
   };
 }
@@ -46,7 +48,9 @@ function notFound(message: string): HttpJsonResult {
       error: {
         code: "NOT_FOUND",
         message,
+        retryable: false,
       },
+      meta: {},
     },
   };
 }
@@ -59,7 +63,9 @@ function conflict(message: string): HttpJsonResult {
       error: {
         code: "INVALID_RUN_TRANSITION",
         message,
+        retryable: false,
       },
+      meta: {},
     },
   };
 }
@@ -72,7 +78,9 @@ function internalError(): HttpJsonResult {
       error: {
         code: "INTERNAL_ERROR",
         message: "Internal server error",
+        retryable: false,
       },
+      meta: {},
     },
   };
 }

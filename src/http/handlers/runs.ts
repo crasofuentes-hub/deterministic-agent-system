@@ -1,4 +1,4 @@
-﻿import { getAgentRunRegistry } from "../runs/registry";
+import { getAgentRunRegistry } from "../runs/registry";
 import type {
   CancelRunRequest,
   CompleteRunRequest,
@@ -31,7 +31,9 @@ function badRequest(message: string): HttpJsonResult {
       error: {
         code: "INVALID_REQUEST",
         message,
+        retryable: false,
       },
+      meta: {},
     },
   };
 }
@@ -44,7 +46,9 @@ function notFound(message: string): HttpJsonResult {
       error: {
         code: "NOT_FOUND",
         message,
+        retryable: false,
       },
+      meta: {},
     },
   };
 }
@@ -57,7 +61,9 @@ function conflict(message: string): HttpJsonResult {
       error: {
         code: "INVALID_RUN_TRANSITION",
         message,
+        retryable: false,
       },
+      meta: {},
     },
   };
 }
@@ -150,7 +156,9 @@ function mapRegistryError(err: unknown): HttpJsonResult {
       error: {
         code: "INTERNAL_ERROR",
         message: "Internal server error",
+        retryable: false,
       },
+      meta: {},
     },
   };
 }
