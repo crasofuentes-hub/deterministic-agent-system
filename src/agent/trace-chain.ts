@@ -1,4 +1,4 @@
-import type { AgentStep, AgentState } from "./plan-types";
+﻿import type { AgentStep, AgentState } from "./plan-types";
 import { prefixedSha256 } from "./crypto-hash";
 
 export const TRACE_SCHEMA_VERSION = 1 as const;
@@ -30,7 +30,7 @@ function stableStateView(state: AgentState): string {
 }
 
 function stableStepView(step: AgentStep): string {
-  return JSON.stringify({
+  const base: any = {
     id: step.id.normalize("NFC"),
     kind: step.kind,
     key: typeof step.key === "undefined" ? null : step.key.normalize("NFC"),
@@ -40,7 +40,19 @@ function stableStepView(step: AgentStep): string {
         : typeof step.value === "string"
           ? step.value.normalize("NFC")
           : step.value,
-  });
+  };
+
+  // Solo incluir sandbox fields cuando aplican (no romper hashes legacy).
+  const isSandbox = typeof step.kind === "string" && step.kind.startsWith("sandbox.");
+  if (isSandbox) {
+    base.sessionId = typeof step.sessionId === "string" ? step.sessionId.normalize("NFC") : null;
+    base.url = typeof step.url === "string" ? step.url.normalize("NFC") : null;
+    base.selector = typeof step.selector === "string" ? step.selector.normalize("NFC") : null;
+    base.text = typeof step.text === "string" ? step.text.normalize("NFC") : null;
+    base.outputKey = typeof step.outputKey === "string" ? step.outputKey.normalize("NFC") : null;
+  }
+
+  return JSON.stringify(base);
 }
 
 export function computeTraceLinkHash(params: {
@@ -82,3 +94,4 @@ export function computeExecutionHash(params: {
 
   return prefixedSha256("eh", payload);
 }
+

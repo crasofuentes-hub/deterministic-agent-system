@@ -23,3 +23,13 @@ Thumbs.db
 # Temporary
 .tmp/
 temp/
+# Local demos (no versionar)
+scripts/demo-*.js
+
+
+# Local demo artifacts
+artifacts/demo-determinism/
+
+# Local determinism reports
+artifacts/determinism-report-*.json
+

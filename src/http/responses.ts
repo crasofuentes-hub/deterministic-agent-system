@@ -10,6 +10,8 @@ interface ErrorPayload {
     retryable: boolean;
   };
   meta: {
+    requestId?: string;
+    issues?: Array<{ field: string; reason: string }>;
     mode?: ExecutionMode;
     stepCount?: number;
     traceId?: string;
@@ -38,6 +40,7 @@ export function sendError(
     mode?: ExecutionMode;
     stepCount?: number;
     traceId?: string;
+    issues?: Array<{ field: string; reason: string }>;
   }
 ): void {
   const body: ErrorPayload = {
@@ -49,6 +52,11 @@ export function sendError(
     },
     meta: {},
   };
+
+  const rid = res.getHeader("x-request-id");
+  if (typeof rid === "string" && rid.length > 0) body.meta.requestId = rid;
+
+  if (typeof params.issues !== "undefined") body.meta.issues = params.issues;
 
   if (typeof params.mode !== "undefined") body.meta.mode = params.mode;
   if (typeof params.stepCount !== "undefined") body.meta.stepCount = params.stepCount;
@@ -88,7 +96,8 @@ export function sendInvalidRequest(
   res: ServerResponse,
   message: string,
   mode?: ExecutionMode,
-  traceId?: string
+  traceId?: string,
+  issues?: Array<{ field: string; reason: string }>
 ): void {
   sendError(res, {
     statusCode: 400,
@@ -97,6 +106,7 @@ export function sendInvalidRequest(
     retryable: false,
     mode,
     traceId,
+    issues,
   });
 }
 

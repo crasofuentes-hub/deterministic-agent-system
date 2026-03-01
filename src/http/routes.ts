@@ -3,6 +3,16 @@ import { handleExecute } from "./handlers/execute";
 import { handleSimulate } from "./handlers/simulate";
 import { handleSimulateModel } from "./handlers/simulate-model";
 import { handleToolExecute } from "./handlers/tool-execute";
+import { handleExecuteRunAsync } from "./handlers/run-execute";
+import { handleExecuteRun } from "./handlers/run-execute";
+import {
+  handleCancelRun,
+  handleCompleteRun,
+  handleCreateRun,
+  handleFailRun,
+  handleGetRun,
+  handleStartRun,
+} from "./handlers/runs";
 import { createRequestId, logHttpEvent } from "./observability";
 import {
   sendInternalError,
@@ -25,6 +35,58 @@ function withRequestId(res: ServerResponse, requestId: string): void {
   if (!res.headersSent) {
     res.setHeader("x-request-id", requestId);
   }
+}
+
+function sendHttpJsonResult(
+  res: ServerResponse,
+  result: { statusCode: number; body: unknown }
+): void {
+  sendJson(res, result.statusCode, result.body);
+}
+
+function isRunsCollectionPath(url: string): boolean {
+  return url === "/runs";
+}
+
+function getRunRouteParts(
+  url: string
+): { runId: string; action?: "start" | "complete" | "fail" | "cancel" | "execute" } | undefined {
+  if (!url.startsWith("/runs/")) {
+    return undefined;
+  }
+
+  const parts = url.split("/");
+  const segment1 = parts[1];
+  const runId = parts[2];
+  const action = parts[3];
+
+  if (
+    parts.length === 3 &&
+    segment1 === "runs" &&
+    typeof runId === "string" &&
+    runId.length > 0
+  ) {
+    return { runId };
+  }
+
+  if (
+    parts.length === 4 &&
+    segment1 === "runs" &&
+    typeof runId === "string" &&
+    runId.length > 0 &&
+    (action === "start" ||
+      action === "complete" ||
+      action === "fail" ||
+      action === "cancel" ||
+      action === "execute")
+  ) {
+    return {
+      runId,
+      action,
+    };
+  }
+
+  return undefined;
 }
 
 function readRequestBody(req: IncomingMessage): Promise<string> {
@@ -242,6 +304,8 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
   try {
     const method = req.method ?? "GET";
     const url = req.url ?? "/";
+    const isRunsCollection = isRunsCollectionPath(url);
+    const runRoute = getRunRouteParts(url);
 
     if (url === "/health") {
       if (method !== "GET") {
@@ -257,6 +321,8 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
     }
 
     if (
+      !isRunsCollection &&
+      !runRoute &&
       url !== "/execute" &&
       url !== "/simulate" &&
       url !== "/simulate-model" &&
@@ -264,6 +330,21 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
     ) {
       withRequestId(res, requestId);
       sendNotFound(res);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (runRoute && method === "GET") {
+      if (typeof runRoute.action !== "undefined") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      const result = handleGetRun(runRoute.runId);
+      withRequestId(res, requestId);
+      sendHttpJsonResult(res, result);
       logEnd(req, res, requestId, startedAt);
       return;
     }
@@ -296,11 +377,56 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
       return;
     }
 
+    if (isRunsCollection) {
+      const result = handleCreateRun(parsed);
+      withRequestId(res, requestId);
+      sendHttpJsonResult(res, result);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (runRoute) {
+      let result;
+      if (runRoute.action === "start") {
+        result = handleStartRun(runRoute.runId, parsed);
+      } else if (runRoute.action === "complete") {
+        result = handleCompleteRun(runRoute.runId, parsed);
+      } else if (runRoute.action === "fail") {
+        result = handleFailRun(runRoute.runId, parsed);
+      } else if (runRoute.action === "cancel") {
+        result = handleCancelRun(runRoute.runId, parsed);
+      } else if (runRoute.action === "execute") {
+        const validation = validateExecuteRequest(parsed);
+        if (!validation.ok) {
+          withRequestId(res, requestId);
+          sendInvalidRequest(res, "Request validation failed: " + validation.error, undefined, undefined, validation.issues);
+          logEnd(req, res, requestId, startedAt, { error: validation.error });
+          return;
+        }
+
+        if (validation.value.mode === "local") {
+          result = await handleExecuteRunAsync(runRoute.runId, validation.value);
+        } else {
+          result = handleExecuteRun(runRoute.runId, validation.value);
+        }
+      } else {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      withRequestId(res, requestId);
+      sendHttpJsonResult(res, result);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
     if (url === "/execute") {
       const validation = validateExecuteRequest(parsed);
       if (!validation.ok) {
         withRequestId(res, requestId);
-        sendInvalidRequest(res, "Request validation failed: " + validation.error);
+        sendInvalidRequest(res, "Request validation failed: " + validation.error, undefined, undefined, validation.issues);
         logEnd(req, res, requestId, startedAt, { error: validation.error });
         return;
       }
@@ -340,6 +466,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
       logEnd(req, res, requestId, startedAt);
       return;
     }
+
     if (url === "/tool/execute") {
       const validation = validateToolExecuteRequest(parsed);
       if (!validation.ok) {
@@ -372,3 +499,8 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
     });
   }
 }
+
+
+
+
+

@@ -1,4 +1,4 @@
-import type { AgentState, AgentStep } from "./plan-types";
+﻿import type { AgentState, AgentStep } from "./plan-types";
 
 export function createInitialAgentState(): AgentState {
   return {
@@ -43,6 +43,10 @@ export function getStateHashLike(state: AgentState): string {
   return stableStateHashLike(state);
 }
 
+function s(value: unknown): string {
+  return typeof value === "string" ? value : String(value ?? "");
+}
+
 export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
   const next: AgentState = {
     counters: { ...state.counters },
@@ -51,12 +55,12 @@ export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
   };
 
   if (step.kind === "set") {
-    next.values[String(step.key)] = String(step.value);
+    next.values[s(step.key)] = s(step.value);
     return next;
   }
 
   if (step.kind === "increment") {
-    const key = String(step.key);
+    const key = s(step.key);
     const delta = Number(step.value);
     const prev = typeof next.counters[key] === "number" ? next.counters[key] : 0;
     next.counters[key] = prev + delta;
@@ -64,7 +68,39 @@ export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
   }
 
   if (step.kind === "append_log") {
-    next.logs.push(String(step.value));
+    next.logs.push(s(step.value));
+    return next;
+  }
+
+  // --- Enterprise sandbox steps (deterministic mock execution) ---
+  if (step.kind === "sandbox.open") {
+    const sessionId = s(step.sessionId);
+    const url = s(step.url);
+    next.logs.push(`sandbox.open:${sessionId}:${url}`);
+    return next;
+  }
+
+  if (step.kind === "sandbox.click") {
+    const sessionId = s(step.sessionId);
+    const selector = s(step.selector);
+    next.logs.push(`sandbox.click:${sessionId}:${selector}`);
+    return next;
+  }
+
+  if (step.kind === "sandbox.type") {
+    const sessionId = s(step.sessionId);
+    const selector = s(step.selector);
+    const text = s(step.text);
+    next.logs.push(`sandbox.type:${sessionId}:${selector}:len=${text.length}`);
+    return next;
+  }
+
+  if (step.kind === "sandbox.extract") {
+    const sessionId = s(step.sessionId);
+    const selector = s(step.selector);
+    const outputKey = s(step.outputKey);
+    next.values[outputKey] = `mock:${selector}`;
+    next.logs.push(`sandbox.extract:${sessionId}:${selector}:out=${outputKey}`);
     return next;
   }
 

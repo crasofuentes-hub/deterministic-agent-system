@@ -10,7 +10,8 @@ async function req(url, init) {
   } catch {
     json = null;
   }
-  return { status: res.status, json, text };
+  const requestId = res.headers.get("x-request-id");
+  return { status: res.status, json, text, requestId };
 }
 
 async function testNotFound() {
@@ -20,6 +21,7 @@ async function testNotFound() {
     assert.equal(r.status, 404);
     assert.equal(r.json.ok, false);
     assert.equal(r.json.error.code, "NOT_FOUND");
+    assert.equal(r.json.meta.requestId, r.requestId);
   } finally {
     await running.close();
   }
@@ -32,6 +34,7 @@ async function testMethodNotAllowed() {
     assert.equal(r.status, 405);
     assert.equal(r.json.ok, false);
     assert.equal(r.json.error.code, "METHOD_NOT_ALLOWED");
+    assert.equal(r.json.meta.requestId, r.requestId);
   } finally {
     await running.close();
   }
@@ -48,6 +51,7 @@ async function testMalformedJson() {
     assert.equal(r.status, 400);
     assert.equal(r.json.ok, false);
     assert.equal(r.json.error.code, "MALFORMED_REQUEST");
+    assert.equal(r.json.meta.requestId, r.requestId);
   } finally {
     await running.close();
   }
@@ -64,6 +68,11 @@ async function testInvalidRequest() {
     assert.equal(r.status, 400);
     assert.equal(r.json.ok, false);
     assert.equal(r.json.error.code, "INVALID_REQUEST");
+    assert.ok(Array.isArray(r.json.meta.issues));
+    assert.equal(r.json.meta.issues.length, 1);
+    assert.equal(r.json.meta.issues[0].field, "maxSteps");
+
+    assert.equal(r.json.meta.requestId, r.requestId);
   } finally {
     await running.close();
   }
