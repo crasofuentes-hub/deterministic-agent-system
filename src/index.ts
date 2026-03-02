@@ -1,5 +1,6 @@
 import { startServer } from "./http/server";
 import { executeDeterministicPlan } from "./agent/executor";
+import { executeDeterministicPlanAsync } from "./agent/executor-async";
 import type { DeterministicAgentPlan } from "./agent/plan-types";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -52,6 +53,54 @@ function makeDemoPlan(): DeterministicAgentPlan {
   };
 }
 
+function parseAgentDemoArgs(argv: string[]): {
+  mode: "mock" | "local";
+  maxSteps: number;
+  traceId: string;
+  writeArtifact: boolean;
+} {
+  let mode: "mock" | "local" = "mock";
+  let maxSteps = 8;
+  let traceId = "trace-agent-demo";
+  let writeArtifact = true;
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const a = argv[i];
+
+    if (a === "--mode") {
+      const v = String(argv[i + 1] ?? "");
+      if (v !== "mock" && v !== "local") throw new Error("--mode must be 'mock' or 'local'");
+      mode = v;
+      i += 1;
+      continue;
+    }
+
+    if (a === "--maxSteps") {
+      const v = Number(argv[i + 1]);
+      if (!Number.isInteger(v) || v <= 0) throw new Error("--maxSteps must be a positive integer");
+      maxSteps = v;
+      i += 1;
+      continue;
+    }
+
+    if (a === "--traceId") {
+      const v = String(argv[i + 1] ?? "");
+      if (!v || v.trim().length === 0) throw new Error("--traceId must be a non-empty string");
+      traceId = v;
+      i += 1;
+      continue;
+    }
+
+    if (a === "--no-artifact") {
+      writeArtifact = false;
+      continue;
+    }
+
+    throw new Error("Unknown arg: " + a);
+  }
+
+  return { mode, maxSteps, traceId, writeArtifact };
+}
 async function runAgentDemo(): Promise<void> {
   const plan = makeDemoPlan();
   const args = parseAgentDemoArgs(process.argv.slice(3));
