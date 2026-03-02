@@ -54,8 +54,14 @@ function makeDemoPlan(): DeterministicAgentPlan {
 
 async function runAgentDemo(): Promise<void> {
   const plan = makeDemoPlan();
-  const traceId = "trace-agent-demo";
-  const result = executeDeterministicPlan(plan, { mode: "mock", maxSteps: 8, traceId });
+  const args = parseAgentDemoArgs(process.argv.slice(3));
+  const traceId = args.traceId;
+  const mode = args.mode;
+  const maxSteps = args.maxSteps;
+  const result =
+    mode === "local"
+      ? await executeDeterministicPlanAsync(plan, { mode, maxSteps, traceId })
+      : executeDeterministicPlan(plan, { mode, maxSteps, traceId });
 
   if (!result.ok) {
     process.stderr.write("agent-demo FAIL: " + result.error.code + " " + result.error.message + "\n");
@@ -76,6 +82,7 @@ async function runAgentDemo(): Promise<void> {
   process.stdout.write("agent-demo PASS\n");
   process.stdout.write(JSON.stringify(summary, null, 2) + "\n");
 
+  if (args.writeArtifact) {
   // Artifact local (no determinista por filename; contenido determinista)
   const outDir = join(process.cwd(), "artifacts", "agent-demo");
   mkdirSync(outDir, { recursive: true });
@@ -89,6 +96,7 @@ async function runAgentDemo(): Promise<void> {
   const outPath = join(outDir, fname);
   writeFileSync(outPath, JSON.stringify(out, null, 2), { encoding: "utf8" });
   process.stdout.write("artifact: " + outPath + "\n");
+  }
 }
 async function main(): Promise<void> {
   const cmd = process.argv[2];

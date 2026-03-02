@@ -5,7 +5,7 @@ const path = require("node:path");
 
 test("agent-demo CLI prints deterministic hashes", () => {
   const entry = path.join(__dirname, "..", "dist", "src", "index.js");
-  const r = spawnSync(process.execPath, [entry, "agent-demo"], { encoding: "utf8" });
+  const r = spawnSync(process.execPath, [entry, "agent-demo", "--mode", "mock", "--no-artifact"], { encoding: "utf8" });
 
   assert.equal(r.status, 0);
   assert.ok(r.stdout.includes("agent-demo PASS"));
