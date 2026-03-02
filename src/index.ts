@@ -1,4 +1,8 @@
 import { startServer } from "./http/server";
+import { executeDeterministicPlan } from "./agent/executor";
+import type { DeterministicAgentPlan } from "./agent/plan-types";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 function printBanner(): void {
   const lines = [
@@ -35,11 +39,67 @@ async function runServe(): Promise<void> {
   );
 }
 
+function makeDemoPlan(): DeterministicAgentPlan {
+  return {
+    planId: "agent-demo-plan-v1",
+    version: 1,
+    steps: [
+      { id: "a", kind: "set", key: "mode", value: "agent-demo" },
+      { id: "b", kind: "increment", key: "n", value: 1 },
+      { id: "c", kind: "increment", key: "n", value: 1 },
+      { id: "d", kind: "append_log", value: "fin" }
+    ]
+  };
+}
+
+async function runAgentDemo(): Promise<void> {
+  const plan = makeDemoPlan();
+  const traceId = "trace-agent-demo";
+  const result = executeDeterministicPlan(plan, { mode: "mock", maxSteps: 8, traceId });
+
+  if (!result.ok) {
+    process.stderr.write("agent-demo FAIL: " + result.error.code + " " + result.error.message + "\n");
+    process.exitCode = 2;
+    return;
+  }
+
+  const summary = {
+    ok: true,
+    traceId,
+    planId: result.result.planId,
+    planHash: result.result.planHash,
+    executionHash: result.result.executionHash,
+    finalTraceLinkHash: result.result.finalTraceLinkHash,
+    traceLength: result.result.trace.length
+  };
+
+  process.stdout.write("agent-demo PASS\n");
+  process.stdout.write(JSON.stringify(summary, null, 2) + "\n");
+
+  // Artifact local (no determinista por filename; contenido determinista)
+  const outDir = join(process.cwd(), "artifacts", "agent-demo");
+  mkdirSync(outDir, { recursive: true });
+
+  const out = {
+    summary,
+    result: result.result
+  };
+
+  const fname = "agent-demo." + Date.now() + ".json";
+  const outPath = join(outDir, fname);
+  writeFileSync(outPath, JSON.stringify(out, null, 2), { encoding: "utf8" });
+  process.stdout.write("artifact: " + outPath + "\n");
+}
 async function main(): Promise<void> {
   const cmd = process.argv[2];
 
   if (cmd === "serve") {
     await runServe();
+    return;
+  }
+
+  if (cmd === "agent-demo") {
+    await runAgentDemo();
     return;
   }
 
