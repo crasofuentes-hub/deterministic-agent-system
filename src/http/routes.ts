@@ -295,6 +295,13 @@ function logEnd(
   });
 }
 
+const ALLOWED_PUBLIC_PATHS = new Set<string>([
+  "/execute",
+  "/simulate",
+  "/simulate-model",
+  "/tool/execute",
+  "/agent/run",
+]);
 export async function routeRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const startedAt = Date.now();
   const requestId = createRequestId();
@@ -310,7 +317,8 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
 
   try {
     const method = req.method ?? "GET";
-    const url = req.url ?? "/";
+    const rawUrl = req.url ?? "/";
+const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
     const isRunsCollection = isRunsCollectionPath(url);
     const runRoute = getRunRouteParts(url);
 
@@ -327,19 +335,12 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
       return;
     }
 
-    if (
-      !isRunsCollection &&
-      !runRoute &&
-      url !== "/execute" &&
-      url !== "/simulate" &&
-      url !== "/simulate-model" &&
-      url !== "/tool/execute"
-    ) {
-      withRequestId(res, requestId);
-      sendNotFound(res);
-      logEnd(req, res, requestId, startedAt);
-      return;
-    }
+    if (!isRunsCollection && !runRoute && !ALLOWED_PUBLIC_PATHS.has(url)) {
+  withRequestId(res, requestId);
+  sendNotFound(res);
+  logEnd(req, res, requestId, startedAt);
+  return;
+}
 
     if (runRoute && method === "GET") {
       if (typeof runRoute.action !== "undefined") {
@@ -444,7 +445,28 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
       return;
     }
 
-    if (url === "/simulate") {
+        if (url === "/agent/run") {
+      if (method !== "POST") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      if (!isObject(parsed)) {
+        withRequestId(res, requestId);
+        sendInvalidRequest(res, "Request validation failed: Request body must be a JSON object");
+        logEnd(req, res, requestId, startedAt, { error: "Request body must be a JSON object" });
+        return;
+      }
+
+      const { handleAgentRun } = await import("./handlers/agent-run");
+      withRequestId(res, requestId);
+      await handleAgentRun(res, parsed as JsonObject);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+if (url === "/simulate") {
       const validation = validateSimulateRequest(parsed);
       if (!validation.ok) {
         withRequestId(res, requestId);
