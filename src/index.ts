@@ -40,7 +40,19 @@ async function runServe(): Promise<void> {
   );
 }
 
-function makeDemoPlan(): DeterministicAgentPlan {
+function makeDemoPlan(demo: "core" | "sandbox", sandboxUrl: string): DeterministicAgentPlan {
+  if (demo === "sandbox") {
+    return {
+      planId: "agent-demo-sandbox-v1",
+      version: 1,
+      steps: [
+        { id: "a", kind: "sandbox.open", sessionId: "s1", url: sandboxUrl },
+        { id: "b", kind: "sandbox.extract", sessionId: "s1", selector: "#title", outputKey: "outTitle" },
+        { id: "c", kind: "append_log", value: "fin" }
+      ]
+    };
+  }
+
   return {
     planId: "agent-demo-plan-v1",
     version: 1,
@@ -55,11 +67,13 @@ function makeDemoPlan(): DeterministicAgentPlan {
 
 function parseAgentDemoArgs(argv: string[]): {
   mode: "mock" | "local";
+  demo: "core" | "sandbox";
   maxSteps: number;
   traceId: string;
   writeArtifact: boolean;
 } {
   let mode: "mock" | "local" = "mock";
+  let demo: "core" | "sandbox" = "core";
   let maxSteps = 8;
   let traceId = "trace-agent-demo";
   let writeArtifact = true;
@@ -96,14 +110,22 @@ function parseAgentDemoArgs(argv: string[]): {
       continue;
     }
 
+    if (a === "--demo") {
+      const v = String(argv[i + 1] ?? "");
+      if (v !== "core" && v !== "sandbox") throw new Error("--demo must be 'core' or 'sandbox'");
+      demo = v;
+      i += 1;
+      continue;
+    }
     throw new Error("Unknown arg: " + a);
   }
 
-  return { mode, maxSteps, traceId, writeArtifact };
+  return { mode, demo, maxSteps, traceId, writeArtifact };
 }
 async function runAgentDemo(): Promise<void> {
-  const plan = makeDemoPlan();
   const args = parseAgentDemoArgs(process.argv.slice(3));
+  const sandboxUrl = "file:///C:/repos/deterministic-agent-system/fixtures/sandbox/site.html";
+  const plan = makeDemoPlan(args.demo, sandboxUrl);
   const traceId = args.traceId;
   const mode = args.mode;
   const maxSteps = args.maxSteps;
