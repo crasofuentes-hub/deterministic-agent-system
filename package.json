@@ -25,7 +25,8 @@
         "verify": "npm run verify:bootstrap && npm run verify:contracts",
         "build": "tsc -p tsconfig.scripts.json",
         "verify:contracts": "node dist/scripts/verify-contract.js",
-        "demo:determinism": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\demo-determinism.ps1 -Runs 5"
+        "demo:determinism": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\demo-determinism.ps1 -Runs 5",
+        "demo:sandbox-server": "node .\\\\scripts\\\\demo-sandbox-server.js"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
