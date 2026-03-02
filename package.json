@@ -26,7 +26,7 @@
         "build": "tsc -p tsconfig.scripts.json",
         "verify:contracts": "node dist/scripts/verify-contract.js",
         "demo:determinism": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\demo-determinism.ps1 -Runs 5",
-        "demo:sandbox-server": "node .\\\\scripts\\\\demo-sandbox-server.js"
+        "demo:sandbox-server": "node .\\\\scripts\\\\demo-sandbox-server.js --port 4319"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
