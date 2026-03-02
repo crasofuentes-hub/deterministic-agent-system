@@ -25,6 +25,7 @@ Thumbs.db
 temp/
 # Local demos (no versionar)
 scripts/demo-*.js
+!scripts/demo-sandbox-server.js
 
 
 # Local demo artifacts
