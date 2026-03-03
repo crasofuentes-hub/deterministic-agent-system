@@ -2,6 +2,7 @@ import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
 import { sendJson, sendInvalidRequest, sendInternalError } from "../responses";
 import { runAgent } from "../../agent-run/run";
+import { runAgentTools } from "../../agent-run/run-tools";
 import { MockPlanner } from "../../agent-run/planner-mock";
 import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
 import type { AgentRunInput } from "../../agent-run/types";
@@ -32,10 +33,11 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
   if (typeof maxSteps !== "number" || !Number.isInteger(maxSteps) || maxSteps <= 0) {
     return { ok: false, message: "maxSteps must be a positive integer" };
   }
+
   const planner = body.planner;
   if (typeof planner !== "undefined") {
-    if (planner !== "mock" && planner !== "deterministic") {
-      return { ok: false, message: "planner must be 'mock' or 'deterministic'" };
+    if (planner !== "mock" && planner !== "deterministic" && planner !== "det-tools") {
+      return { ok: false, message: "planner must be 'mock' or 'deterministic' or 'det-tools'" };
     }
   }
 
@@ -53,6 +55,7 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
     }
     if (sandboxUrl.length > 2048) return { ok: false, message: "sandboxUrl exceeds 2048 characters" };
   }
+
   return {
     ok: true,
     value: {
@@ -60,7 +63,7 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
       demo,
       mode,
       maxSteps,
-      planner: typeof planner === "string" ? planner : "deterministic",
+      planner: typeof planner === "string" ? (planner as AgentRunInput["planner"]) : "deterministic",
       traceId: typeof traceId === "string" ? traceId : undefined,
       sandboxUrl: typeof sandboxUrl === "string" ? sandboxUrl : undefined,
     },
@@ -75,11 +78,18 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
   }
 
   try {
+    if (parsed.value.planner === "det-tools") {
+      const result = runAgentTools(parsed.value);
+      sendJson(res, 200, result);
+      return;
+    }
+
     const planner =
       parsed.value.planner === "mock" ? new MockPlanner() : new DeterministicPlanner();
+
     const result = await runAgent(parsed.value, planner);
     sendJson(res, 200, result);
-  } catch (err) {
+  } catch (_err) {
     // No filtramos detalles internos; payload estable.
     sendInternalError(res);
   }
