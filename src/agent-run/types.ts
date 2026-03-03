@@ -2,7 +2,7 @@ import type { DeterministicAgentPlan, AgentExecutionResult } from "../agent/plan
 import type { ExecutionMode, DeterministicResponse } from "../core/contracts";
 
 /**
- * Input â€œalto nivelâ€ para correr un agente (planner -> plan -> executor).
+ * Input Ã¢â‚¬Å“alto nivelÃ¢â‚¬Â para correr un agente (planner -> plan -> executor).
  */
 export interface AgentRunInput {
   goal: string;
@@ -12,6 +12,7 @@ export interface AgentRunInput {
   planner?: "mock" | "deterministic";
   traceId?: string;
   sandboxUrl?: string;
+
 }
 
 /**

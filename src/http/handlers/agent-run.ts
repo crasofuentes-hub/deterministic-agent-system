@@ -45,6 +45,14 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
     if (traceId.length > 256) return { ok: false, message: "traceId exceeds 256 characters" };
   }
 
+  const sandboxUrl = body.sandboxUrl;
+  if (typeof sandboxUrl !== "undefined") {
+    if (!isNonEmptyString(sandboxUrl)) return { ok: false, message: "sandboxUrl must be a non-empty string when provided" };
+    if (!sandboxUrl.startsWith("http://") && !sandboxUrl.startsWith("https://")) {
+      return { ok: false, message: "sandboxUrl must start with http:// or https://" };
+    }
+    if (sandboxUrl.length > 2048) return { ok: false, message: "sandboxUrl exceeds 2048 characters" };
+  }
   return {
     ok: true,
     value: {
@@ -54,6 +62,7 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
       maxSteps,
       planner: typeof planner === "string" ? planner : "deterministic",
       traceId: typeof traceId === "string" ? traceId : undefined,
+      sandboxUrl: typeof sandboxUrl === "string" ? sandboxUrl : undefined,
     },
   };
 }
