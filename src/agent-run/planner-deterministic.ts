@@ -1,44 +1,39 @@
-import { createHash } from "node:crypto";
 import type { DeterministicAgentPlan } from "../agent/plan-types";
 import type { AgentRunInput, Planner } from "./types";
+import { buildPlanFromGoal } from "./spec";
 
-function sha256Hex(input: string): string {
-  return createHash("sha256").update(input, "utf8").digest("hex");
+type UnknownRecord = Record<string, unknown>;
+
+function isObject(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stablePlanId(prefix: string, goal: string): string {
-  const h = sha256Hex(goal.normalize("NFC"));
-  return prefix + "-" + h.slice(0, 16);
-}
-
+/**
+ * Planner determinístico (NO LLM):
+ * - Normaliza goal + deriva intent vía spec.ts
+ * - Produce planId estable (sin timestamps)
+ * - Para demo sandbox: inyecta URL fixture server de forma estable
+ */
 export class DeterministicPlanner implements Planner {
   plan(input: AgentRunInput): DeterministicAgentPlan {
-    const planId = stablePlanId(
-      input.demo === "sandbox" ? "agent-run-sandbox-v1" : "agent-run-core-v1",
-      input.goal
-    );
+    const base = buildPlanFromGoal(input);
 
-    if (input.demo === "sandbox") {
-      // sandboxUrl debe venir validada desde el handler HTTP.
-      const sandboxUrl = (input as any).sandboxUrl as string;
-
-      return {
-        planId,
-        version: 1,
-        steps: [
-          { id: "a", kind: "sandbox.open", sessionId: "s1", url: sandboxUrl },
-          { id: "b", kind: "sandbox.extract", sessionId: "s1", selector: "#title", outputKey: "title" },
-          { id: "c", kind: "append_log", value: "done" }
-        ],
-      };
+    if (input.demo !== "sandbox") {
+      return base;
     }
 
+    // Fixture server local (determinista por configuración, no por entorno)
+    const sandboxUrl = "http://127.0.0.1:4319/";
+
+    // Convertimos el plan base "sandbox" en uno ejecutable por el sandbox runner.
+    // Nota: mantenemos ids estables y orden fijo.
     return {
-      planId,
+      planId: base.planId,
       version: 1,
       steps: [
-        { id: "a", kind: "set", key: "goal", value: input.goal },
-        { id: "b", kind: "append_log", value: "done" }
+        { id: "a", kind: "sandbox.open", sessionId: "s1", url: sandboxUrl },
+        { id: "b", kind: "sandbox.extract", sessionId: "s1", selector: "#title", outputKey: "title" },
+        { id: "c", kind: "append_log", value: "done" },
       ],
     };
   }
