@@ -3,6 +3,7 @@ import type { JsonObject } from "../../tools";
 import { sendJson, sendInvalidRequest, sendInternalError } from "../responses";
 import { runAgent } from "../../agent-run/run";
 import { MockPlanner } from "../../agent-run/planner-mock";
+import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
 import type { AgentRunInput } from "../../agent-run/types";
 
 type UnknownRecord = Record<string, unknown>;
@@ -31,6 +32,12 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
   if (typeof maxSteps !== "number" || !Number.isInteger(maxSteps) || maxSteps <= 0) {
     return { ok: false, message: "maxSteps must be a positive integer" };
   }
+  const planner = body.planner;
+  if (typeof planner !== "undefined") {
+    if (planner !== "mock" && planner !== "deterministic") {
+      return { ok: false, message: "planner must be 'mock' or 'deterministic'" };
+    }
+  }
 
   const traceId = body.traceId;
   if (typeof traceId !== "undefined") {
@@ -45,6 +52,7 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
       demo,
       mode,
       maxSteps,
+      planner: typeof planner === "string" ? planner : "deterministic",
       traceId: typeof traceId === "string" ? traceId : undefined,
     },
   };
@@ -58,7 +66,8 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
   }
 
   try {
-    const planner = new MockPlanner();
+    const planner =
+      parsed.value.planner === "mock" ? new MockPlanner() : new DeterministicPlanner();
     const result = await runAgent(parsed.value, planner);
     sendJson(res, 200, result);
   } catch (err) {
