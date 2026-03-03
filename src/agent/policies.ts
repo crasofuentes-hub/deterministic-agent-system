@@ -1,4 +1,4 @@
-﻿import type { DeterministicAgentPlan, AgentStep } from "./plan-types";
+import type { DeterministicAgentPlan, AgentStep } from "./plan-types";
 
 export interface PolicyValidationIssue {
   code: string;
@@ -18,6 +18,25 @@ function isHttpUrl(value: unknown): value is string {
   if (!isNonEmptyString(value)) return false;
   return value.startsWith("http://") || value.startsWith("https://");
 }
+
+function isJsonValue(value: unknown): boolean {
+  if (value === null) return true;
+  const t = typeof value;
+  if (t === "string" || t === "boolean") return true;
+  if (t === "number") return Number.isFinite(value as any);
+  if (Array.isArray(value)) return value.every(isJsonValue);
+  if (t === "object") {
+    const o = value as Record<string, unknown>;
+    for (const k of Object.keys(o)) {
+      const v = o[k];
+      if (typeof v === "undefined") return false;
+      if (!isJsonValue(v)) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 
 function validateStep(step: AgentStep, index: number): PolicyValidationIssue[] {
   const issues: PolicyValidationIssue[] = [];
@@ -137,6 +156,28 @@ function validateStep(step: AgentStep, index: number): PolicyValidationIssue[] {
       issues.push({
         code: "INVALID_SANDBOX_OUTPUT_KEY",
         message: "Step '" + step.id + "' (sandbox.extract) requires non-empty outputKey",
+      });
+    }
+  }
+
+
+  if (step.kind === "tool.call") {
+    if (!isNonEmptyString(step.toolId)) {
+      issues.push({
+        code: "INVALID_TOOL_ID",
+        message: "Step '" + step.id + "' (tool.call) requires non-empty toolId",
+      });
+    }
+    if (!isNonEmptyString(step.outputKey)) {
+      issues.push({
+        code: "INVALID_TOOL_OUTPUT_KEY",
+        message: "Step '" + step.id + "' (tool.call) requires non-empty outputKey",
+      });
+    }
+    if (typeof step.input === "undefined" || !isJsonValue(step.input)) {
+      issues.push({
+        code: "INVALID_TOOL_INPUT",
+        message: "Step '" + step.id + "' (tool.call) requires JSON-compatible input",
       });
     }
   }

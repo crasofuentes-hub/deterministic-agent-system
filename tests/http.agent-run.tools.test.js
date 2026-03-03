@@ -14,7 +14,7 @@ async function requestJson(url, init) {
   return { status: response.status, headers: response.headers, body };
 }
 
-test("http POST /agent/run supports planner=det-tools (bounded loop, deterministic across repeats)", async () => {
+test("http POST /agent/run supports planner=det-tools (plan→executor path, deterministic across repeats)", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
@@ -24,7 +24,7 @@ test("http POST /agent/run supports planner=det-tools (bounded loop, determinist
       demo: "core",
       mode: "mock",
       planner: "det-tools",
-      maxSteps: 5,
+      maxSteps: 8,
       traceId: "trace-det-tools-001"
     };
 
@@ -42,19 +42,12 @@ test("http POST /agent/run supports planner=det-tools (bounded loop, determinist
 
     assert.equal(r1.status, 200);
     assert.equal(r2.status, 200);
+    assert.equal(r1.body.ok, true);
+    assert.equal(r2.body.ok, true);
 
-    // Debe ser DeterministicResponse-like
-    assert.equal(r1.body && r1.body.ok, true);
-    assert.equal(r2.body && r2.body.ok, true);
-
-    // Determinismo fuerte: misma request => mismo JSON completo
-    assert.deepEqual(r1.body, r2.body);
-
-    // Shape mínimo del payload det-tools (run-tools.ts)
-    assert.equal(r1.body.value.kind, "agent-tool-loop-v1");
-    assert.equal(typeof r1.body.value.finalObservationHash, "string");
-    assert.ok(Array.isArray(r1.body.value.steps));
-    assert.ok(r1.body.value.termination === "fixpoint" || r1.body.value.termination === "max_iterations");
+    assert.equal(r1.body.result.planHash, r2.body.result.planHash);
+    assert.equal(r1.body.result.executionHash, r2.body.result.executionHash);
+    assert.equal(r1.body.result.finalTraceLinkHash, r2.body.result.finalTraceLinkHash);
   } finally {
     await running.close();
   }

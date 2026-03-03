@@ -2,9 +2,9 @@ import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
 import { sendJson, sendInvalidRequest, sendInternalError } from "../responses";
 import { runAgent } from "../../agent-run/run";
-import { runAgentTools } from "../../agent-run/run-tools";
 import { MockPlanner } from "../../agent-run/planner-mock";
 import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
+import { DetToolsPlanner } from "../../agent-run/planner-det-tools";
 import type { AgentRunInput } from "../../agent-run/types";
 
 type UnknownRecord = Record<string, unknown>;
@@ -78,14 +78,12 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
   }
 
   try {
-    if (parsed.value.planner === "det-tools") {
-      const result = runAgentTools(parsed.value);
-      sendJson(res, 200, result);
-      return;
-    }
-
     const planner =
-      parsed.value.planner === "mock" ? new MockPlanner() : new DeterministicPlanner();
+      parsed.value.planner === "det-tools"
+        ? new DetToolsPlanner()
+        : parsed.value.planner === "mock"
+          ? new MockPlanner()
+          : new DeterministicPlanner();
 
     const result = await runAgent(parsed.value, planner);
     sendJson(res, 200, result);

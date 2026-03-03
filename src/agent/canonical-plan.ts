@@ -1,4 +1,4 @@
-﻿import type { DeterministicAgentPlan, AgentStep, AgentStepKind } from "./plan-types";
+import type { DeterministicAgentPlan, AgentStep, AgentStepKind } from "./plan-types";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -45,11 +45,44 @@ function normalizeSafeInteger(value: unknown, context: string): number {
   if (typeof value !== "number" || !Number.isFinite(value) || !Number.isInteger(value)) {
     throw new Error(context + " must be a finite integer");
   }
+
+
   if (!Number.isSafeInteger(value)) {
     throw new Error(context + " must be a safe integer");
   }
   return value;
 }
+
+function canonicalizeJsonValue(value: unknown, context: string): unknown {
+  if (value === null) return null;
+
+  const t = typeof value;
+  if (t === "string") return (value as string).normalize("NFC");
+  if (t === "boolean") return value;
+  if (t === "number") {
+    if (!Number.isFinite(value)) throw new Error(context + " must be a finite number");
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v, i) => canonicalizeJsonValue(v, context + "[" + String(i) + "]"));
+  }
+
+  if (t === "object") {
+    const o = value as Record<string, unknown>;
+    const keys = Object.keys(o).sort();
+    const out: Record<string, unknown> = {};
+    for (const k of keys) {
+      const v = o[k];
+      if (typeof v === "undefined") throw new Error(context + " must not contain undefined");
+      out[k] = canonicalizeJsonValue(v, context + "." + k);
+    }
+    return out;
+  }
+
+  throw new Error(context + " must be JSON-compatible");
+}
+
 
 function normalizeStepKind(value: unknown, context: string): AgentStepKind {
   if (
@@ -60,12 +93,13 @@ function normalizeStepKind(value: unknown, context: string): AgentStepKind {
     value === "sandbox.click" ||
     value === "sandbox.type" ||
     value === "sandbox.extract"
+    || value === "tool.call"
   ) {
     return value;
   }
   throw new Error(
     context +
-      " must be one of: set, increment, append_log, sandbox.open, sandbox.click, sandbox.type, sandbox.extract"
+      " must be one of: set, increment, append_log, sandbox.open, sandbox.click, sandbox.type, sandbox.extract, tool.call"
   );
 }
 
@@ -162,6 +196,21 @@ function normalizeStepRaw(value: unknown, index: number): AgentStep {
     // sandbox.extract
     step.selector = normalizeStringStrict(value.selector, ctx + ".selector", { maxLen: 512 });
     step.outputKey = normalizeStringStrict(value.outputKey, ctx + ".outputKey", { maxLen: 256 });
+    return step;
+  }
+
+  // tool.call step
+  if (kind === "tool.call") {
+    assertNoExtraKeys(value, ["id", "kind", "toolId", "input", "outputKey"], ctx);
+
+    const toolId = normalizeStringStrict(value.toolId, ctx + ".toolId", { maxLen: 256 });
+    const outputKey = normalizeStringStrict(value.outputKey, ctx + ".outputKey", { maxLen: 256 });
+    const input = canonicalizeJsonValue(value.input, ctx + ".input");
+
+    const step: AgentStep = { id, kind };
+    step.toolId = toolId;
+    step.outputKey = outputKey;
+    step.input = input;
     return step;
   }
 

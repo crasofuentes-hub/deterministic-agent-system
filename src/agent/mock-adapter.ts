@@ -1,4 +1,5 @@
-﻿import type { AgentState, AgentStep } from "./plan-types";
+import type { AgentState, AgentStep } from "./plan-types";
+import { ToolRegistry, toolEcho, toolMathAdd } from "./tools";
 
 export function createInitialAgentState(): AgentState {
   return {
@@ -46,6 +47,23 @@ export function getStateHashLike(state: AgentState): string {
 function s(value: unknown): string {
   return typeof value === "string" ? value : String(value ?? "");
 }
+
+
+function stableStringifyJson(x: unknown): string {
+  if (x === null) return "null";
+  const t = typeof x;
+  if (t === "number" || t === "boolean") return String(x);
+  if (t === "string") return JSON.stringify(x);
+  if (Array.isArray(x)) return "[" + x.map(stableStringifyJson).join(",") + "]";
+  if (t === "object") {
+    const o = x as Record<string, unknown>;
+    const keys = Object.keys(o).sort();
+    return "{" + keys.map(k => JSON.stringify(k) + ":" + stableStringifyJson(o[k])).join(",") + "}";
+  }
+  return JSON.stringify(String(x));
+}
+
+const TOOL_REGISTRY = new ToolRegistry([toolEcho, toolMathAdd]);
 
 export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
   const next: AgentState = {
@@ -101,6 +119,18 @@ export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
     const outputKey = s(step.outputKey);
     next.values[outputKey] = `mock:${selector}`;
     next.logs.push(`sandbox.extract:${sessionId}:${selector}:out=${outputKey}`);
+    return next;
+  }
+
+
+  if (step.kind === "tool.call") {
+    const toolId = s(step.toolId);
+    const outputKey = s(step.outputKey);
+    const input = step.input;
+
+    const output = TOOL_REGISTRY.run(toolId, {}, input as any);
+    next.values[outputKey] = stableStringifyJson(output);
+    next.logs.push(`tool.call:${toolId}:out=${outputKey}`);
     return next;
   }
 

@@ -97,7 +97,16 @@ export function executeDeterministicPlan(
     };
     const beforeHashLike = getStateHashLike(beforeState);
 
-    const next = applyMockStep(state, step);
+    let next;
+    try {
+      next = applyMockStep(state, step);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return failure(
+        { code: ERROR_CODES.INVALID_REQUEST, message: msg, retryable: false },
+        { mode: options.mode, stepCount: i, traceId: options.traceId }
+      );
+    }
 
     const afterState = {
       counters: { ...next.counters },

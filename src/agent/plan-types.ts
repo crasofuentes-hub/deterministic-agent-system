@@ -1,11 +1,14 @@
-﻿export type AgentStepKind =
+export type AgentStepKind =
   | "set"
   | "increment"
   | "append_log"
   | "sandbox.open"
   | "sandbox.click"
   | "sandbox.type"
-  | "sandbox.extract";
+  | "sandbox.extract"
+  | "tool.call";
+
+
 
 export interface AgentStep {
   id: string;
@@ -21,6 +24,10 @@ export interface AgentStep {
   selector?: string;
   text?: string;
   outputKey?: string;
+
+  // Tool call (deterministic tools)
+  toolId?: string;
+  input?: unknown;
 }
 
 export interface DeterministicAgentPlan {
