@@ -34,3 +34,4 @@ artifacts/demo-determinism/
 # Local determinism reports
 artifacts/determinism-report-*.json
 artifacts/agent-demo/
+*.bak.*
