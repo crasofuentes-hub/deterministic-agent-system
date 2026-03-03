@@ -230,6 +230,24 @@ When boundary violations occur, the correct system behavior is to surface the pr
 ---
 
 ## Current Development Status
+### Implemented and verified (current main)
+
+The following capabilities are implemented in code and verified by automated tests in this repository:
+
+- **HTTP interface:** `POST /agent/run` (see `src/http/handlers/agent-run.ts`)
+  - Accepts planners: `deterministic`, `mock`, and `det-tools`
+- **Deterministic planners (no LLM):**
+  - `deterministic` planner builds stable plans from normalized input (see `src/agent-run/spec.ts`, `src/agent-run/planner-deterministic.ts`)
+  - `mock` planner supported for test coverage (see `src/agent-run/planner-mock.ts`)
+- **Bounded tool-loop (opt-in):** `planner = det-tools`
+  - Deterministic bounded loop with termination (`fixpoint` or `max_iterations`)
+  - Minimal deterministic ToolRegistry + built-in tools: `echo`, `math/add` (see `src/agent/tools/*`)
+- **Determinism verification:** identical requests are validated for stability by tests.
+
+Evidence (tests):
+- `tests/http.agent-run.test.js`
+- `tests/http.agent-run.tools.test.js`
+
 
 This repository is under active development and is being advanced from execution foundation work toward fully integrated deterministic agent behavior.
 
@@ -254,19 +272,19 @@ This is a deliberate engineering choice and a major part of the long-term reliab
 The repository is organized to separate implementation, scripts, documentation, and testing concerns.
 
     deterministic-agent-system/
-    ├─ .github/
-    │  └─ workflows/
-    ├─ docs/
-    │  └─ architecture.md
-    ├─ scripts/
-    ├─ src/
-    │  └─ index.ts
-    ├─ tests/
-    ├─ .gitignore
-    ├─ LICENSE
-    ├─ README.md
-    ├─ package.json
-    └─ tsconfig.json
+    |-- .github/
+    |   -- workflows/
+    |-- docs/
+    |   -- architecture.md
+    |-- scripts/
+    |-- src/
+    |   -- index.ts
+    |-- tests/
+    |-- .gitignore
+    |-- LICENSE
+    |-- README.md
+    |-- package.json
+    -- tsconfig.json
 
 As the system evolves, this layout will expand to include:
 
