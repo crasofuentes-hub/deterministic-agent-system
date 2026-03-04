@@ -14,13 +14,13 @@ async function requestJson(url, init) {
   return { status: response.status, headers: response.headers, body };
 }
 
-test("http POST /agent/run supports planner=det-tools (plan→executor path, deterministic across repeats)", async () => {
+test("http POST /agent/run planner=det-tools parses goal add/sum and remains deterministic", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
 
     const body = {
-      goal: "sum-and-echo",
+      goal: "add 2 3",
       demo: "core",
       mode: "mock",
       planner: "det-tools",
@@ -45,9 +45,13 @@ test("http POST /agent/run supports planner=det-tools (plan→executor path, det
     assert.equal(r1.body.ok, true);
     assert.equal(r2.body.ok, true);
 
+    // Determinismo fuerte: mismos hashes en repeticiones
     assert.equal(r1.body.result.planHash, r2.body.result.planHash);
     assert.equal(r1.body.result.executionHash, r2.body.result.executionHash);
     assert.equal(r1.body.result.finalTraceLinkHash, r2.body.result.finalTraceLinkHash);
+
+    // Resultado útil: tool.call math/add persistió salida en finalState.values.sum
+    assert.equal(r1.body.result.finalState.values.sum, "{\"sum\":5}");
   } finally {
     await running.close();
   }
