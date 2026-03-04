@@ -44,6 +44,27 @@ export function getStateHashLike(state: AgentState): string {
   return stableStateHashLike(state);
 }
 
+function getCoreHashLike(state: AgentState): string {
+  const sortedCounters: Record<string, number> = {};
+  for (const k of Object.keys(state.counters).sort()) {
+    const v = state.counters[k];
+    if (typeof v === "number") sortedCounters[k] = v;
+  }
+  const sortedValues: Record<string, string> = {};
+  for (const k of Object.keys(state.values).sort()) {
+    const v = state.values[k];
+    if (typeof v === "string") sortedValues[k] = v;
+  }
+  const canonical = JSON.stringify({ counters: sortedCounters, values: sortedValues });
+  let hash = 2166136261 >>> 0;
+  for (let i = 0; i < canonical.length; i += 1) {
+    hash ^= canonical.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return "c" + hash.toString(16).padStart(8, "0");
+}
+
+
 function s(value: unknown): string {
   return typeof value === "string" ? value : String(value ?? "");
 }
@@ -131,6 +152,30 @@ export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
     const output = TOOL_REGISTRY.run(toolId, {}, input as any);
     next.values[outputKey] = stableStringifyJson(output);
     next.logs.push(`tool.call:${toolId}:out=${outputKey}`);
+    return next;
+  }
+
+
+  if (step.kind === "tool.loop") {
+    const toolId = s(step.toolId);
+    const outputKey = s(step.outputKey);
+    const input = step.input;
+    const maxIterations = Number(step.maxIterations);
+
+    let prevCoreHash = getCoreHashLike(next);
+    for (let i = 0; i < maxIterations; i += 1) {
+      const out = TOOL_REGISTRY.run(toolId, {}, input as any);
+      next.values[outputKey] = stableStringifyJson(out);
+
+      const afterCoreHash = getCoreHashLike(next);
+      const fix = afterCoreHash === prevCoreHash;
+      next.logs.push(`tool.loop:i=${i}:tool=${toolId}:out=${outputKey}:fix=${fix ? 1 : 0}`);
+      if (fix) {
+        return next;
+      }
+      prevCoreHash = afterCoreHash;
+    }
+
     return next;
   }
 
