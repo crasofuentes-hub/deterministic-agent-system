@@ -26,7 +26,18 @@ export class DetToolsPlanner implements Planner {
     const a = parsed ? parsed.a : 1;
     const b = parsed ? parsed.b : 2;
 
-    if (wantsLoop(goal)) {
+        // Deterministic negative-path: allow tests to force TOOL_NOT_FOUND
+    if (goal.includes("missingtool")) {
+      return {
+        planId: "agent-run-det-tools-neg-v1:" + intent,
+        version: 1,
+        steps: [
+          { id: "a", kind: "set", key: "goal", value: goal },
+          { id: "b", kind: "tool.call", toolId: "nope/tool", input: { x: 1 }, outputKey: "out" }
+        ]
+      };
+    }
+if (wantsLoop(goal)) {
       return {
         planId: "agent-run-det-tools-loop-v1:" + intent,
         version: 1,

@@ -1,4 +1,5 @@
-﻿import { ERROR_CODES } from "../core/error-codes";
+import { ERROR_CODES } from "../core/error-codes";
+import type { ErrorCode } from "../core/error-codes";
 import { failure, success, type DeterministicResponse, type ExecutionMode } from "../core/contracts";
 import type { DeterministicAgentPlan, AgentExecutionResult, StepTrace, AgentState, AgentStep } from "./plan-types";
 import { validatePlan } from "./policies";
@@ -113,6 +114,14 @@ function logStepEnd(params: {
   console.log(JSON.stringify(payload));
 }
 
+
+function mapToolErrorCode(message: string): ErrorCode | null {
+  if (message.startsWith("tool_not_found:")) return ERROR_CODES.TOOL_NOT_FOUND;
+  if (message.startsWith("tool_invalid_input:")) return ERROR_CODES.TOOL_INVALID_INPUT;
+  if (message.startsWith("tool_")) return ERROR_CODES.TOOL_EXECUTION_FAILED;
+  return null;
+}
+
 export async function executeDeterministicPlanAsync(
   plan: DeterministicAgentPlan,
   options: ExecutePlanOptionsAsync,
@@ -222,7 +231,7 @@ export async function executeDeterministicPlanAsync(
           errorMessage: msg,
         });
         return failure(
-          { code: ERROR_CODES.INTERNAL_ERROR, message: msg, retryable: true },
+{ code: ((mapToolErrorCode(msg)) ?? ERROR_CODES.INTERNAL_ERROR), message: msg, retryable: (mapToolErrorCode(msg)) ? false : true },
           { mode: options.mode, stepCount: i, traceId: options.traceId }
         );
       }
