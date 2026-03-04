@@ -3,6 +3,7 @@ import { handleExecute } from "./handlers/execute";
 import { handleSimulate } from "./handlers/simulate";
 import { handleSimulateModel } from "./handlers/simulate-model";
 import { handleToolExecute } from "./handlers/tool-execute";
+import { handleTools } from "./handlers/tools";
 import { handleExecuteRunAsync } from "./handlers/run-execute";
 import { handleExecuteRun } from "./handlers/run-execute";
 import {
@@ -301,6 +302,7 @@ const ALLOWED_PUBLIC_PATHS = new Set<string>([
   "/simulate-model",
   "/tool/execute",
   "/agent/run",
+  "/tools",
 ]);
 export async function routeRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const startedAt = Date.now();
@@ -353,6 +355,21 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       const result = handleGetRun(runRoute.runId);
       withRequestId(res, requestId);
       sendHttpJsonResult(res, result, requestId);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+
+    if (url === "/tools") {
+      if (method !== "GET") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      withRequestId(res, requestId);
+      await handleTools(res);
       logEnd(req, res, requestId, startedAt);
       return;
     }
