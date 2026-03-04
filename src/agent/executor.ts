@@ -1,4 +1,5 @@
 import { ERROR_CODES } from "../core/error-codes";
+import type { ErrorCode } from "../core/error-codes";
 import {
   failure,
   success,
@@ -11,6 +12,14 @@ import { applyMockStep, createInitialAgentState, getStateHashLike } from "./mock
 import { canonicalizePlan } from "./canonical-plan";
 import { computeDeterministicPlanHash } from "./plan-hash";
 import { computeTraceLinkHash, computeExecutionHash, TRACE_SCHEMA_VERSION } from "./trace-chain";
+
+
+function mapToolErrorCode(message: string): ErrorCode | null {
+  if (message.startsWith("tool_not_found:")) return ERROR_CODES.TOOL_NOT_FOUND;
+  if (message.startsWith("tool_invalid_input:")) return ERROR_CODES.TOOL_INVALID_INPUT;
+  if (message.startsWith("tool_")) return ERROR_CODES.TOOL_EXECUTION_FAILED;
+  return null;
+}
 
 export interface ExecutePlanOptions {
   mode: ExecutionMode;
@@ -103,7 +112,7 @@ export function executeDeterministicPlan(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       return failure(
-        { code: ERROR_CODES.INVALID_REQUEST, message: msg, retryable: false },
+        { code: (mapToolErrorCode(msg) ?? ERROR_CODES.INVALID_REQUEST), message: msg, retryable: false },
         { mode: options.mode, stepCount: i, traceId: options.traceId }
       );
     }

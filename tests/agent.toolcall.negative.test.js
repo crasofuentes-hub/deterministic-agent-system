@@ -18,11 +18,10 @@ test("tool.call fails deterministically when toolId is missing", () => {
   assert.equal(r1.ok, false);
   assert.equal(r2.ok, false);
 
-  // Determinismo: mismo error shape/mensaje
+  // Determinismo: mismo error completo
   assert.deepEqual(r1, r2);
 
-  // Señal mínima estable
-  assert.equal(r1.error.code, "INVALID_REQUEST");
+  assert.equal(r1.error.code, "TOOL_NOT_FOUND");
   assert.ok(String(r1.error.message).includes("tool_not_found"));
 });
 
@@ -31,7 +30,6 @@ test("tool.call fails deterministically when input is invalid", () => {
     planId: "neg-tool-bad-input",
     version: 1,
     steps: [
-      // math/add requiere {a:number,b:number}; aquí mandamos null
       { id: "a", kind: "tool.call", toolId: "math/add", input: null, outputKey: "out" }
     ]
   };
@@ -43,6 +41,6 @@ test("tool.call fails deterministically when input is invalid", () => {
   assert.equal(r2.ok, false);
   assert.deepEqual(r1, r2);
 
-  assert.equal(r1.error.code, "INVALID_REQUEST");
+  assert.equal(r1.error.code, "TOOL_INVALID_INPUT");
   assert.ok(String(r1.error.message).includes("tool_invalid_input"));
 });
