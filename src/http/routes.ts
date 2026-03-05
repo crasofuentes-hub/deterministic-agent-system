@@ -5,6 +5,9 @@ import { handleSimulateModel } from "./handlers/simulate-model";
 import { handleToolExecute } from "./handlers/tool-execute";
 import { handleTools } from "./handlers/tools";
 import { handleAgentCapabilities } from "./handlers/agent-capabilities";
+import { handleSchemaAgentRun } from "./handlers/schema-agent-run";
+import { handleSchemaAgentCapabilities } from "./handlers/schema-agent-capabilities";
+import { handleSchemaReplayBundle } from "./handlers/schema-replay-bundle";
 import { handleExecuteRunAsync } from "./handlers/run-execute";
 import { handleExecuteRun } from "./handlers/run-execute";
 import {
@@ -305,6 +308,9 @@ const ALLOWED_PUBLIC_PATHS = new Set<string>([
   "/agent/run",
   "/tools",
   "/agent/capabilities",
+  "/schema/agent-run",
+  "/schema/agent-capabilities",
+  "/schema/replay-bundle",
 ]);
 export async function routeRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const startedAt = Date.now();
@@ -387,6 +393,51 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
 
       withRequestId(res, requestId);
       await handleAgentCapabilities(res);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+
+    if (url === "/schema/agent-run") {
+      if (method !== "GET") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      withRequestId(res, requestId);
+      await handleSchemaAgentRun(res);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+
+    if (url === "/schema/agent-capabilities") {
+      if (method !== "GET") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      withRequestId(res, requestId);
+      await handleSchemaAgentCapabilities(res);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+
+    if (url === "/schema/replay-bundle") {
+      if (method !== "GET") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      withRequestId(res, requestId);
+      await handleSchemaReplayBundle(res);
       logEnd(req, res, requestId, startedAt);
       return;
     }
