@@ -130,7 +130,7 @@ export async function executeDeterministicPlanAsync(
   if (!Number.isInteger(options.maxSteps) || options.maxSteps <= 0) {
     return failure(
       {
-        code: ERROR_CODES.INVALID_REQUEST,
+        code: ERROR_CODES.PLAN_CANONICALIZATION_FAILED,
         message: "maxSteps must be a positive integer",
         retryable: false,
       },
@@ -142,7 +142,7 @@ export async function executeDeterministicPlanAsync(
   if (!validation.ok) {
     return failure(
       {
-        code: ERROR_CODES.INVALID_REQUEST,
+        code: ERROR_CODES.PLAN_VALIDATION_FAILED,
         message: "Plan validation failed: " + validation.issues.map((x) => x.code).join(", "),
         retryable: false,
       },
@@ -157,7 +157,7 @@ export async function executeDeterministicPlanAsync(
     const message = err instanceof Error ? err.message : String(err);
     return failure(
       {
-        code: ERROR_CODES.INVALID_REQUEST,
+        code: ERROR_CODES.PLAN_CANONICALIZATION_FAILED,
         message: "Plan canonicalization failed: " + message,
         retryable: false,
       },
@@ -170,7 +170,7 @@ export async function executeDeterministicPlanAsync(
   if (canonicalPlan.steps.length > options.maxSteps) {
     return failure(
       {
-        code: ERROR_CODES.EXECUTION_CONVERGENCE_FAILED,
+        code: ERROR_CODES.PLAN_EXCEEDS_MAX_STEPS,
         message: "Plan exceeds maxSteps bound",
         retryable: false,
       },

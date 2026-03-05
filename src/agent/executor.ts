@@ -46,7 +46,7 @@ export function executeDeterministicPlan(
   if (!validation.ok) {
     return failure(
       {
-        code: ERROR_CODES.INVALID_REQUEST,
+        code: ERROR_CODES.PLAN_VALIDATION_FAILED,
         message: "Plan validation failed: " + validation.issues.map((x) => x.code).join(", "),
         retryable: false,
       },
@@ -61,7 +61,7 @@ export function executeDeterministicPlan(
     const message = err instanceof Error ? err.message : String(err);
     return failure(
       {
-        code: ERROR_CODES.INVALID_REQUEST,
+        code: ERROR_CODES.PLAN_CANONICALIZATION_FAILED,
         message: "Plan canonicalization failed: " + message,
         retryable: false,
       },
@@ -74,7 +74,7 @@ export function executeDeterministicPlan(
   if (canonicalPlan.steps.length > options.maxSteps) {
     return failure(
       {
-        code: ERROR_CODES.EXECUTION_CONVERGENCE_FAILED,
+        code: ERROR_CODES.PLAN_EXCEEDS_MAX_STEPS,
         message: "Plan exceeds maxSteps bound",
         retryable: false,
       },
