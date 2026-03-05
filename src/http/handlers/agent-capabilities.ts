@@ -9,7 +9,7 @@ export async function handleAgentCapabilities(res: ServerResponse): Promise<void
     ok: true,
     result: {
       endpoint: "/agent/run",
-      planners: ["mock", "deterministic", "det-tools", "det-replan"],
+      planners: ["mock", "deterministic", "det-tools", "det-replan", "llm-mock"],
       demos: ["core", "sandbox"],
       modes: ["mock", "local"],
       bounds: {

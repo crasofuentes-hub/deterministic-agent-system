@@ -6,6 +6,7 @@ import { runAgent } from "../../agent-run/run";
 import { MockPlanner } from "../../agent-run/planner-mock";
 import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
 import { DetToolsPlanner } from "../../agent-run/planner-det-tools";
+import { LlmMockPlanner } from "../../agent-run/planner-llm-mock";
 import type { AgentRunInput } from "../../agent-run/types";
 
 type UnknownRecord = Record<string, unknown>;
@@ -37,7 +38,7 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
 
   const planner = body.planner;
   if (typeof planner !== "undefined") {
-    if (planner !== "mock" && planner !== "deterministic" && planner !== "det-tools" && planner !== "det-replan") {
+    if (planner !== "mock" && planner !== "deterministic" && planner !== "det-tools" && planner !== "det-replan" && planner !== "llm-mock") {
       return { ok: false, message: "planner must be 'mock' or 'deterministic' or 'det-tools' or 'det-replan'" };
     }
   }
@@ -78,7 +79,7 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
     return;
   }
 
-  // det-replan: 1 intento + 1 replan determinista (máximo 2 ejecuciones)
+  // det-replan: 1 intento + 1 replan determinista (mÃ¡ximo 2 ejecuciones)
   if (parsed.value.planner === "det-replan") {
     const first = await runAgent(
       { ...parsed.value, planner: "det-tools" },
@@ -125,9 +126,11 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
     const planner =
       parsed.value.planner === "det-tools"
         ? new DetToolsPlanner()
-        : parsed.value.planner === "mock"
-          ? new MockPlanner()
-          : new DeterministicPlanner();
+        : parsed.value.planner === "llm-mock"
+          ? new LlmMockPlanner()
+          : parsed.value.planner === "mock"
+            ? new MockPlanner()
+            : new DeterministicPlanner();
 
     const result = await runAgent(parsed.value, planner);
     sendJson(res, 200, result);
