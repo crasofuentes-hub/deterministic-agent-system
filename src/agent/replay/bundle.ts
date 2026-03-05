@@ -18,6 +18,34 @@ export interface ReplayBundleV1 {
   resultHashes: ReplayResultHashes;
 }
 
+export interface ReplayToolManifestEntry {
+  id: string;
+  version: number;
+}
+
+export interface ReplayManifestV1 {
+  nodeVersion: string;
+  platform: string;
+  arch: string;
+
+  packageName: string;
+  packageVersion: string;
+
+  traceSchemaVersion: number;
+  tools: ReplayToolManifestEntry[];
+}
+
+export interface ReplayBundleV2 {
+  schema: "deterministic-agent-system.replay-bundle";
+  version: 2;
+  planner: ReplayPlannerId;
+  input: AgentRunInput;
+  resultHashes: ReplayResultHashes;
+  manifest: ReplayManifestV1;
+}
+
+export type AnyReplayBundle = ReplayBundleV1 | ReplayBundleV2;
+
 function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
 }
@@ -28,20 +56,22 @@ export function stableStringifyJson(x: unknown): string {
   if (t === "string") return JSON.stringify(x);
   if (t === "number") {
     if (!Number.isFinite(x as number)) return JSON.stringify(null);
-    // JSON.stringify mantiene formato estable para numbers finitos
     return JSON.stringify(x);
   }
   if (t === "boolean") return JSON.stringify(x);
   if (Array.isArray(x)) return "[" + x.map(stableStringifyJson).join(",") + "]";
   if (isObject(x)) {
     const keys = Object.keys(x).sort();
-    return "{" + keys.map((k) => JSON.stringify(k) + ":" + stableStringifyJson((x as any)[k])).join(",") + "}";
+    return (
+      "{" +
+      keys.map((k) => JSON.stringify(k) + ":" + stableStringifyJson((x as any)[k])).join(",") +
+      "}"
+    );
   }
-  // undefined / function / symbol -> null
   return "null";
 }
 
-export function buildReplayBundle(params: {
+export function buildReplayBundleV1(params: {
   planner: ReplayPlannerId;
   input: AgentRunInput;
   result: AgentExecutionResult;
@@ -60,7 +90,27 @@ export function buildReplayBundle(params: {
   };
 }
 
-export function replayBundleToJson(bundle: ReplayBundleV1): string {
-  // JSON determinista (keys ordenadas)
+export function buildReplayBundleV2(params: {
+  planner: ReplayPlannerId;
+  input: AgentRunInput;
+  result: AgentExecutionResult;
+  manifest: ReplayManifestV1;
+}): ReplayBundleV2 {
+  return {
+    schema: "deterministic-agent-system.replay-bundle",
+    version: 2,
+    planner: params.planner,
+    input: params.input,
+    resultHashes: {
+      planHash: params.result.planHash,
+      executionHash: params.result.executionHash,
+      finalTraceLinkHash: params.result.finalTraceLinkHash,
+      traceSchemaVersion: params.result.traceSchemaVersion,
+    },
+    manifest: params.manifest,
+  };
+}
+
+export function replayBundleToJson(bundle: AnyReplayBundle): string {
   return stableStringifyJson(bundle);
 }

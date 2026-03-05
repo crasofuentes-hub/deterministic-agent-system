@@ -7,7 +7,7 @@ import { LlmMockPlanner } from "../../agent-run/planner-llm-mock";
 import type { DeterministicResponse } from "../../core/contracts";
 import type { AgentExecutionResult } from "../plan-types";
 import { ERROR_CODES } from "../../core/error-codes";
-import type { ReplayBundleV1, ReplayPlannerId } from "./bundle";
+import type { AnyReplayBundle, ReplayBundleV1, ReplayBundleV2, ReplayPlannerId } from "./bundle";
 
 function makePlanner(id: ReplayPlannerId): Planner {
   if (id === "mock") return new MockPlanner();
@@ -16,7 +16,7 @@ function makePlanner(id: ReplayPlannerId): Planner {
   if (id === "deterministic") return new DeterministicPlanner();
 
   // det-replan vive en el handler HTTP; para replay usamos fallback deterministic
-  // (la replanificación se verifica vía test HTTP ya existente)
+  // (la replanificaciÃ³n se verifica vÃ­a test HTTP ya existente)
   return new DeterministicPlanner();
 }
 
@@ -36,7 +36,7 @@ export async function executeForReplay(input: AgentRunInput, planner: ReplayPlan
   return await runAgent(input, p);
 }
 
-export async function verifyReplayBundle(bundle: ReplayBundleV1): Promise<ReplayVerification> {
+export async function verifyReplayBundle(bundle: AnyReplayBundle): Promise<ReplayVerification> {
   const input: AgentRunInput = bundle.input;
   const planner: ReplayPlannerId = bundle.planner;
 

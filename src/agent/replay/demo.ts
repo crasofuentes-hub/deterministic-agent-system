@@ -1,6 +1,12 @@
 import { writeFileSync, readFileSync } from "node:fs";
-import { buildReplayBundle, replayBundleToJson, type ReplayBundleV1, type ReplayPlannerId } from "./bundle";
+import {
+  buildReplayBundleV2,
+  replayBundleToJson,
+  type ReplayBundleV2,
+  type ReplayPlannerId,
+} from "./bundle";
 import { executeForReplay, verifyReplayBundle } from "./replay";
+import { buildReplayManifest } from "./manifest";
 
 function parseArg(name: string, def?: string): string | undefined {
   const idx = process.argv.indexOf(name);
@@ -23,7 +29,7 @@ async function main(): Promise<void> {
     mode,
     planner,
     maxSteps,
-    traceId: "replay-demo-001", // estable
+    traceId: "replay-demo-001",
   };
 
   const r = await executeForReplay(input, planner);
@@ -33,11 +39,16 @@ async function main(): Promise<void> {
     return;
   }
 
-  const bundle = buildReplayBundle({ planner, input, result: r.result });
+  const manifest = buildReplayManifest({
+    planner,
+    traceSchemaVersion: r.result.traceSchemaVersion,
+  });
+
+  const bundle: ReplayBundleV2 = buildReplayBundleV2({ planner, input, result: r.result, manifest });
   const json = replayBundleToJson(bundle);
   writeFileSync(outPath, json + "\n", { encoding: "utf8" });
 
-  const loaded = JSON.parse(readFileSync(outPath, "utf8")) as ReplayBundleV1;
+  const loaded = JSON.parse(readFileSync(outPath, "utf8"));
   const verify = await verifyReplayBundle(loaded);
 
   console.log(JSON.stringify({ ok: true, outPath, verify }, null, 0));
