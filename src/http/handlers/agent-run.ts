@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
 import { sendJson, sendInvalidRequest, sendInternalError } from "../responses";
+import { ERROR_CODES } from "../../core/error-codes";
 import { runAgent } from "../../agent-run/run";
 import { MockPlanner } from "../../agent-run/planner-mock";
 import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
@@ -36,8 +37,8 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
 
   const planner = body.planner;
   if (typeof planner !== "undefined") {
-    if (planner !== "mock" && planner !== "deterministic" && planner !== "det-tools") {
-      return { ok: false, message: "planner must be 'mock' or 'deterministic' or 'det-tools'" };
+    if (planner !== "mock" && planner !== "deterministic" && planner !== "det-tools" && planner !== "det-replan") {
+      return { ok: false, message: "planner must be 'mock' or 'deterministic' or 'det-tools' or 'det-replan'" };
     }
   }
 
@@ -77,6 +78,49 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
     return;
   }
 
+  // det-replan: 1 intento + 1 replan determinista (máximo 2 ejecuciones)
+  if (parsed.value.planner === "det-replan") {
+    const first = await runAgent(
+      { ...parsed.value, planner: "det-tools" },
+      new DetToolsPlanner()
+    );
+
+    if (first.ok) {
+      sendJson(res, 200, first);
+      return;
+    }
+
+    const code = String(first.error?.code ?? "");
+    const isToolError =
+      code === ERROR_CODES.TOOL_NOT_FOUND ||
+      code === ERROR_CODES.TOOL_INVALID_INPUT ||
+      code === ERROR_CODES.TOOL_EXECUTION_FAILED;
+
+    if (!isToolError) {
+      sendJson(res, 200, first);
+      return;
+    }
+
+    const msg = "replan:" + code;
+
+    const fallbackPlanner = {
+      plan: (_input: any) => ({
+        planId: "agent-run-det-replan-v1:" + code,
+        version: 1,
+        steps: [
+          { id: "a", kind: "set", key: "goal", value: String(parsed.value.goal ?? "") },
+          { id: "b", kind: "set", key: "errorCode", value: code },
+          { id: "c", kind: "append_log", value: msg },
+          { id: "d", kind: "tool.call", toolId: "echo", input: { value: msg }, outputKey: "fallback" },
+          { id: "e", kind: "append_log", value: "done" }
+        ],
+      }),
+    } as const;
+
+    const second = await runAgent(parsed.value, fallbackPlanner as any);
+    sendJson(res, 200, second);
+    return;
+  }
   try {
     const planner =
       parsed.value.planner === "det-tools"
