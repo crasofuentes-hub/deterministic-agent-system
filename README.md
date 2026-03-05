@@ -304,32 +304,52 @@ As the system evolves, this layout will expand to include:
 
 - Windows PowerShell 5.1
 - Git
-- Node.js
-- npm
+- Node.js + npm
 
 ### 1) Install dependencies
 
     npm install
 
-### 2) Build the project
+### 2) Build
 
     npm run build
 
-### 3) Run the bootstrap entrypoint
+### 3) Verify (tests that define the current contract)
 
-    npm start
+    node --test tests/http.negative.test.js
+    node --test tests/http.agent-run.test.js
+    node --test tests/http.agent-run.tools.test.js
+    node --test tests/http.agent-run.tools.loop.test.js
+    node --test tests/http.tools.test.js
+    node --test tests/http.agent.capabilities.test.js
 
-### Expected result
+### 4) Run the HTTP server (manual try)
 
-At the current bootstrap stage, the entrypoint prints a minimal startup message confirming that:
+In one terminal:
 
-- dependency installation works,
-- the TypeScript build pipeline is functioning,
-- and the Node execution path is operational.
+    node dist/src/http/server.js
 
-This verifies repository initialization and build plumbing while deterministic agent modules continue to be integrated.
+Then in another terminal:
 
----
+    curl http://127.0.0.1:3000/tools
+    curl http://127.0.0.1:3000/agent/capabilities
+
+Agent run (det-tools):
+
+    curl -X POST http://127.0.0.1:3000/agent/run ^
+      -H "content-type: application/json" ^
+      -d "{""goal"":""add 2 3"",""demo"":""core"",""mode"":""mock"",""planner"":""det-tools"",""maxSteps"":8}"
+
+Loop demo (fixpoint inside tool.loop):
+
+    curl -X POST http://127.0.0.1:3000/agent/run ^
+      -H "content-type: application/json" ^
+      -d "{""goal"":""loop add 1 2"",""demo"":""core"",""mode"":""mock"",""planner"":""det-tools"",""maxSteps"":12}"
+
+Notes:
+- All results include deterministic hashes (planHash / executionHash / finalTraceLinkHash) when inputs and mode are controlled.
+- tool.loop convergence is based on a fixpoint check over the core state (values + counters), ignoring logs.
+
 
 ## High-Level Architecture
 
