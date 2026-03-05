@@ -323,6 +323,14 @@ As the system evolves, this layout will expand to include:
     node --test tests/http.tools.test.js
     node --test tests/http.agent.capabilities.test.js
 
+### Try it now (one-command demos)
+
+    npm run build
+    npm run demo:tools
+    npm run demo:capabilities
+    npm run demo:agent:llm-mock
+    npm run demo:agent:tool-loop
+    npm run demo:replay:verify
 ### 4) Run the HTTP server (manual try)
 
 In one terminal:
