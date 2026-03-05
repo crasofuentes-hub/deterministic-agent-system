@@ -6,7 +6,8 @@ export type AgentStepKind =
   | "sandbox.click"
   | "sandbox.type"
   | "sandbox.extract"
-  | "tool.call";
+  | "tool.call"
+  | "tool.loop";
 
 
 
@@ -28,6 +29,9 @@ export interface AgentStep {
   // Tool call (deterministic tools)
   toolId?: string;
   input?: unknown;
+
+  // Tool loop (deterministic bounded loop)
+  maxIterations?: number;
 }
 
 export interface DeterministicAgentPlan {

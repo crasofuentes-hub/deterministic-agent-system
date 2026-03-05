@@ -4,6 +4,9 @@
     "description": "Deterministic agent system with auditable and replayable execution",
     "main": "dist/index.js",
     "type": "commonjs",
+    "engines": { "node": ">=18" },
+    "files": ["dist/","LICENSE","README.md","package.json"],
+    "exports": { ".": "./dist/index.js" },
     "scripts": {
         "status:generate": "node dist/scripts/generate-status.js",
         "test:determinism": "node tests/agent.determinism.snapshot.test.js",
@@ -24,6 +27,7 @@
         "test:replay": "node tests/agent.replay.e2e.test.js",
         "verify": "npm run verify:bootstrap && npm run verify:contracts",
         "build": "tsc -p tsconfig.scripts.json",
+        "verify:pack": "powershell -ExecutionPolicy Bypass -File .\\scripts\\verify-pack.ps1",
         "verify:contracts": "node dist/scripts/verify-contract.js",
         "demo:determinism": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\demo-determinism.ps1 -Runs 5",
                 "demo:tools": "node -e \"(async()=>{const {startServer}=require('./dist/src/http/server');const r=await startServer({port:0});const base='http://127.0.0.1:'+r.port;const res=await fetch(base+'/tools');console.log(await res.text());await r.close();})().catch(e=>{console.error(e);process.exit(1);});\"",
