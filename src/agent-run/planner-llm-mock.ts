@@ -11,16 +11,48 @@ function parseTwoInts(goal: string): { a: number; b: number } | null {
   return { a, b };
 }
 
-/**
- * LLM mock planner:
- * - Determinista (sin RNG, sin timestamps)
- * - Simula "razonamiento" mediante reglas
- * - Produce planes tool-first para que el executor haga el trabajo verificable
- */
+function s(x: unknown): string {
+  return typeof x === "string" ? x : String(x ?? "");
+}
+
 export class LlmMockPlanner implements Planner {
   plan(input: AgentRunInput): DeterministicAgentPlan {
     const goal = normalizeGoal(input.goal);
     const intent = deriveIntent(goal);
+
+    const lastErr = s(input.lastErrorCode).trim();
+
+    // Replan logic (deterministic): if we have a TOOL_* failure, degrade to echo with evidence.
+    if (lastErr.startsWith("TOOL_")) {
+      const msg = "replan2:" + lastErr;
+      return {
+        planId: "agent-run-llm-mock-replan2-v1:" + intent + ":" + lastErr,
+        version: 1,
+        steps: [
+          { id: "a", kind: "set", key: "goal", value: goal },
+          { id: "b", kind: "set", key: "intent", value: intent },
+          { id: "c", kind: "set", key: "lastErrorCode", value: lastErr },
+          { id: "d", kind: "append_log", value: msg },
+          { id: "e", kind: "tool.call", toolId: "echo", input: { value: msg }, outputKey: "output" },
+          { id: "f", kind: "append_log", value: "done" }
+        ]
+      };
+    }
+
+    // Deterministic negative-path trigger: if goal includes "missingtool", simulate a "bad tool selection"
+    if (goal.includes("missingtool")) {
+      return {
+        planId: "agent-run-llm-mock-v1:" + intent + ":missingtool",
+        version: 1,
+        steps: [
+          { id: "a", kind: "set", key: "goal", value: goal },
+          { id: "b", kind: "set", key: "intent", value: intent },
+          { id: "c", kind: "append_log", value: "llm-mock:plan" },
+          { id: "d", kind: "tool.call", toolId: "nope/tool", input: { x: 1 }, outputKey: "out" },
+          { id: "e", kind: "append_log", value: "done" }
+        ]
+      };
+    }
 
     if (intent === "compute") {
       const p = parseTwoInts(goal);
@@ -40,7 +72,6 @@ export class LlmMockPlanner implements Planner {
       };
     }
 
-    // default/core: echo a stable "assistant" output
     const msg = "llm-mock:" + intent;
     return {
       planId: "agent-run-llm-mock-v1:" + intent,
