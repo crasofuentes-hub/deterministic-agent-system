@@ -1,13 +1,13 @@
 import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
 import { sendJson, sendInvalidRequest, sendInternalError } from "../responses";
-import { ERROR_CODES } from "../../core/error-codes";
 import { runAgent } from "../../agent-run/run";
 import { MockPlanner } from "../../agent-run/planner-mock";
 import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
 import { DetToolsPlanner } from "../../agent-run/planner-det-tools";
 import { LlmMockPlanner } from "../../agent-run/planner-llm-mock";
-import type { AgentRunInput } from "../../agent-run/types";
+import { LlmLivePlanner } from "../../agent-run/planner-llm-live";
+import type { AgentRunInput, Planner } from "../../agent-run/types";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -38,8 +38,20 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
 
   const planner = body.planner;
   if (typeof planner !== "undefined") {
-    if (planner !== "mock" && planner !== "deterministic" && planner !== "det-tools" && planner !== "det-replan" && planner !== "det-replan2" && planner !== "llm-mock") {
-      return { ok: false, message: "planner must be 'mock' or 'deterministic' or 'det-tools' or 'det-replan'" };
+    if (
+      planner !== "mock" &&
+      planner !== "deterministic" &&
+      planner !== "det-tools" &&
+      planner !== "det-replan" &&
+      planner !== "det-replan2" &&
+      planner !== "llm-mock" &&
+      planner !== "llm-live"
+    ) {
+      return {
+        ok: false,
+        message:
+          "planner must be 'mock' or 'deterministic' or 'det-tools' or 'det-replan' or 'det-replan2' or 'llm-mock' or 'llm-live'",
+      };
     }
   }
 
@@ -58,6 +70,16 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
     if (sandboxUrl.length > 2048) return { ok: false, message: "sandboxUrl exceeds 2048 characters" };
   }
 
+  // Optional replan context
+  const history = body.history;
+  const lastErrorCode = body.lastErrorCode;
+
+  // Optional LLM config
+  const llmProvider = body.llmProvider;
+  const llmModel = body.llmModel;
+  const llmTemperature = body.llmTemperature;
+  const llmMaxTokens = body.llmMaxTokens;
+
   return {
     ok: true,
     value: {
@@ -65,11 +87,25 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
       demo,
       mode,
       maxSteps,
-      planner: typeof planner === "string" ? (planner as AgentRunInput["planner"]) : "deterministic",
+      planner: typeof planner === "string" ? (planner as any) : "deterministic",
       traceId: typeof traceId === "string" ? traceId : undefined,
       sandboxUrl: typeof sandboxUrl === "string" ? sandboxUrl : undefined,
+      history: Array.isArray(history) ? (history as any) : undefined,
+      lastErrorCode: typeof lastErrorCode === "string" ? lastErrorCode : undefined,
+      llmProvider: typeof llmProvider === "string" ? (llmProvider as any) : undefined,
+      llmModel: typeof llmModel === "string" ? llmModel : undefined,
+      llmTemperature: typeof llmTemperature === "number" ? llmTemperature : undefined,
+      llmMaxTokens: typeof llmMaxTokens === "number" ? llmMaxTokens : undefined,
     },
   };
+}
+
+function selectPlanner(plannerId: string | undefined): Planner {
+  if (plannerId === "det-tools") return new DetToolsPlanner();
+  if (plannerId === "llm-live") return new LlmLivePlanner();
+  if (plannerId === "llm-mock") return new LlmMockPlanner();
+  if (plannerId === "mock") return new MockPlanner();
+  return new DeterministicPlanner();
 }
 
 export async function handleAgentRun(res: ServerResponse, body: JsonObject): Promise<void> {
@@ -79,99 +115,11 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
     return;
   }
 
-  // det-replan: 1 intento + 1 replan determinista (mÃƒÂ¡ximo 2 ejecuciones)
-  if (parsed.value.planner === "det-replan") {
-    const first = await runAgent(
-      { ...parsed.value, planner: "det-tools" },
-      new DetToolsPlanner()
-    );
-
-    if (first.ok) {
-      sendJson(res, 200, first);
-      return;
-    }
-
-    const code = String(first.error?.code ?? "");
-    const isToolError =
-      code === ERROR_CODES.TOOL_NOT_FOUND ||
-      code === ERROR_CODES.TOOL_INVALID_INPUT ||
-      code === ERROR_CODES.TOOL_EXECUTION_FAILED;
-
-    if (!isToolError) {
-      sendJson(res, 200, first);
-      return;
-    }
-
-    const msg = "replan:" + code;
-
-    const fallbackPlanner = {
-      plan: (_input: any) => ({
-        planId: "agent-run-det-replan-v1:" + code,
-        version: 1,
-        steps: [
-          { id: "a", kind: "set", key: "goal", value: String(parsed.value.goal ?? "") },
-          { id: "b", kind: "set", key: "errorCode", value: code },
-          { id: "c", kind: "append_log", value: msg },
-          { id: "d", kind: "tool.call", toolId: "echo", input: { value: msg }, outputKey: "fallback" },
-          { id: "e", kind: "append_log", value: "done" }
-        ],
-      }),
-    } as const;
-
-    const second = await runAgent(parsed.value, fallbackPlanner as any);
-    sendJson(res, 200, second);
-    return;
-  }
-  // det-replan2: bounded 2-pass replan using llm-mock + lastErrorCode/history
-  if (parsed.value.planner === "det-replan2") {
-    const llm = new LlmMockPlanner();
-
-    const first = await runAgent(
-      { ...parsed.value, planner: "llm-mock", lastErrorCode: undefined },
-      llm
-    );
-
-    if (first.ok) {
-      sendJson(res, 200, first);
-      return;
-    }
-
-    const code = String(first.error?.code ?? "");
-    const isToolError =
-      code === ERROR_CODES.TOOL_NOT_FOUND ||
-      code === ERROR_CODES.TOOL_INVALID_INPUT ||
-      code === ERROR_CODES.TOOL_EXECUTION_FAILED;
-
-    if (!isToolError) {
-      sendJson(res, 200, first);
-      return;
-    }
-
-    const baseHist = Array.isArray((parsed.value as any).history) ? (parsed.value as any).history : [];
-    const hist = baseHist.concat([{ role: "assistant", content: "error:" + code }]);
-
-    const second = await runAgent(
-      { ...parsed.value, planner: "llm-mock", history: hist, lastErrorCode: code },
-      llm
-    );
-
-    sendJson(res, 200, second);
-    return;
-  }
   try {
-    const planner =
-      parsed.value.planner === "det-tools"
-        ? new DetToolsPlanner()
-        : parsed.value.planner === "llm-mock"
-          ? new LlmMockPlanner()
-          : parsed.value.planner === "mock"
-            ? new MockPlanner()
-            : new DeterministicPlanner();
-
+    const planner = selectPlanner(parsed.value.planner);
     const result = await runAgent(parsed.value, planner);
     sendJson(res, 200, result);
   } catch (_err) {
-    // No filtramos detalles internos; payload estable.
     sendInternalError(res);
   }
 }

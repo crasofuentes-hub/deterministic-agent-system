@@ -19,7 +19,7 @@ export async function handleSchemaAgentRun(res: ServerResponse): Promise<void> {
           demo: { type: "string", enum: ["core", "sandbox"] },
           mode: { type: "string", enum: ["mock", "local"] },
           maxSteps: { type: "integer", minimum: 1 },
-          planner: { type: "string", enum: ["mock", "deterministic", "det-tools", "det-replan", "det-replan2", "llm-mock"] },
+          planner: { type: "string", enum: ["mock", "deterministic", "det-tools", "det-replan", "det-replan2", "llm-mock", "llm-live"] },
           traceId: { type: "string", minLength: 1, maxLength: 256 },
           sandboxUrl: { type: "string", minLength: 1, maxLength: 2048 },
           history: {
