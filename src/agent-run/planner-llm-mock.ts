@@ -33,7 +33,7 @@ export class LlmMockPlanner implements Planner {
           { id: "b", kind: "set", key: "intent", value: intent },
           { id: "c", kind: "set", key: "lastErrorCode", value: lastErr },
           { id: "d", kind: "append_log", value: msg },
-          { id: "e", kind: "tool.call", toolId: "echo", input: { value: msg }, outputKey: "output" },
+          { id: "e", kind: "tool.call", toolId: "echo", input: { value: msg }, outputKey: "sum" },
           { id: "f", kind: "append_log", value: "done" }
         ]
       };

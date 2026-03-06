@@ -50,7 +50,7 @@ test("http POST /agent/run planner=det-tools parses goal add/sum and remains det
     assert.equal(r1.body.result.executionHash, r2.body.result.executionHash);
     assert.equal(r1.body.result.finalTraceLinkHash, r2.body.result.finalTraceLinkHash);
 
-    // Resultado útil: tool.call math/add persistió salida en finalState.values.sum
+    // Resultado ÃƒÂºtil: tool.call math/add persistiÃƒÂ³ salida en finalState.values.sum
     assert.equal(r1.body.result.finalState.values.sum, "{\"sum\":5}");
   } finally {
     await running.close();

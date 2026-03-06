@@ -168,6 +168,8 @@ function validateStep(step: AgentStep, index: number): PolicyValidationIssue[] {
         message: "Step '" + step.id + "' (tool.call) requires non-empty toolId",
       });
     }
+
+
     if (!isNonEmptyString(step.outputKey)) {
       issues.push({
         code: "INVALID_TOOL_OUTPUT_KEY",
@@ -179,6 +181,22 @@ function validateStep(step: AgentStep, index: number): PolicyValidationIssue[] {
         code: "INVALID_TOOL_INPUT",
         message: "Step '" + step.id + "' (tool.call) requires JSON-compatible input",
       });
+    }
+  }
+
+  if (step.kind === "tool.loop") {
+    if (!isNonEmptyString(step.toolId)) {
+      issues.push({ code: "INVALID_TOOL_ID", message: "Step '" + step.id + "' (tool.loop) requires non-empty toolId" });
+    }
+    if (!isNonEmptyString(step.outputKey)) {
+      issues.push({ code: "INVALID_TOOL_OUTPUT_KEY", message: "Step '" + step.id + "' (tool.loop) requires non-empty outputKey" });
+    }
+    if (typeof step.input === "undefined" || !isJsonValue(step.input)) {
+      issues.push({ code: "INVALID_TOOL_INPUT", message: "Step '" + step.id + "' (tool.loop) requires JSON-compatible input" });
+    }
+    const mi = (step.maxIterations as any);
+    if (typeof mi !== "number" || !Number.isInteger(mi) || mi <= 0 || !Number.isSafeInteger(mi)) {
+      issues.push({ code: "INVALID_TOOL_MAX_ITER", message: "Step '" + step.id + "' (tool.loop) requires maxIterations as positive safe integer" });
     }
   }
 

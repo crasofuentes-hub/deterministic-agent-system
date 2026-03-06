@@ -49,7 +49,7 @@ test("http POST /agent/run planner=det-replan2 re-plans deterministically using 
     assert.equal(r1.body.result.executionHash, r2.body.result.executionHash);
     assert.equal(r1.body.result.finalTraceLinkHash, r2.body.result.finalTraceLinkHash);
 
-    assert.equal(r1.body.result.finalState.values.output, "{\"value\":\"replan2:TOOL_NOT_FOUND\"}");
+    assert.equal(r1.body.result.finalState.values.sum, "{\"value\":\"replan2:TOOL_NOT_FOUND\"}");
     const logs = r1.body.result.finalState.logs.join("\n");
     assert.ok(logs.includes("replan2:TOOL_NOT_FOUND"));
   } finally {

@@ -94,6 +94,7 @@ function normalizeStepKind(value: unknown, context: string): AgentStepKind {
     value === "sandbox.type" ||
     value === "sandbox.extract"
     || value === "tool.call"
+    || value === "tool.loop"
   ) {
     return value;
   }
@@ -211,6 +212,23 @@ function normalizeStepRaw(value: unknown, index: number): AgentStep {
     step.toolId = toolId;
     step.outputKey = outputKey;
     step.input = input;
+    return step;
+  }
+
+  // tool.loop step
+  if (kind === "tool.loop") {
+    assertNoExtraKeys(value, ["id", "kind", "toolId", "input", "outputKey", "maxIterations"], ctx);
+
+    const toolId = normalizeStringStrict(value.toolId, ctx + ".toolId", { maxLen: 256 });
+    const outputKey = normalizeStringStrict(value.outputKey, ctx + ".outputKey", { maxLen: 256 });
+    const input = canonicalizeJsonValue(value.input, ctx + ".input");
+    const maxIterations = normalizeSafeInteger(value.maxIterations, ctx + ".maxIterations");
+
+    const step: AgentStep = { id, kind };
+    step.toolId = toolId;
+    step.outputKey = outputKey;
+    step.input = input;
+    step.maxIterations = maxIterations;
     return step;
   }
 

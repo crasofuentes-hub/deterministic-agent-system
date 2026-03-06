@@ -114,6 +114,33 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
     sendInvalidRequest(res, "Request validation failed: " + parsed.message);
     return;
   }
+    if (parsed.value.planner === "det-replan2") {
+      // det-replan2: bounded deterministic replan (max 1) basado en TOOL_*
+      const first = await runAgent(
+        { ...parsed.value, planner: "llm-mock" },
+        new LlmMockPlanner()
+      );
+
+      if (first.ok) {
+        sendJson(res, 200, first);
+        return;
+      }
+
+      const code = String((first as any).error?.code ?? "");
+      const isToolError = code.startsWith("TOOL_");
+      if (!isToolError) {
+        sendJson(res, 200, first);
+        return;
+      }
+
+      const second = await runAgent(
+        { ...parsed.value, planner: "llm-mock", lastErrorCode: code },
+        new LlmMockPlanner()
+      );
+      sendJson(res, 200, second);
+      return;
+    }
+
 
   try {
     const planner = selectPlanner(parsed.value.planner);

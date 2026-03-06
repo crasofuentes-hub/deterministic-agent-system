@@ -18,15 +18,15 @@ test("tool.loop converges by fixpoint deterministically", () => {
   assert.equal(r1.ok, true);
   assert.equal(r2.ok, true);
 
-  // Determinismo: hashes idénticos en repetición
+  // Determinismo: hashes idÃƒÂ©nticos en repeticiÃƒÂ³n
   assert.equal(r1.result.planHash, r2.result.planHash);
   assert.equal(r1.result.executionHash, r2.result.executionHash);
   assert.equal(r1.result.finalTraceLinkHash, r2.result.finalTraceLinkHash);
 
-  // Resultado útil: sum debe existir
+  // Resultado ÃƒÂºtil: sum debe existir
   assert.equal(r1.result.finalState.values.sum, "{\"sum\":3}");
 
-  // Debe haber logs del loop con fix=1 en alguna iteración
+  // Debe haber logs del loop con fix=1 en alguna iteraciÃƒÂ³n
   const logs = r1.result.finalState.logs.join("\n");
   assert.ok(logs.includes("tool.loop:i=0:tool=math/add:out=sum:fix=0"));
   assert.ok(logs.includes("fix=1"));
