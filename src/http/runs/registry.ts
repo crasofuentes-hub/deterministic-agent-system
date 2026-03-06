@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   CreateRunRequest,
   RunRecord,
   RunStatus,
@@ -120,6 +120,11 @@ export class AgentRunRegistry {
 
   cancel(runId: string, reason?: string): RunRecord {
     const current = this.requireRun(runId);
+
+    if (current.status === "cancelled") {
+      // Idempotente: cancelar de nuevo devuelve el mismo run
+      return cloneRun(current);
+    }
 
     if (isTerminal(current.status)) {
       throw new Error(`Invalid transition: ${current.status} -> cancelled`);
