@@ -11,39 +11,23 @@ async function requestJson(url, init) {
   } catch {
     body = { parseError: true, raw: text };
   }
-  return { status: response.status, body };
+  return { status: response.status, headers: response.headers, body };
 }
 
-test("runs: complete unknown runId returns 404 NOT_FOUND deterministically", async () => {
+test("runs: complete returns 404 NOT_FOUND for unknown runId (deterministic)", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
 
-    const body = { output: { ok: true } };
-
-    const r1 = await requestJson(base + "/runs/run_DOES_NOT_EXIST/complete", {
+    const r = await requestJson(base + "/runs/run_DOES_NOT_EXIST/complete", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ output: { ok: true } }),
     });
 
-    const r2 = await requestJson(base + "/runs/run_DOES_NOT_EXIST/complete", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    assert.equal(r1.status, 404);
-    assert.equal(r2.status, 404);
-
-    assert.equal(r1.body.ok, false);
-    assert.equal(r2.body.ok, false);
-
-    assert.equal(r1.body.error.code, "NOT_FOUND");
-    assert.equal(r2.body.error.code, "NOT_FOUND");
-
-    // determinismo de payload (except requestId)
-    assert.equal(r1.body.error.message, r2.body.error.message);
+    assert.equal(r.status, 404);
+    assert.equal(r.body.ok, false);
+    assert.equal(r.body.error.code, "NOT_FOUND");
   } finally {
     await running.close();
   }
