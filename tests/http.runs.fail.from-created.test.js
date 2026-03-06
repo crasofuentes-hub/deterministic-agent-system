@@ -19,21 +19,20 @@ test("runs: fail from CREATED returns 409 INVALID_RUN_TRANSITION (deterministic)
   try {
     const base = "http://127.0.0.1:" + running.port;
 
-    // create
     const created = await requestJson(base + "/runs", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ agentId: "agent-fail-created-001", input: { goal: "fail-from-created" } }),
+      body: JSON.stringify({ agentId: "agent-fail-from-created-001", input: { goal: "fail-from-created" } }),
     });
     assert.equal(created.status, 201);
     assert.equal(created.body.ok, true);
+
     const runId = created.body.result.runId;
 
-    // fail without start -> conflict
     const failed = await requestJson(base + `/runs/${runId}/fail`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code: "TEST_FAIL", message: "fail-from-created" }),
+      body: JSON.stringify({ code: "E_TEST", message: "forced failure" }),
     });
 
     assert.equal(failed.status, 409);
