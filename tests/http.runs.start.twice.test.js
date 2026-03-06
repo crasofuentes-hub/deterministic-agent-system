@@ -14,7 +14,7 @@ async function requestJson(url, init) {
   return { status: response.status, headers: response.headers, body };
 }
 
-test("runs: start twice returns 409 INVALID_RUN_TRANSITION (deterministic)", async () => {
+test("runs: start twice returns 409 INVALID_RUN_TRANSITION on second call (deterministic)", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
@@ -29,7 +29,7 @@ test("runs: start twice returns 409 INVALID_RUN_TRANSITION (deterministic)", asy
     assert.equal(created.body.ok, true);
     const runId = created.body.result.runId;
 
-    // first start ok
+    // first start -> running
     const s1 = await requestJson(base + `/runs/${runId}/start`, {
       method: "POST",
       headers: { "content-type": "application/json" },
