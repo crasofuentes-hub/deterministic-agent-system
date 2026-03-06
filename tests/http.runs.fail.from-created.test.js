@@ -14,7 +14,7 @@ async function requestJson(url, init) {
   return { status: response.status, headers: response.headers, body };
 }
 
-test("runs: fail from CREATED returns 409 INVALID_RUN_TRANSITION (deterministic)", async () => {
+test("runs: fail from CREATED => 409 INVALID_RUN_TRANSITION (deterministic)", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
@@ -22,8 +22,12 @@ test("runs: fail from CREATED returns 409 INVALID_RUN_TRANSITION (deterministic)
     const created = await requestJson(base + "/runs", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ agentId: "agent-fail-from-created-001", input: { goal: "fail-from-created" } }),
+      body: JSON.stringify({
+        agentId: "agent-fail-from-created-001",
+        input: { goal: "fail-from-created" }
+      }),
     });
+
     assert.equal(created.status, 201);
     assert.equal(created.body.ok, true);
 
@@ -32,7 +36,7 @@ test("runs: fail from CREATED returns 409 INVALID_RUN_TRANSITION (deterministic)
     const failed = await requestJson(base + `/runs/${runId}/fail`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code: "E_TEST", message: "forced failure" }),
+      body: JSON.stringify({ code: "SOME_ERROR", message: "boom" }),
     });
 
     assert.equal(failed.status, 409);
