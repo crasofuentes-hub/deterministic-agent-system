@@ -19,17 +19,16 @@ test("runs: complete from CREATED returns 409 INVALID_RUN_TRANSITION (determinis
   try {
     const base = "http://127.0.0.1:" + running.port;
 
-    // create
     const created = await requestJson(base + "/runs", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ agentId: "agent-complete-created-001", input: { goal: "complete-from-created" } }),
+      body: JSON.stringify({ agentId: "agent-complete-from-created-001", input: { goal: "complete-from-created" } }),
     });
     assert.equal(created.status, 201);
     assert.equal(created.body.ok, true);
+
     const runId = created.body.result.runId;
 
-    // complete without start -> conflict
     const completed = await requestJson(base + `/runs/${runId}/complete`, {
       method: "POST",
       headers: { "content-type": "application/json" },
