@@ -192,3 +192,51 @@ test("http /runs/:id/execute returns 404 NOT_FOUND for unknown runId", async () 
     await running.close();
   }
 });
+
+test("http /runs/:id/execute returns 409 when run is cancelled", async () => {
+  const running = await startServer({ port: 0 });
+  try {
+    const base = "http://127.0.0.1:" + running.port;
+
+    // crea run
+    const created = await requestJson(base + "/runs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ agentId: "agent-cancelled-exec-001", input: { goal: "cancelled-then-execute" } })
+    });
+
+    assert.equal(created.status, 201);
+    assert.equal(created.body.ok, true);
+    const runId = created.body.result.runId;
+
+    // cancela
+    const cancelled = await requestJson(base + "/runs/" + runId + "/cancel", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reason: "user_request" })
+    });
+
+    assert.equal(cancelled.status, 200);
+    assert.equal(cancelled.body.ok, true);
+    assert.equal(cancelled.body.result.status, "cancelled");
+
+    // IMPORTANTE: pega aquÃ­ el mismo body que usas en el test principal de /execute
+    const EXEC_BODY = {
+      mode: "mock",
+      maxSteps: 4,
+      plan: makePlan()
+    };
+
+    const executed = await requestJson(base + "/runs/" + runId + "/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(EXEC_BODY)
+    });
+
+    assert.equal(executed.status, 409);
+    assert.equal(executed.body.ok, false);
+    assert.equal(executed.body.error.code, "INVALID_RUN_TRANSITION");
+  } finally {
+    await running.close();
+  }
+});
