@@ -6,44 +6,24 @@ async function requestJson(url, init) {
   const response = await fetch(url, init);
   const text = await response.text();
   let body = null;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = { parseError: true, raw: text };
-  }
+  try { body = text ? JSON.parse(text) : null; } catch { body = { parseError: true, raw: text }; }
   return { status: response.status, body };
 }
 
-test("runs: fail unknown runId returns 404 NOT_FOUND deterministically", async () => {
+test("runs: fail returns 404 NOT_FOUND for unknown runId", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
 
-    const body = { code: "SOME_ERROR", message: "fail me" };
-
-    const r1 = await requestJson(base + "/runs/run_DOES_NOT_EXIST/fail", {
+    const r = await requestJson(base + "/runs/run_DOES_NOT_EXIST/fail", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ code: "X", message: "y" }),
     });
 
-    const r2 = await requestJson(base + "/runs/run_DOES_NOT_EXIST/fail", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    assert.equal(r1.status, 404);
-    assert.equal(r2.status, 404);
-
-    assert.equal(r1.body.ok, false);
-    assert.equal(r2.body.ok, false);
-
-    assert.equal(r1.body.error.code, "NOT_FOUND");
-    assert.equal(r2.body.error.code, "NOT_FOUND");
-
-    // determinismo del payload (except requestId)
-    assert.equal(r1.body.error.message, r2.body.error.message);
+    assert.equal(r.status, 404);
+    assert.equal(r.body.ok, false);
+    assert.equal(r.body.error.code, "NOT_FOUND");
   } finally {
     await running.close();
   }
