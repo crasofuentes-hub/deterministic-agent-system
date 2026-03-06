@@ -6,15 +6,11 @@ async function requestJson(url, init) {
   const response = await fetch(url, init);
   const text = await response.text();
   let body = null;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = { parseError: true, raw: text };
-  }
-  return { status: response.status, headers: response.headers, body };
+  try { body = text ? JSON.parse(text) : null; } catch { body = { parseError: true, raw: text }; }
+  return { status: response.status, body };
 }
 
-test("runs: complete returns 404 NOT_FOUND for unknown runId (deterministic)", async () => {
+test("runs: complete returns 404 NOT_FOUND for unknown runId", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
