@@ -35,3 +35,7 @@ artifacts/demo-determinism/
 artifacts/determinism-report-*.json
 artifacts/agent-demo/
 *.bak.*
+
+# local artifacts
+.llm-live-cache/
+*.tgz
