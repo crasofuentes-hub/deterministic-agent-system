@@ -14,7 +14,7 @@ async function requestJson(url, init) {
   return { status: response.status, headers: response.headers, body };
 }
 
-test("runs: complete from CREATED returns 409 INVALID_RUN_TRANSITION (deterministic)", async () => {
+test("runs: complete from CREATED => 409 INVALID_RUN_TRANSITION (deterministic)", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
