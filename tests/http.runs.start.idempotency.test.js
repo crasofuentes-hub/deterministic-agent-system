@@ -14,23 +14,21 @@ async function requestJson(url, init) {
   return { status: response.status, headers: response.headers, body };
 }
 
-test("runs: start twice returns 409 INVALID_RUN_TRANSITION deterministically", async () => {
+test("runs: start twice => 2nd returns 409 INVALID_RUN_TRANSITION (deterministic)", async () => {
   const running = await startServer({ port: 0 });
   try {
     const base = "http://127.0.0.1:" + running.port;
 
-    // create
     const created = await requestJson(base + "/runs", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ agentId: "agent-start-dup-001", input: { goal: "start-dup" } }),
+      body: JSON.stringify({ agentId: "agent-start-idempotency-001", input: { goal: "start-twice" } }),
     });
-
     assert.equal(created.status, 201);
     assert.equal(created.body.ok, true);
+
     const runId = created.body.result.runId;
 
-    // first start -> 200 running
     const s1 = await requestJson(base + `/runs/${runId}/start`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -41,7 +39,6 @@ test("runs: start twice returns 409 INVALID_RUN_TRANSITION deterministically", a
     assert.equal(s1.body.ok, true);
     assert.equal(s1.body.result.status, "running");
 
-    // second start -> 409 INVALID_RUN_TRANSITION
     const s2 = await requestJson(base + `/runs/${runId}/start`, {
       method: "POST",
       headers: { "content-type": "application/json" },
