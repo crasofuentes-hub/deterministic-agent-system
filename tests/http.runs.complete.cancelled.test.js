@@ -6,12 +6,18 @@ async function requestJson(url, init) {
   const response = await fetch(url, init);
   const text = await response.text();
   let body = null;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = { parseError: true, raw: text };
-  }
-  return { status: response.status, headers: response.headers, body };
+  try { body = text ? JSON.parse(text) : null; } catch { body = { parseError: true, raw: text }; }
+  return { status: response.status, body };
+}
+
+async function createRun(base, agentId, input) {
+  const body = { agentId };
+  if (typeof input !== "undefined") body.input = input;
+  return await requestJson(base + "/runs", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 test("runs: complete returns 409 when run is cancelled", async () => {
@@ -19,20 +25,11 @@ test("runs: complete returns 409 when run is cancelled", async () => {
   try {
     const base = "http://127.0.0.1:" + running.port;
 
-    // create
-    const created = await requestJson(base + "/runs", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        agentId: "agent-complete-cancelled-001",
-        input: { goal: "cancel-then-complete" }
-      }),
-    });
+    const created = await createRun(base, "agent-complete-cancelled-001", { goal: "cancel-then-complete" });
     assert.equal(created.status, 201);
     assert.equal(created.body.ok, true);
     const runId = created.body.result.runId;
 
-    // cancel
     const cancelled = await requestJson(base + `/runs/${runId}/cancel`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -42,7 +39,6 @@ test("runs: complete returns 409 when run is cancelled", async () => {
     assert.equal(cancelled.body.ok, true);
     assert.equal(cancelled.body.result.status, "cancelled");
 
-    // complete should be rejected deterministically
     const completed = await requestJson(base + `/runs/${runId}/complete`, {
       method: "POST",
       headers: { "content-type": "application/json" },
