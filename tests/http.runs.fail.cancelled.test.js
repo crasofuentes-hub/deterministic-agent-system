@@ -46,7 +46,7 @@ test("runs: fail returns 409 when run is cancelled", async () => {
     const failed = await requestJson(base + `/runs/${runId}/fail`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code: "USER_ABORT", message: "late failure attempt" }),
+      body: JSON.stringify({ code: "USER_ABORT", message: "late" }),
     });
 
     assert.equal(failed.status, 409);
