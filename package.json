@@ -7,7 +7,7 @@
     "engines": { "node": ">=18" },
     "files": ["dist/","LICENSE","README.md","package.json"],
     "exports": { ".": "./dist/index.js" },
-    "scripts": {
+    "scripts": {"demo:agent:llm-live:triplicate": "node scripts/demo-llm-live-triplicate.js",
         "status:generate": "node dist/scripts/generate-status.js",
         "test:determinism": "node tests/agent.determinism.snapshot.test.js",
         "test:integrations": "node tests/http.simulate.test.js",
