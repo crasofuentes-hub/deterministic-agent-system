@@ -19,16 +19,18 @@ test("runs: cancel unknown runId returns 404 NOT_FOUND deterministically", async
   try {
     const base = "http://127.0.0.1:" + running.port;
 
+    const body = { reason: "no_such_run" };
+
     const r1 = await requestJson(base + "/runs/run_DOES_NOT_EXIST/cancel", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ reason: "x" }),
+      body: JSON.stringify(body),
     });
 
     const r2 = await requestJson(base + "/runs/run_DOES_NOT_EXIST/cancel", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ reason: "x" }),
+      body: JSON.stringify(body),
     });
 
     assert.equal(r1.status, 404);
@@ -40,7 +42,7 @@ test("runs: cancel unknown runId returns 404 NOT_FOUND deterministically", async
     assert.equal(r1.body.error.code, "NOT_FOUND");
     assert.equal(r2.body.error.code, "NOT_FOUND");
 
-    // determinismo de payload (except requestId que va en meta vía router)
+    // determinismo (except requestId)
     assert.equal(r1.body.error.message, r2.body.error.message);
   } finally {
     await running.close();
