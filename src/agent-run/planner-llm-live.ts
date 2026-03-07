@@ -1,4 +1,5 @@
 import type { DeterministicAgentPlan } from "../agent/plan-types";
+import { canonicalizePlan } from "../agent/canonical-plan";
 import type { AgentRunInput, Planner } from "./types";
 import { normalizeGoal, deriveIntent } from "./spec";
 import { computeLlmLiveCacheKey, loadCachedPlan, saveCachedPlan } from "./llm-live-cache";
@@ -15,6 +16,19 @@ function parseTwoInts(goal: string): { a: number; b: number } | null {
 function providerFromInput(input: AgentRunInput): "mock" | "openai-compatible" {
   const p = typeof input.llmProvider === "string" ? input.llmProvider : "mock";
   return p === "openai-compatible" ? "openai-compatible" : "mock";
+}
+
+export function parseDeterministicPlanFromModelText(text: string): DeterministicAgentPlan {
+  try {
+    const parsed = JSON.parse(String(text ?? ""));
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("Plan text must decode to an object");
+    }
+    return canonicalizePlan(parsed as DeterministicAgentPlan);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error("llm_live_invalid_plan_text: " + message);
+  }
 }
 
 function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan {
@@ -56,7 +70,6 @@ export class LlmLivePlanner implements Planner {
   plan(input: AgentRunInput): DeterministicAgentPlan {
     const provider = providerFromInput(input);
 
-    // Cache key includes planner+provider+model params + deterministic replan context fields
     const keyObj = {
       planner: "llm-live",
       provider,
@@ -66,7 +79,8 @@ export class LlmLivePlanner implements Planner {
       goal: String(input.goal ?? ""),
       demo: input.demo,
       history: Array.isArray((input as any).history) ? (input as any).history : [],
-      lastErrorCode: typeof (input as any).lastErrorCode === "string" ? (input as any).lastErrorCode : ""
+      lastErrorCode: typeof (input as any).lastErrorCode === "string" ? (input as any).lastErrorCode : "",
+      llmPlanText: typeof input.llmPlanText === "string" ? input.llmPlanText : ""
     };
 
     const { keyHash } = computeLlmLiveCacheKey(keyObj);
@@ -76,9 +90,14 @@ export class LlmLivePlanner implements Planner {
     if (cached) return cached;
 
     if (provider === "openai-compatible") {
-      // No activamos live real aún en P5.5. Se conecta después con caching + manifest reforzado.
-      // Mantener comportamiento determinista: throw estable.
-      throw new Error("llm_live_not_configured");
+      const planText = typeof input.llmPlanText === "string" ? input.llmPlanText : "";
+      if (planText.trim().length === 0) {
+        throw new Error("llm_live_not_configured");
+      }
+
+      const plan = parseDeterministicPlanFromModelText(planText);
+      saveCachedPlan(cacheDir, keyHash, plan);
+      return plan;
     }
 
     const plan = buildPlanViaMockProvider(input);

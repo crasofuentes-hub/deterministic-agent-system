@@ -34,7 +34,12 @@ export async function handleSchemaAgentRun(res: ServerResponse): Promise<void> {
               }
             }
           },
-          lastErrorCode: { type: "string" }
+          lastErrorCode: { type: "string" },
+          llmProvider: { type: "string", enum: ["mock", "openai-compatible"] },
+          llmModel: { type: "string" },
+          llmTemperature: { type: "number" },
+          llmMaxTokens: { type: "integer", minimum: 1 },
+          llmPlanText: { type: "string", minLength: 1 }
         }
       },
       response: {

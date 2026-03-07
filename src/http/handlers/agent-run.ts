@@ -79,6 +79,11 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
   const llmModel = body.llmModel;
   const llmTemperature = body.llmTemperature;
   const llmMaxTokens = body.llmMaxTokens;
+  const llmPlanText = body.llmPlanText;
+
+  if (typeof llmPlanText !== "undefined" && !isNonEmptyString(llmPlanText)) {
+    return { ok: false, message: "llmPlanText must be a non-empty string when provided" };
+  }
 
   return {
     ok: true,
@@ -96,6 +101,7 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
       llmModel: typeof llmModel === "string" ? llmModel : undefined,
       llmTemperature: typeof llmTemperature === "number" ? llmTemperature : undefined,
       llmMaxTokens: typeof llmMaxTokens === "number" ? llmMaxTokens : undefined,
+      llmPlanText: typeof llmPlanText === "string" ? llmPlanText : undefined,
     },
   };
 }
