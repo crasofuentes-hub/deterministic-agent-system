@@ -111,6 +111,18 @@ function validateAgentRunSuccessShape(obj: unknown, source: string): ShapeResult
     }
   }
 
+  if (typeof result.planHash === "string" && !result.planHash.startsWith("ph")) {
+    errors.push("result.planHash must start with 'ph'");
+  }
+
+  if (typeof result.executionHash === "string" && !result.executionHash.startsWith("eh")) {
+    errors.push("result.executionHash must start with 'eh'");
+  }
+
+  if (typeof result.finalTraceLinkHash === "string" && !result.finalTraceLinkHash.startsWith("tl")) {
+    errors.push("result.finalTraceLinkHash must start with 'tl'");
+  }
+
   if (typeof result.traceSchemaVersion !== "number" || !Number.isInteger(result.traceSchemaVersion)) {
     errors.push("result.traceSchemaVersion must be an integer");
   }

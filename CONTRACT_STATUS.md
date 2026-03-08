@@ -2,7 +2,7 @@
 
 ## Interface Contract Verification Status
 
-- Generated (UTC): 2026-03-08T08:33:33.894Z
+- Generated (UTC): 2026-03-08T08:39:59.883Z
 - Scope: Error response samples + live `/agent/run` contract and determinism checks
 - Overall status: **PASS**
 
@@ -62,7 +62,7 @@
 
 #### POST /agent/run llm-live stub returns HTTP 200
 - Status: **PASS**
-- DurationMs: 0
+- DurationMs: 1
 
 #### POST /agent/run llm-live stub matches minimum result shape
 - Status: **PASS**
