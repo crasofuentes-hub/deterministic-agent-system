@@ -441,46 +441,6 @@ Expected behavior:
 - the summary prints HTTP status, error code, and error message
 
 
-### `llm-live` real-path demo (PowerShell)
-
-#### A) Deterministic stub path
-
-This path uses explicit model text and does not require a live provider call.
-
-    $env:DAS_LLM_PLAN_TEXT = '{"planId":"demo-llm-live-stub-v1","version":1,"steps":[{"id":"d","kind":"tool.call","toolId":"math/add","input":{"a":2,"b":3},"outputKey":"sum"},{"id":"b","kind":"set","key":"intent","value":"compute"},{"id":"a","kind":"set","key":"goal","value":"sum 2 3"},{"id":"c","kind":"append_log","value":"llm-live:planned"},{"id":"e","kind":"append_log","value":"done"}]}'
-    npm run demo:agent:llm-live:real
-    Remove-Item Env:DAS_LLM_PLAN_TEXT
-
-Expected behavior:
-- `pathUsed = "stub"`
-- deterministic hashes are shown
-- no external provider call is required
-
-#### B) Real provider path
-
-    $env:DAS_OPENAI_COMPAT_BASE_URL = "https://your-provider.example/v1"
-    $env:DAS_OPENAI_COMPAT_API_KEY = "your-api-key"
-    $env:DAS_OPENAI_COMPAT_MODEL = "your-model-id"
-    npm run demo:agent:llm-live:real
-
-Expected behavior:
-- `pathUsed = "real-provider"`
-- the provider is asked for plan materialization
-- the resulting plan is canonicalized before execution
-
-#### C) Real path without configuration
-
-    Remove-Item Env:DAS_LLM_PLAN_TEXT -ErrorAction SilentlyContinue
-    Remove-Item Env:DAS_OPENAI_COMPAT_BASE_URL -ErrorAction SilentlyContinue
-    Remove-Item Env:DAS_OPENAI_COMPAT_API_KEY -ErrorAction SilentlyContinue
-    Remove-Item Env:DAS_OPENAI_COMPAT_MODEL -ErrorAction SilentlyContinue
-    npm run demo:agent:llm-live:real
-
-Expected behavior:
-- the demo reports `pathUsed = "real-provider"`
-- the request fails through the current deterministic error envelope
-- the summary prints HTTP status, error code, and error message
-
 ### 4) Run the HTTP server (manual try)
 
 In one terminal:
