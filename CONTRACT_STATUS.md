@@ -2,7 +2,7 @@
 
 ## Interface Contract Verification Status
 
-- Generated (UTC): 2026-03-08T08:25:30.547Z
+- Generated (UTC): 2026-03-08T08:33:33.894Z
 - Scope: Error response samples + live `/agent/run` contract and determinism checks
 - Overall status: **PASS**
 
@@ -26,7 +26,7 @@
 
 #### Read valid sample JSON
 - Status: **PASS**
-- DurationMs: 0
+- DurationMs: 1
 
 #### Read invalid sample JSON
 - Status: **PASS**
@@ -42,7 +42,7 @@
 
 #### Invalid sample reports missing error.code
 - Status: **PASS**
-- DurationMs: 1
+- DurationMs: 0
 
 #### POST /agent/run success returns HTTP 200
 - Status: **PASS**
@@ -76,8 +76,20 @@
 - Status: **PASS**
 - DurationMs: 0
 
+#### POST /agent/run llm-live real path without config returns HTTP 500 deterministic error envelope
+- Status: **PASS**
+- DurationMs: 0
+
+#### POST /agent/run llm-live real path without config matches error shape
+- Status: **PASS**
+- DurationMs: 0
+
+#### POST /agent/run llm-live real path without config returns stable not-configured code/message
+- Status: **PASS**
+- DurationMs: 0
+
 ### Notes
 
 - JSON Schema file is present and versioned.
 - Validation is implemented in TypeScript for cross-platform execution.
-- Verification now includes live `/agent/run` success, invalid request, `llm-live` stub checks, and repeated-request determinism checks.
+- Verification now includes live `/agent/run` success, invalid request, `llm-live` stub checks, repeated-request determinism checks, and the real-path not-configured error envelope.

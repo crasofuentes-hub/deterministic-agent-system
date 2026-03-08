@@ -153,6 +153,16 @@ function getResultRecord(obj: unknown, source: string): UnknownRecord {
   return obj.result;
 }
 
+function getErrorRecord(obj: unknown, source: string): UnknownRecord {
+  if (!isObject(obj)) {
+    throw new Error(source + ": top-level JSON must be an object");
+  }
+  if (!isObject(obj.error)) {
+    throw new Error(source + ": error must be an object");
+  }
+  return obj.error;
+}
+
 async function postJson(
   base: string,
   path: string,
@@ -361,6 +371,52 @@ async function main(): Promise<void> {
         }
       })
     );
+
+    delete process.env.DAS_OPENAI_COMPAT_BASE_URL;
+    delete process.env.DAS_OPENAI_COMPAT_API_KEY;
+    delete process.env.DAS_OPENAI_COMPAT_MODEL;
+
+    const llmNotConfiguredRes = await postJson(base, "/agent/run", {
+      goal: "sum 2 3",
+      demo: "core",
+      mode: "mock",
+      planner: "llm-live",
+      llmProvider: "openai-compatible",
+      llmModel: "gpt-test",
+      llmTemperature: 0,
+      llmMaxTokens: 256,
+      maxSteps: 12,
+      traceId: "verify-contract-llm-live-not-configured-001",
+    });
+
+    checks.push(
+      runStep("POST /agent/run llm-live real path without config returns HTTP 500 deterministic error envelope", () => {
+        if (llmNotConfiguredRes.status !== 500) {
+          throw new Error("Expected 500, got " + String(llmNotConfiguredRes.status));
+        }
+      })
+    );
+
+    checks.push(
+      runStep("POST /agent/run llm-live real path without config matches error shape", () => {
+        const shape = validateErrorResponseShape(llmNotConfiguredRes.json, "/agent/run llm-live not configured");
+        if (!shape.ok) {
+          throw new Error(shape.errors.join(" | "));
+        }
+      })
+    );
+
+    checks.push(
+      runStep("POST /agent/run llm-live real path without config returns stable not-configured code/message", () => {
+        const err = getErrorRecord(llmNotConfiguredRes.json, "llm-live not configured");
+        if (String(err.code) !== "INTERNAL_ERROR") {
+          throw new Error("Expected INTERNAL_ERROR, got " + String(err.code));
+        }
+        if (String(err.message) !== "Internal server error") {
+          throw new Error("Expected 'Internal server error', got " + String(err.message));
+        }
+      })
+    );
   } finally {
     await running.close();
   }
@@ -393,7 +449,7 @@ async function main(): Promise<void> {
   lines.push("");
   lines.push("- JSON Schema file is present and versioned.");
   lines.push("- Validation is implemented in TypeScript for cross-platform execution.");
-  lines.push("- Verification now includes live `/agent/run` success, invalid request, `llm-live` stub checks, and repeated-request determinism checks.");
+  lines.push("- Verification now includes live `/agent/run` success, invalid request, `llm-live` stub checks, repeated-request determinism checks, and the real-path not-configured error envelope.");
   lines.push("");
 
   const outPath = resolveRepoPath("CONTRACT_STATUS.md");
