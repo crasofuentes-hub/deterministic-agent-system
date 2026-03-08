@@ -2,7 +2,7 @@ import type { DeterministicAgentPlan } from "../agent/plan-types";
 import { canonicalizePlan } from "../agent/canonical-plan";
 import type { AgentRunInput, Planner, AsyncPlanner } from "./types";
 import type { AsyncModelAdapter } from "../integrations/provider-types";
-import { OpenAICompatibleModelAdapter, FetchHttpTransport } from "../integrations";
+import { createModelAdapterSelection } from "../integrations";
 import { normalizeGoal, deriveIntent } from "./spec";
 import { computeLlmLiveCacheKey, loadCachedPlan, saveCachedPlan } from "./llm-live-cache";
 
@@ -139,8 +139,9 @@ function createOpenAICompatibleAdapterFromEnv(input: AgentRunInput): AsyncModelA
     return undefined;
   }
 
-  return new OpenAICompatibleModelAdapter(
-    {
+  const selection = createModelAdapterSelection({
+    provider: "openai-compatible",
+    openaiCompatible: {
       baseUrl,
       apiKey,
       model,
@@ -149,8 +150,9 @@ function createOpenAICompatibleAdapterFromEnv(input: AgentRunInput): AsyncModelA
           ? input.llmTemperature
           : 0,
     },
-    new FetchHttpTransport()
-  );
+  });
+
+  return selection.asyncAdapter;
 }
 
 export class LlmLivePlanner implements Planner, AsyncPlanner {
