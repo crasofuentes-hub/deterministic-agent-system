@@ -133,6 +133,36 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
     };
   }
 
+  if (intent === "extract") {
+    const path =
+      goal.includes("name") ? "user.name" :
+      goal.includes("role") ? "user.role" :
+      "items.0.id";
+
+    const text = JSON.stringify({
+      user: { name: "Oscar", role: "inventor" },
+      items: [{ id: "a1" }, { id: "b2" }]
+    });
+
+    return {
+      planId: "agent-run-llm-live-mock-v1:" + intent,
+      version: 1,
+      steps: [
+        { id: "a", kind: "set", key: "goal", value: goal },
+        { id: "b", kind: "set", key: "intent", value: intent },
+        { id: "c", kind: "append_log", value: "llm-live:planned" },
+        {
+          id: "d",
+          kind: "tool.call",
+          toolId: "json/extract",
+          input: { text, path },
+          outputKey: "extracted"
+        },
+        { id: "e", kind: "append_log", value: "done" }
+      ]
+    };
+  }
+
   const msg = "llm-live:" + intent;
   return {
     planId: "agent-run-llm-live-mock-v1:" + intent,

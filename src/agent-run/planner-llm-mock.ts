@@ -97,6 +97,36 @@ export class LlmMockPlanner implements Planner {
       };
     }
 
+    if (intent === "extract") {
+      const path =
+        goal.includes("name") ? "user.name" :
+        goal.includes("role") ? "user.role" :
+        "items.0.id";
+
+      const text = JSON.stringify({
+        user: { name: "Oscar", role: "inventor" },
+        items: [{ id: "a1" }, { id: "b2" }]
+      });
+
+      return {
+        planId: "agent-run-llm-mock-v1:" + intent,
+        version: 1,
+        steps: [
+          { id: "a", kind: "set", key: "goal", value: goal },
+          { id: "b", kind: "set", key: "intent", value: intent },
+          { id: "c", kind: "append_log", value: "llm-mock:plan" },
+          {
+            id: "d",
+            kind: "tool.call",
+            toolId: "json/extract",
+            input: { text, path },
+            outputKey: "extracted"
+          },
+          { id: "e", kind: "append_log", value: "done" }
+        ]
+      };
+    }
+
     const msg = "llm-mock:" + intent;
     return {
       planId: "agent-run-llm-mock-v1:" + intent,
