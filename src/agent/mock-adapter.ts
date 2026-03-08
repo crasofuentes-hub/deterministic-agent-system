@@ -50,12 +50,15 @@ function getCoreHashLike(state: AgentState): string {
     const v = state.counters[k];
     if (typeof v === "number") sortedCounters[k] = v;
   }
+
   const sortedValues: Record<string, string> = {};
   for (const k of Object.keys(state.values).sort()) {
     const v = state.values[k];
     if (typeof v === "string") sortedValues[k] = v;
   }
+
   const canonical = JSON.stringify({ counters: sortedCounters, values: sortedValues });
+
   let hash = 2166136261 >>> 0;
   for (let i = 0; i < canonical.length; i += 1) {
     hash ^= canonical.charCodeAt(i);
@@ -64,11 +67,9 @@ function getCoreHashLike(state: AgentState): string {
   return "c" + hash.toString(16).padStart(8, "0");
 }
 
-
 function s(value: unknown): string {
   return typeof value === "string" ? value : String(value ?? "");
 }
-
 
 function stableStringifyJson(x: unknown): string {
   if (x === null) return "null";
@@ -79,9 +80,85 @@ function stableStringifyJson(x: unknown): string {
   if (t === "object") {
     const o = x as Record<string, unknown>;
     const keys = Object.keys(o).sort();
-    return "{" + keys.map(k => JSON.stringify(k) + ":" + stableStringifyJson(o[k])).join(",") + "}";
+    return "{" + keys.map((k) => JSON.stringify(k) + ":" + stableStringifyJson(o[k])).join(",") + "}";
   }
   return JSON.stringify(String(x));
+}
+
+function getPathValue(root: unknown, path: string): unknown {
+  const parts = path.split(".").filter((x) => x.length > 0);
+  let current: unknown = root;
+
+  for (const part of parts) {
+    if (Array.isArray(current)) {
+      if (!/^(0|[1-9][0-9]*)$/.test(part)) {
+        throw new Error("tool_input_ref_invalid_path: " + path);
+      }
+      const index = Number(part);
+      if (!Number.isInteger(index) || index < 0 || index >= current.length) {
+        throw new Error("tool_input_ref_not_found: " + path);
+      }
+      current = current[index];
+      continue;
+    }
+
+    if (typeof current === "object" && current !== null) {
+      const obj = current as Record<string, unknown>;
+      if (!Object.prototype.hasOwnProperty.call(obj, part)) {
+        throw new Error("tool_input_ref_not_found: " + path);
+      }
+      current = obj[part];
+      continue;
+    }
+
+    throw new Error("tool_input_ref_not_found: " + path);
+  }
+
+  return current;
+}
+
+function resolveInputRefs(value: unknown, state: AgentState): unknown {
+  if (Array.isArray(value)) {
+    return value.map((x) => resolveInputRefs(x, state));
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const obj = value as Record<string, unknown>;
+    const keys = Object.keys(obj);
+
+    if (keys.length === 1 && keys[0] === "__valueFromState") {
+      const refExpr = String(obj.__valueFromState ?? "");
+      const firstDot = refExpr.indexOf(".");
+      const stateKey = firstDot >= 0 ? refExpr.slice(0, firstDot) : refExpr;
+      const nestedPath = firstDot >= 0 ? refExpr.slice(firstDot + 1) : "";
+
+      const stored = state.values[stateKey];
+      if (typeof stored !== "string") {
+        throw new Error("tool_input_ref_not_found: " + refExpr);
+      }
+
+      if (nestedPath.length === 0) {
+        return stored;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(stored);
+      } catch {
+        throw new Error("tool_input_ref_invalid_json: " + refExpr);
+      }
+
+      return getPathValue(parsed, nestedPath);
+    }
+
+    const out: Record<string, unknown> = {};
+    for (const k of keys) {
+      out[k] = resolveInputRefs(obj[k], state);
+    }
+    return out;
+  }
+
+  return value;
 }
 
 const TOOL_REGISTRY = new ToolRegistry([toolEcho, toolMathAdd, toolTextNormalize, toolJsonExtract]);
@@ -111,7 +188,6 @@ export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
     return next;
   }
 
-  // --- Enterprise sandbox steps (deterministic mock execution) ---
   if (step.kind === "sandbox.open") {
     const sessionId = s(step.sessionId);
     const url = s(step.url);
@@ -143,28 +219,26 @@ export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
     return next;
   }
 
-
   if (step.kind === "tool.call") {
     const toolId = s(step.toolId);
     const outputKey = s(step.outputKey);
-    const input = step.input;
+    const input = resolveInputRefs(step.input, state);
 
-    const output = TOOL_REGISTRY.run(toolId, {}, input as any);
+    const output = TOOL_REGISTRY.run(toolId, {}, input as never);
     next.values[outputKey] = stableStringifyJson(output);
     next.logs.push(`tool.call:${toolId}:out=${outputKey}`);
     return next;
   }
 
-
   if (step.kind === "tool.loop") {
     const toolId = s(step.toolId);
     const outputKey = s(step.outputKey);
-    const input = step.input;
+    const input = resolveInputRefs(step.input, state);
     const maxIterations = Number(step.maxIterations);
 
     let prevCoreHash = getCoreHashLike(next);
     for (let i = 0; i < maxIterations; i += 1) {
-      const out = TOOL_REGISTRY.run(toolId, {}, input as any);
+      const out = TOOL_REGISTRY.run(toolId, {}, input as never);
       next.values[outputKey] = stableStringifyJson(out);
 
       const afterCoreHash = getCoreHashLike(next);

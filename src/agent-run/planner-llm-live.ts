@@ -162,6 +162,44 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
       ]
     };
   }
+  if (intent === "extract-chain") {
+    const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "items" : [ { "id" : "a1" } , { "id" : "b2" } ] }  ';
+    const path = goal.includes("role") ? "user.role" : "user.name";
+
+    return {
+      planId: "agent-run-llm-live-mock-v1:" + intent,
+      version: 1,
+      steps: [
+        { id: "a", kind: "set", key: "goal", value: goal },
+        { id: "b", kind: "set", key: "intent", value: intent },
+        { id: "c", kind: "append_log", value: "llm-live:planned" },
+        {
+          id: "d",
+          kind: "tool.call",
+          toolId: "text/normalize",
+          input: {
+            text: rawJson,
+            trim: true,
+            lowercase: false,
+            collapseWhitespace: true
+          },
+          outputKey: "normalizedJson"
+        },
+        {
+          id: "e",
+          kind: "tool.call",
+          toolId: "json/extract",
+          input: {
+            text: { "__valueFromState": "normalizedJson.text" },
+            path
+          },
+          outputKey: "extracted"
+        },
+        { id: "f", kind: "append_log", value: "done" }
+      ]
+    };
+  }
+
 
   const msg = "llm-live:" + intent;
   return {
