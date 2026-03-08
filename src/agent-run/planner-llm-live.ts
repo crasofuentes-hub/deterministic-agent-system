@@ -1,6 +1,8 @@
 import type { DeterministicAgentPlan } from "../agent/plan-types";
 import { canonicalizePlan } from "../agent/canonical-plan";
-import type { AgentRunInput, Planner } from "./types";
+import type { AgentRunInput, Planner, AsyncPlanner } from "./types";
+import type { AsyncModelAdapter } from "../integrations/provider-types";
+import { OpenAICompatibleModelAdapter, FetchHttpTransport } from "../integrations";
 import { normalizeGoal, deriveIntent } from "./spec";
 import { computeLlmLiveCacheKey, loadCachedPlan, saveCachedPlan } from "./llm-live-cache";
 
@@ -18,6 +20,41 @@ function providerFromInput(input: AgentRunInput): "mock" | "openai-compatible" {
   return p === "openai-compatible" ? "openai-compatible" : "mock";
 }
 
+function computeKey(input: AgentRunInput): { keyHash: string; cacheDir: string } {
+  const provider = providerFromInput(input);
+  const keyObj = {
+    planner: "llm-live",
+    provider,
+    model: input.llmModel ?? "",
+    temperature: typeof input.llmTemperature === "number" ? input.llmTemperature : null,
+    maxTokens: typeof input.llmMaxTokens === "number" ? input.llmMaxTokens : null,
+    goal: String(input.goal ?? ""),
+    demo: input.demo,
+    history: Array.isArray((input as any).history) ? (input as any).history : [],
+    lastErrorCode: typeof (input as any).lastErrorCode === "string" ? (input as any).lastErrorCode : "",
+    llmPlanText: typeof input.llmPlanText === "string" ? input.llmPlanText : ""
+  };
+
+  const { keyHash } = computeLlmLiveCacheKey(keyObj);
+  return { keyHash, cacheDir: ".llm-live-cache" };
+}
+
+function buildLlmLivePrompt(input: AgentRunInput): string {
+  const goal = normalizeGoal(input.goal);
+  const intent = deriveIntent(goal);
+
+  return [
+    "Return ONLY valid JSON for a DeterministicAgentPlan.",
+    "No markdown. No prose. No code fences.",
+    "Schema keys: planId, version, steps.",
+    "version must be 1.",
+    "Use stable step ids and deterministic content.",
+    "Goal: " + goal,
+    "Intent: " + intent,
+    "Demo: " + input.demo
+  ].join("\n");
+}
+
 export function parseDeterministicPlanFromModelText(text: string): DeterministicAgentPlan {
   try {
     const parsed = JSON.parse(String(text ?? ""));
@@ -29,6 +66,25 @@ export function parseDeterministicPlanFromModelText(text: string): Deterministic
     const message = err instanceof Error ? err.message : String(err);
     throw new Error("llm_live_invalid_plan_text: " + message);
   }
+}
+
+export async function buildPlanViaOpenAICompatibleAdapter(
+  input: AgentRunInput,
+  adapter: AsyncModelAdapter
+): Promise<DeterministicAgentPlan> {
+  const response = await adapter.generateAsync({
+    prompt: buildLlmLivePrompt(input),
+    maxTokens:
+      typeof input.llmMaxTokens === "number" && Number.isFinite(input.llmMaxTokens)
+        ? Math.floor(input.llmMaxTokens)
+        : 256,
+    temperature:
+      typeof input.llmTemperature === "number" && Number.isFinite(input.llmTemperature)
+        ? input.llmTemperature
+        : 0,
+  });
+
+  return parseDeterministicPlanFromModelText(response.text);
 }
 
 function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan {
@@ -66,36 +122,85 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
   };
 }
 
-export class LlmLivePlanner implements Planner {
+function buildPlanViaStubText(input: AgentRunInput): DeterministicAgentPlan {
+  const planText = typeof input.llmPlanText === "string" ? input.llmPlanText : "";
+  if (planText.trim().length === 0) {
+    throw new Error("llm_live_not_configured");
+  }
+  return parseDeterministicPlanFromModelText(planText);
+}
+
+function createOpenAICompatibleAdapterFromEnv(input: AgentRunInput): AsyncModelAdapter | undefined {
+  const baseUrl = String(process.env.DAS_OPENAI_COMPAT_BASE_URL ?? "").trim();
+  const apiKey = String(process.env.DAS_OPENAI_COMPAT_API_KEY ?? "").trim();
+  const model = String(input.llmModel ?? process.env.DAS_OPENAI_COMPAT_MODEL ?? "").trim();
+
+  if (baseUrl.length === 0 || apiKey.length === 0 || model.length === 0) {
+    return undefined;
+  }
+
+  return new OpenAICompatibleModelAdapter(
+    {
+      baseUrl,
+      apiKey,
+      model,
+      defaultTemperature:
+        typeof input.llmTemperature === "number" && Number.isFinite(input.llmTemperature)
+          ? input.llmTemperature
+          : 0,
+    },
+    new FetchHttpTransport()
+  );
+}
+
+export class LlmLivePlanner implements Planner, AsyncPlanner {
+  private readonly asyncAdapter?: AsyncModelAdapter;
+
+  public constructor(asyncAdapter?: AsyncModelAdapter) {
+    this.asyncAdapter = asyncAdapter;
+  }
+
   plan(input: AgentRunInput): DeterministicAgentPlan {
     const provider = providerFromInput(input);
-
-    const keyObj = {
-      planner: "llm-live",
-      provider,
-      model: input.llmModel ?? "",
-      temperature: typeof input.llmTemperature === "number" ? input.llmTemperature : null,
-      maxTokens: typeof input.llmMaxTokens === "number" ? input.llmMaxTokens : null,
-      goal: String(input.goal ?? ""),
-      demo: input.demo,
-      history: Array.isArray((input as any).history) ? (input as any).history : [],
-      lastErrorCode: typeof (input as any).lastErrorCode === "string" ? (input as any).lastErrorCode : "",
-      llmPlanText: typeof input.llmPlanText === "string" ? input.llmPlanText : ""
-    };
-
-    const { keyHash } = computeLlmLiveCacheKey(keyObj);
-    const cacheDir = ".llm-live-cache";
+    const { keyHash, cacheDir } = computeKey(input);
 
     const cached = loadCachedPlan(cacheDir, keyHash);
     if (cached) return cached;
 
     if (provider === "openai-compatible") {
-      const planText = typeof input.llmPlanText === "string" ? input.llmPlanText : "";
-      if (planText.trim().length === 0) {
+      if (typeof input.llmPlanText === "string" && input.llmPlanText.trim().length > 0) {
+        const plan = buildPlanViaStubText(input);
+        saveCachedPlan(cacheDir, keyHash, plan);
+        return plan;
+      }
+      throw new Error("llm_live_requires_async_planner");
+    }
+
+    const plan = buildPlanViaMockProvider(input);
+    saveCachedPlan(cacheDir, keyHash, plan);
+    return plan;
+  }
+
+  async planAsync(input: AgentRunInput): Promise<DeterministicAgentPlan> {
+    const provider = providerFromInput(input);
+    const { keyHash, cacheDir } = computeKey(input);
+
+    const cached = loadCachedPlan(cacheDir, keyHash);
+    if (cached) return cached;
+
+    if (provider === "openai-compatible") {
+      if (typeof input.llmPlanText === "string" && input.llmPlanText.trim().length > 0) {
+        const plan = buildPlanViaStubText(input);
+        saveCachedPlan(cacheDir, keyHash, plan);
+        return plan;
+      }
+
+      const adapter = this.asyncAdapter ?? createOpenAICompatibleAdapterFromEnv(input);
+      if (!adapter) {
         throw new Error("llm_live_not_configured");
       }
 
-      const plan = parseDeterministicPlanFromModelText(planText);
+      const plan = await buildPlanViaOpenAICompatibleAdapter(input, adapter);
       saveCachedPlan(cacheDir, keyHash, plan);
       return plan;
     }
