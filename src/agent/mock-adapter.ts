@@ -1,5 +1,5 @@
 import type { AgentState, AgentStep } from "./plan-types";
-import { ToolRegistry, toolEcho, toolMathAdd, toolTextNormalize } from "./tools";
+import { ToolRegistry, toolEcho, toolMathAdd, toolTextNormalize, toolJsonExtract } from "./tools";
 
 export function createInitialAgentState(): AgentState {
   return {
@@ -84,7 +84,7 @@ function stableStringifyJson(x: unknown): string {
   return JSON.stringify(String(x));
 }
 
-const TOOL_REGISTRY = new ToolRegistry([toolEcho, toolMathAdd, toolTextNormalize]);
+const TOOL_REGISTRY = new ToolRegistry([toolEcho, toolMathAdd, toolTextNormalize, toolJsonExtract]);
 
 export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
   const next: AgentState = {

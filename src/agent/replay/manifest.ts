@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ToolRegistry, toolEcho, toolMathAdd, toolTextNormalize } from "../tools";
+import { ToolRegistry, toolEcho, toolMathAdd, toolTextNormalize, toolJsonExtract } from "../tools";
 import type { ReplayManifestV1, ReplayToolManifestEntry, ReplayPlannerId } from "./bundle";
 
 function loadPackageMeta(): { name: string; version: string } {
@@ -16,7 +16,7 @@ export function buildReplayManifest(params: {
 }): ReplayManifestV1 {
   const pkg = loadPackageMeta();
 
-  const reg = new ToolRegistry([toolEcho, toolMathAdd, toolTextNormalize]);
+  const reg = new ToolRegistry([toolEcho, toolMathAdd, toolTextNormalize, toolJsonExtract]);
   const tools: ReplayToolManifestEntry[] = reg.listIds().map((id) => {
     const t = reg.get(id as any);
     return { id, version: t ? t.version : 1 };

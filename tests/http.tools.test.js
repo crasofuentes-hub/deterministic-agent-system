@@ -35,6 +35,7 @@ test("http GET /tools returns deterministic tool registry", async () => {
 
     assert.deepEqual(r1.body.result.tools, [
       { id: "echo", version: 1 },
+      { id: "json/extract", version: 1 },
       { id: "math/add", version: 1 },
       { id: "text/normalize", version: 1 }
     ]);
