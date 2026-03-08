@@ -1,3 +1,4 @@
+import { startServer } from "../src/http/server";
 import { readJson, assertFileExists, resolveRepoPath, runStep, writeUtf8NoBom, fileSize } from "./lib/io";
 import { joinLines, sanitizeInline, utcStamp } from "./lib/markdown";
 
@@ -75,7 +76,96 @@ function validateErrorResponseShape(obj: unknown, source: string): ShapeResult {
   return { source, ok: errors.length === 0, errors };
 }
 
-function main(): void {
+function validateAgentRunSuccessShape(obj: unknown, source: string): ShapeResult {
+  const errors: string[] = [];
+
+  if (!isObject(obj)) {
+    return { source, ok: false, errors: ["Top-level JSON must be an object"] };
+  }
+
+  if (obj.ok !== true) {
+    errors.push("Property 'ok' must be true");
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(obj, "result")) {
+    errors.push("Missing top-level property: result");
+    return { source, ok: errors.length === 0, errors };
+  }
+
+  const result = obj.result;
+  if (!isObject(result)) {
+    errors.push("Property 'result' must be an object");
+    return { source, ok: errors.length === 0, errors };
+  }
+
+  const requiredStringProps = [
+    "planId",
+    "planHash",
+    "executionHash",
+    "finalTraceLinkHash",
+  ];
+
+  for (const k of requiredStringProps) {
+    if (typeof result[k] !== "string" || String(result[k]).trim().length === 0) {
+      errors.push("result." + k + " must be a non-empty string");
+    }
+  }
+
+  if (typeof result.traceSchemaVersion !== "number" || !Number.isInteger(result.traceSchemaVersion)) {
+    errors.push("result.traceSchemaVersion must be an integer");
+  }
+
+  if (typeof result.stepsRequested !== "number" || !Number.isInteger(result.stepsRequested)) {
+    errors.push("result.stepsRequested must be an integer");
+  }
+
+  if (typeof result.stepsExecuted !== "number" || !Number.isInteger(result.stepsExecuted)) {
+    errors.push("result.stepsExecuted must be an integer");
+  }
+
+  if (typeof result.converged !== "boolean") {
+    errors.push("result.converged must be boolean");
+  }
+
+  if (!isObject(result.finalState)) {
+    errors.push("result.finalState must be an object");
+  } else {
+    const finalState = result.finalState;
+    if (!isObject(finalState.counters)) errors.push("result.finalState.counters must be an object");
+    if (!isObject(finalState.values)) errors.push("result.finalState.values must be an object");
+    if (!Array.isArray(finalState.logs)) errors.push("result.finalState.logs must be an array");
+  }
+
+  if (!Array.isArray(result.trace)) {
+    errors.push("result.trace must be an array");
+  }
+
+  return { source, ok: errors.length === 0, errors };
+}
+
+async function postJson(
+  base: string,
+  path: string,
+  body: unknown
+): Promise<{ status: number; json: unknown; text: string }> {
+  const res = await fetch(base + path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const text = await res.text();
+  let json: unknown = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = { parseError: true, raw: text };
+  }
+
+  return { status: res.status, json, text };
+}
+
+async function main(): Promise<void> {
   const required = [
     resolveRepoPath("docs", "error-codes.md"),
     resolveRepoPath("schemas", "error-response.schema.json"),
@@ -97,41 +187,145 @@ function main(): void {
   let validObj: unknown;
   let invalidObj: unknown;
 
-  const readValid = runStep("Read valid sample JSON", () => {
-    validObj = readJson<unknown>(validPath);
-  });
-  checks.push(readValid);
+  checks.push(
+    runStep("Read valid sample JSON", () => {
+      validObj = readJson<unknown>(validPath);
+    })
+  );
 
-  const readInvalid = runStep("Read invalid sample JSON", () => {
-    invalidObj = readJson<unknown>(invalidPath);
-  });
-  checks.push(readInvalid);
+  checks.push(
+    runStep("Read invalid sample JSON", () => {
+      invalidObj = readJson<unknown>(invalidPath);
+    })
+  );
 
   let validShape: ShapeResult = { source: "valid", ok: false, errors: ["Not executed"] };
   let invalidShape: ShapeResult = { source: "invalid", ok: false, errors: ["Not executed"] };
 
-  const validateValid = runStep("Valid sample passes shape validation", () => {
-    validShape = validateErrorResponseShape(validObj, "samples/error-response.valid.json");
-    if (!validShape.ok) {
-      throw new Error(validShape.errors.join(" | "));
-    }
-  });
-  checks.push(validateValid);
+  checks.push(
+    runStep("Valid sample passes shape validation", () => {
+      validShape = validateErrorResponseShape(validObj, "samples/error-response.valid.json");
+      if (!validShape.ok) {
+        throw new Error(validShape.errors.join(" | "));
+      }
+    })
+  );
 
-  const validateInvalid = runStep("Invalid sample fails shape validation", () => {
-    invalidShape = validateErrorResponseShape(invalidObj, "samples/error-response.invalid.missing-code.json");
-    if (invalidShape.ok) {
-      throw new Error("Unexpected PASS");
-    }
-  });
-  checks.push(validateInvalid);
+  checks.push(
+    runStep("Invalid sample fails shape validation", () => {
+      invalidShape = validateErrorResponseShape(invalidObj, "samples/error-response.invalid.missing-code.json");
+      if (invalidShape.ok) {
+        throw new Error("Unexpected PASS");
+      }
+    })
+  );
 
-  const detectMissingCode = runStep("Invalid sample reports missing error.code", () => {
-    if (!invalidShape.errors.some((e) => e.includes("Missing error.code"))) {
-      throw new Error("Expected 'Missing error.code' not detected");
-    }
-  });
-  checks.push(detectMissingCode);
+  checks.push(
+    runStep("Invalid sample reports missing error.code", () => {
+      if (!invalidShape.errors.some((e) => e.includes("Missing error.code"))) {
+        throw new Error("Expected 'Missing error.code' not detected");
+      }
+    })
+  );
+
+  const running = await startServer({ port: 0 });
+  try {
+    const base = "http://127.0.0.1:" + running.port;
+
+    const successRes = await postJson(base, "/agent/run", {
+      goal: "sum 2 3",
+      demo: "core",
+      mode: "mock",
+      planner: "deterministic",
+      maxSteps: 12,
+      traceId: "verify-contract-agent-run-success-001",
+    });
+
+    checks.push(
+      runStep("POST /agent/run success returns HTTP 200", () => {
+        if (successRes.status !== 200) {
+          throw new Error("Expected 200, got " + String(successRes.status));
+        }
+      })
+    );
+
+    checks.push(
+      runStep("POST /agent/run success matches minimum result shape", () => {
+        const shape = validateAgentRunSuccessShape(successRes.json, "/agent/run success");
+        if (!shape.ok) {
+          throw new Error(shape.errors.join(" | "));
+        }
+      })
+    );
+
+    const invalidRes = await postJson(base, "/agent/run", {
+      goal: "",
+      demo: "core",
+      mode: "mock",
+      planner: "deterministic",
+      maxSteps: 12,
+    });
+
+    checks.push(
+      runStep("POST /agent/run invalid request returns HTTP 400", () => {
+        if (invalidRes.status !== 400) {
+          throw new Error("Expected 400, got " + String(invalidRes.status));
+        }
+      })
+    );
+
+    checks.push(
+      runStep("POST /agent/run invalid request matches error shape", () => {
+        const shape = validateErrorResponseShape(invalidRes.json, "/agent/run invalid");
+        if (!shape.ok) {
+          throw new Error(shape.errors.join(" | "));
+        }
+      })
+    );
+
+    const llmStubRes = await postJson(base, "/agent/run", {
+      goal: "sum 2 3",
+      demo: "core",
+      mode: "mock",
+      planner: "llm-live",
+      llmProvider: "openai-compatible",
+      llmModel: "gpt-test",
+      llmTemperature: 0,
+      llmMaxTokens: 256,
+      llmPlanText: JSON.stringify({
+        planId: "verify-contract-llm-live-stub-v1",
+        version: 1,
+        steps: [
+          { id: "d", kind: "tool.call", toolId: "math/add", input: { a: 2, b: 3 }, outputKey: "sum" },
+          { id: "b", kind: "set", key: "intent", value: "compute" },
+          { id: "a", kind: "set", key: "goal", value: "sum 2 3" },
+          { id: "c", kind: "append_log", value: "llm-live:planned" },
+          { id: "e", kind: "append_log", value: "done" }
+        ]
+      }),
+      maxSteps: 12,
+      traceId: "verify-contract-llm-live-stub-001",
+    });
+
+    checks.push(
+      runStep("POST /agent/run llm-live stub returns HTTP 200", () => {
+        if (llmStubRes.status !== 200) {
+          throw new Error("Expected 200, got " + String(llmStubRes.status));
+        }
+      })
+    );
+
+    checks.push(
+      runStep("POST /agent/run llm-live stub matches minimum result shape", () => {
+        const shape = validateAgentRunSuccessShape(llmStubRes.json, "/agent/run llm-live stub");
+        if (!shape.ok) {
+          throw new Error(shape.errors.join(" | "));
+        }
+      })
+    );
+  } finally {
+    await running.close();
+  }
 
   const overall = checks.every((c) => c.ok) ? "PASS" : "FAIL";
 
@@ -141,7 +335,7 @@ function main(): void {
   lines.push("## Interface Contract Verification Status");
   lines.push("");
   lines.push("- Generated (UTC): " + utcStamp());
-  lines.push("- Scope: Deterministic error response shape checks (TypeScript validator + JSON samples)");
+  lines.push("- Scope: Error response samples + live `/agent/run` contract checks");
   lines.push("- Overall status: **" + overall + "**");
   lines.push("");
   lines.push("### Checks");
@@ -161,7 +355,7 @@ function main(): void {
   lines.push("");
   lines.push("- JSON Schema file is present and versioned.");
   lines.push("- Validation is implemented in TypeScript for cross-platform execution.");
-  lines.push("- This is a foundation for expanded contract and negative-path testing.");
+  lines.push("- Verification now includes live `/agent/run` success, invalid request, and `llm-live` stub checks.");
   lines.push("");
 
   const outPath = resolveRepoPath("CONTRACT_STATUS.md");
@@ -179,4 +373,4 @@ function main(): void {
   }
 }
 
-main();
+void main();
