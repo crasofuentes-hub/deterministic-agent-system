@@ -319,6 +319,22 @@ Build the project and run:
 - Without stub text and without provider configuration, the system fails through the current deterministic error envelope for the unconfigured real path.
 
 The intent of this path is controlled materialization of plans, not unconstrained autonomous generation. Deterministic caching, validation, and contract checks remain part of the design.
+
+## Roadmap Snapshot
+
+| Status | Area | Notes |
+|---|---|---|
+| Done | Deterministic execution core | Canonical plans, bounded execution, stable plan/execution/trace hashes |
+| Done | Replay and determinism verification | Replay bundle, replay verification, determinism snapshot coverage |
+| Done | Run lifecycle hardening | Create/get/start/execute/complete/fail/cancel transitions with deterministic behavior |
+| Done | `llm-live` stub + async real-path support | Mock path, deterministic stub path, async planner support for real provider integration |
+| Done | Live contract verification | `verify:contracts` checks live `/agent/run`, repeated determinism, hash prefixes, and unconfigured real-path error envelope |
+| In Progress | Real-provider path hardening | Tightening real `openai-compatible` path behavior, validation, and operational evidence |
+| In Progress | README / usage clarity | Making live-path usage, demos, and expected behavior more explicit |
+| Next | Provider-backed `llm-live` demo workflow | End-to-end documented flow using real provider configuration |
+| Next | Stronger contract assertions | Expand verification beyond minimum shape into more semantic result guarantees |
+| Next | Additional deterministic tools | Increase practical agent value while keeping bounded and verifiable behavior |
+
 ## Repository Structure
 
 The repository is organized to separate implementation, scripts, documentation, and testing concerns.
