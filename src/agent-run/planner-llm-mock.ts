@@ -72,6 +72,31 @@ export class LlmMockPlanner implements Planner {
       };
     }
 
+    if (intent === "normalize") {
+      return {
+        planId: "agent-run-llm-mock-v1:" + intent,
+        version: 1,
+        steps: [
+          { id: "a", kind: "set", key: "goal", value: goal },
+          { id: "b", kind: "set", key: "intent", value: intent },
+          { id: "c", kind: "append_log", value: "llm-mock:plan" },
+          {
+            id: "d",
+            kind: "tool.call",
+            toolId: "text/normalize",
+            input: {
+              text: goal,
+              trim: true,
+              lowercase: true,
+              collapseWhitespace: true
+            },
+            outputKey: "normalized"
+          },
+          { id: "e", kind: "append_log", value: "done" }
+        ]
+      };
+    }
+
     const msg = "llm-mock:" + intent;
     return {
       planId: "agent-run-llm-mock-v1:" + intent,

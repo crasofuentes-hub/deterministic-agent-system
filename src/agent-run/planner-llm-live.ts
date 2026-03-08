@@ -108,6 +108,31 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
     };
   }
 
+  if (intent === "normalize") {
+    return {
+      planId: "agent-run-llm-live-mock-v1:" + intent,
+      version: 1,
+      steps: [
+        { id: "a", kind: "set", key: "goal", value: goal },
+        { id: "b", kind: "set", key: "intent", value: intent },
+        { id: "c", kind: "append_log", value: "llm-live:planned" },
+        {
+          id: "d",
+          kind: "tool.call",
+          toolId: "text/normalize",
+          input: {
+            text: goal,
+            trim: true,
+            lowercase: true,
+            collapseWhitespace: true
+          },
+          outputKey: "normalized"
+        },
+        { id: "e", kind: "append_log", value: "done" }
+      ]
+    };
+  }
+
   const msg = "llm-live:" + intent;
   return {
     planId: "agent-run-llm-live-mock-v1:" + intent,

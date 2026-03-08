@@ -14,8 +14,8 @@ export function normalizeGoal(goal: string): string {
 
 /**
  * Deriva un "intent" estable a partir del goal.
- * Nota: aquí NO usamos hash crypto; mantenemos determinismo puro sin depender de utilidades externas.
- * El intent es una clasificación simple y extensible.
+ * Nota: aquÃ­ NO usamos hash crypto; mantenemos determinismo puro sin depender de utilidades externas.
+ * El intent es una clasificaciÃ³n simple y extensible.
  */
 export function deriveIntent(goal: string): string {
   const g = normalizeGoal(goal);
@@ -23,11 +23,12 @@ export function deriveIntent(goal: string): string {
   if (g.includes("sandbox") || g.includes("browser") || g.includes("web")) return "sandbox";
   if (g.includes("sum") || g.includes("add") || g.includes("math")) return "compute";
   if (g.includes("extract") || g.includes("parse")) return "extract";
+  if (g.includes("normalize") || g.includes("clean")) return "normalize";
   return "core";
 }
 
 /**
- * Construye un plan determinístico a partir del input.
+ * Construye un plan determinÃ­stico a partir del input.
  * - planId estable (depende de demo + intent; NO incluye timestamps)
  * - pasos simples, extensibles
  */
@@ -36,8 +37,8 @@ export function buildPlanFromGoal(input: AgentRunInput): DeterministicAgentPlan 
   const intent = deriveIntent(goal);
 
   if (input.demo === "sandbox") {
-    // El planner/handler puede decidir el URL de fixture; aquí no lo asumimos.
-    // Se espera que planners concretos reemplacen/inyecten url según entorno.
+    // El planner/handler puede decidir el URL de fixture; aquÃ­ no lo asumimos.
+    // Se espera que planners concretos reemplacen/inyecten url segÃºn entorno.
     return {
       planId: "agent-run-sandbox-v1:" + intent,
       version: 1,
