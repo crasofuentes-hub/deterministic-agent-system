@@ -289,6 +289,36 @@ This repository is under active development, but it has moved beyond pure execut
 - Async-capable LLM plan materialization
 - Controlled adapter integration for real-provider planning
 - Verification tooling and reproducible demos
+
+### `llm-live` real-path usage
+
+The repository now supports a controlled async planning path for `planner = llm-live` with `llmProvider = openai-compatible`.
+
+#### Environment variables
+
+- `DAS_OPENAI_COMPAT_BASE_URL`
+- `DAS_OPENAI_COMPAT_API_KEY`
+- `DAS_OPENAI_COMPAT_MODEL`
+
+#### Optional deterministic stub override
+
+- `DAS_LLM_PLAN_TEXT`
+
+When `DAS_LLM_PLAN_TEXT` is provided, the system can materialize a deterministic plan from explicit model text without requiring a live provider call. This is useful for contract verification, deterministic demos, and reproducible local validation.
+
+#### Demo
+
+Build the project and run:
+
+    npm run demo:agent:llm-live:real
+
+#### Expected behavior
+
+- With `DAS_LLM_PLAN_TEXT`, the demo uses the deterministic stub path.
+- Without `DAS_LLM_PLAN_TEXT`, and with valid provider environment variables, the async real-provider path is used.
+- Without stub text and without provider configuration, the system fails through the current deterministic error envelope for the unconfigured real path.
+
+The intent of this path is controlled materialization of plans, not unconstrained autonomous generation. Deterministic caching, validation, and contract checks remain part of the design.
 ## Repository Structure
 
 The repository is organized to separate implementation, scripts, documentation, and testing concerns.
