@@ -3,3 +3,4 @@ export * from "./registry";
 
 export * from "./builtins/echo";
 export * from "./builtins/math_add";
+export * from "./builtins/text_normalize";
