@@ -2,11 +2,15 @@ import { startServer } from "../http/server";
 
 type JsonRecord = Record<string, unknown>;
 
+function isObject(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 async function postJson(
   base: string,
   path: string,
   body: JsonRecord
-): Promise<{ status: number; json: any; text: string }> {
+): Promise<{ status: number; json: unknown; text: string }> {
   const res = await fetch(base + path, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -14,7 +18,7 @@ async function postJson(
   });
 
   const text = await res.text();
-  let json: any = null;
+  let json: unknown = null;
   try {
     json = text ? JSON.parse(text) : null;
   } catch {
@@ -22,6 +26,10 @@ async function postJson(
   }
 
   return { status: res.status, json, text };
+}
+
+function detectPathUsed(body: JsonRecord): "stub" | "real-provider" {
+  return typeof body.llmPlanText === "string" ? "stub" : "real-provider";
 }
 
 async function main(): Promise<void> {
@@ -48,18 +56,43 @@ async function main(): Promise<void> {
       body.llmPlanText = llmPlanText;
     }
 
+    const pathUsed = detectPathUsed(body);
     const r = await postJson(base, "/agent/run", body);
 
     if (r.status !== 200) {
-      console.error("FAIL: non-200 response");
-      console.error(JSON.stringify({ status: r.status, body: r.json }, null, 2));
+      const errObj = isObject(r.json) && isObject(r.json.error) ? r.json.error : {};
+      const failure = {
+        ok: false,
+        pathUsed,
+        goal: body.goal,
+        provider: body.llmProvider,
+        model: body.llmModel,
+        usedStubPlanText: typeof body.llmPlanText === "string",
+        status: r.status,
+        errorCode: errObj.code ?? null,
+        errorMessage: errObj.message ?? null,
+      };
+
+      console.error("FAIL: demo:agent:llm-live:real");
+      console.error(JSON.stringify(failure, null, 2));
       process.exitCode = 1;
       return;
     }
 
-    if (!r.json?.ok) {
-      console.error("FAIL: ok=false");
-      console.error(JSON.stringify(r.json, null, 2));
+    if (!isObject(r.json) || r.json.ok !== true || !isObject(r.json.result)) {
+      const failure = {
+        ok: false,
+        pathUsed,
+        goal: body.goal,
+        provider: body.llmProvider,
+        model: body.llmModel,
+        usedStubPlanText: typeof body.llmPlanText === "string",
+        status: r.status,
+        body: r.json,
+      };
+
+      console.error("FAIL: unexpected response envelope");
+      console.error(JSON.stringify(failure, null, 2));
       process.exitCode = 1;
       return;
     }
@@ -67,7 +100,10 @@ async function main(): Promise<void> {
     const result = r.json.result;
     const summary = {
       ok: true,
+      goal: body.goal,
       provider: body.llmProvider,
+      model: body.llmModel,
+      pathUsed,
       usedStubPlanText: typeof body.llmPlanText === "string",
       planId: result.planId,
       planHash: result.planHash,
@@ -87,6 +123,8 @@ async function main(): Promise<void> {
 }
 
 void main().catch((err) => {
-  console.error(err);
+  const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
+  console.error("FAIL: demo:agent:llm-live:real");
+  console.error(message);
   process.exit(1);
 });
