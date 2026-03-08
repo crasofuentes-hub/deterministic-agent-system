@@ -230,43 +230,65 @@ When boundary violations occur, the correct system behavior is to surface the pr
 ---
 
 ## Current Development Status
+
 ### Implemented and verified (current main)
 
-The following capabilities are implemented in code and verified by automated tests in this repository:
+The following capabilities are implemented in code and covered by automated tests in this repository:
 
-- **HTTP interface:** `POST /agent/run` (see `src/http/handlers/agent-run.ts`)
-  - Accepts planners: `deterministic`, `mock`, and `det-tools`
-- **Deterministic planners (no LLM):**
-  - `deterministic` planner builds stable plans from normalized input (see `src/agent-run/spec.ts`, `src/agent-run/planner-deterministic.ts`)
-  - `mock` planner supported for test coverage (see `src/agent-run/planner-mock.ts`)
-- **Bounded tool-loop (opt-in):** `planner = det-tools`
-  - Deterministic bounded loop with termination (`fixpoint` or `max_iterations`)
-  - Minimal deterministic ToolRegistry + built-in tools: `echo`, `math/add` (see `src/agent/tools/*`)
-- **Determinism verification:** identical requests are validated for stability by tests.
+- **HTTP agent execution interface:** `POST /agent/run`
+  - Supports planners: `deterministic`, `mock`, `det-tools`, `det-replan`, `det-replan2`, `llm-mock`, and `llm-live`
+- **Deterministic planners and bounded execution**
+  - Stable plan canonicalization
+  - Stable plan / execution / final trace link hashes
+  - Bounded execution with explicit `maxSteps`
+- **Bounded deterministic tool-loop**
+  - `planner = det-tools`
+  - Deterministic loop termination via fixpoint or bounded iteration
+  - Built-in deterministic tools including `echo` and `math/add`
+- **Replay and determinism verification**
+  - Replay bundle generation and replay verification
+  - Determinism snapshot validation
+  - Canonical-equivalent plans now hash and execute consistently
+- **Run registry and lifecycle hardening**
+  - Create / get / start / execute / complete / fail / cancel transitions
+  - Deterministic invalid-transition handling
+  - Persisted cancellation semantics and terminal-state protection
+- **LLM-oriented planning paths**
+  - `llm-mock` planner for deterministic model-style planning tests
+  - `llm-live` planner with canonical cache-backed materialization
+  - `llm-live` supports:
+    - deterministic mock provider path
+    - deterministic `openai-compatible` stub path via `llmPlanText`
+    - async planner path for real `openai-compatible` adapter usage
+- **Async planner support**
+  - `runAgent()` can resolve either synchronous planners or planners exposing `planAsync()`
+- **Deterministic demo and validation scripts**
+  - triplicate live demo
+  - replay verification demo
+  - real-path `llm-live` demo with visible hashes
 
-Evidence (tests):
-- `tests/http.agent-run.test.js`
-- `tests/http.agent-run.tools.test.js`
+### Evidence (representative tests)
 
+- `tests/agent.executor.test.js`
+- `tests/agent.determinism.snapshot.test.js`
+- `tests/agent.replay.e2e.test.js`
+- `tests/http.agent-run.llm-live.test.js`
+- `tests/http.agent-run.llm-live.openai-compatible.stub.test.js`
+- `tests/planner.llm-live.parse.test.js`
+- `tests/planner.llm-live.real-adapter.test.js`
+- `tests/agent-run.async-planner.test.js`
+- `tests/http.runs.*.test.js`
 
-This repository is under active development and is being advanced from execution foundation work toward fully integrated deterministic agent behavior.
+This repository is under active development, but it has moved beyond pure execution scaffolding: it now includes deterministic agent execution, hardened run lifecycle behavior, replay verification, and an async-capable `llm-live` planning path that can be materialized through cache, stubbed model text, or an injected real adapter.
 
 ### Current implementation emphasis (high level)
 
-- Deterministic execution-oriented backend foundations
-- Adapter-based execution paths (including local and mock behavior)
-- Verification and smoke-test workflows
-- Status artifact generation and validation tooling
-- Interface hardening and deterministic error contract work
-
-### Why this order of work matters
-
-The project is intentionally strengthening the execution and validation substrate before expanding agent capabilities. This avoids the common failure mode of building agent features on top of unstable execution semantics.
-
-This is a deliberate engineering choice and a major part of the long-term reliability strategy.
-
----
-
+- Deterministic execution substrate and traceability
+- Replay, snapshot, and cache-backed reproducibility
+- Hardened run lifecycle and contract behavior
+- Async-capable LLM plan materialization
+- Controlled adapter integration for real-provider planning
+- Verification tooling and reproducible demos
 ## Repository Structure
 
 The repository is organized to separate implementation, scripts, documentation, and testing concerns.
