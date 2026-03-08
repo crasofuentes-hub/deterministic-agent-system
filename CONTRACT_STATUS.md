@@ -2,15 +2,15 @@
 
 ## Interface Contract Verification Status
 
-- Generated (UTC): 2026-03-08T08:19:05.541Z
-- Scope: Error response samples + live `/agent/run` contract checks
+- Generated (UTC): 2026-03-08T08:25:30.547Z
+- Scope: Error response samples + live `/agent/run` contract and determinism checks
 - Overall status: **PASS**
 
 ### Checks
 
 #### Required file exists: docs\error-codes.md
 - Status: **PASS**
-- DurationMs: 12
+- DurationMs: 0
 
 #### Required file exists: schemas\error-response.schema.json
 - Status: **PASS**
@@ -18,7 +18,7 @@
 
 #### Required file exists: samples\error-response.valid.json
 - Status: **PASS**
-- DurationMs: 1
+- DurationMs: 0
 
 #### Required file exists: samples\error-response.invalid.missing-code.json
 - Status: **PASS**
@@ -30,7 +30,7 @@
 
 #### Read invalid sample JSON
 - Status: **PASS**
-- DurationMs: 1
+- DurationMs: 0
 
 #### Valid sample passes shape validation
 - Status: **PASS**
@@ -42,7 +42,7 @@
 
 #### Invalid sample reports missing error.code
 - Status: **PASS**
-- DurationMs: 0
+- DurationMs: 1
 
 #### POST /agent/run success returns HTTP 200
 - Status: **PASS**
@@ -68,8 +68,16 @@
 - Status: **PASS**
 - DurationMs: 0
 
+#### POST /agent/run llm-live stub repeated request returns HTTP 200
+- Status: **PASS**
+- DurationMs: 0
+
+#### POST /agent/run llm-live stub repeated request preserves planHash/executionHash/finalTraceLinkHash
+- Status: **PASS**
+- DurationMs: 0
+
 ### Notes
 
 - JSON Schema file is present and versioned.
 - Validation is implemented in TypeScript for cross-platform execution.
-- Verification now includes live `/agent/run` success, invalid request, and `llm-live` stub checks.
+- Verification now includes live `/agent/run` success, invalid request, `llm-live` stub checks, and repeated-request determinism checks.

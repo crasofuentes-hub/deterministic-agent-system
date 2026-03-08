@@ -89,13 +89,13 @@ function validateAgentRunSuccessShape(obj: unknown, source: string): ShapeResult
 
   if (!Object.prototype.hasOwnProperty.call(obj, "result")) {
     errors.push("Missing top-level property: result");
-    return { source, ok: errors.length === 0, errors };
+    return { source, ok: false, errors };
   }
 
   const result = obj.result;
   if (!isObject(result)) {
     errors.push("Property 'result' must be an object");
-    return { source, ok: errors.length === 0, errors };
+    return { source, ok: false, errors };
   }
 
   const requiredStringProps = [
@@ -141,6 +141,16 @@ function validateAgentRunSuccessShape(obj: unknown, source: string): ShapeResult
   }
 
   return { source, ok: errors.length === 0, errors };
+}
+
+function getResultRecord(obj: unknown, source: string): UnknownRecord {
+  if (!isObject(obj)) {
+    throw new Error(source + ": top-level JSON must be an object");
+  }
+  if (!isObject(obj.result)) {
+    throw new Error(source + ": result must be an object");
+  }
+  return obj.result;
 }
 
 async function postJson(
@@ -283,7 +293,7 @@ async function main(): Promise<void> {
       })
     );
 
-    const llmStubRes = await postJson(base, "/agent/run", {
+    const llmStubBody = {
       goal: "sum 2 3",
       demo: "core",
       mode: "mock",
@@ -305,21 +315,49 @@ async function main(): Promise<void> {
       }),
       maxSteps: 12,
       traceId: "verify-contract-llm-live-stub-001",
-    });
+    };
+
+    const llmStubRes1 = await postJson(base, "/agent/run", llmStubBody);
+    const llmStubRes2 = await postJson(base, "/agent/run", llmStubBody);
 
     checks.push(
       runStep("POST /agent/run llm-live stub returns HTTP 200", () => {
-        if (llmStubRes.status !== 200) {
-          throw new Error("Expected 200, got " + String(llmStubRes.status));
+        if (llmStubRes1.status !== 200) {
+          throw new Error("Expected 200, got " + String(llmStubRes1.status));
         }
       })
     );
 
     checks.push(
       runStep("POST /agent/run llm-live stub matches minimum result shape", () => {
-        const shape = validateAgentRunSuccessShape(llmStubRes.json, "/agent/run llm-live stub");
+        const shape = validateAgentRunSuccessShape(llmStubRes1.json, "/agent/run llm-live stub");
         if (!shape.ok) {
           throw new Error(shape.errors.join(" | "));
+        }
+      })
+    );
+
+    checks.push(
+      runStep("POST /agent/run llm-live stub repeated request returns HTTP 200", () => {
+        if (llmStubRes2.status !== 200) {
+          throw new Error("Expected 200, got " + String(llmStubRes2.status));
+        }
+      })
+    );
+
+    checks.push(
+      runStep("POST /agent/run llm-live stub repeated request preserves planHash/executionHash/finalTraceLinkHash", () => {
+        const r1 = getResultRecord(llmStubRes1.json, "llm-live stub first");
+        const r2 = getResultRecord(llmStubRes2.json, "llm-live stub second");
+
+        if (r1.planHash !== r2.planHash) {
+          throw new Error("planHash mismatch");
+        }
+        if (r1.executionHash !== r2.executionHash) {
+          throw new Error("executionHash mismatch");
+        }
+        if (r1.finalTraceLinkHash !== r2.finalTraceLinkHash) {
+          throw new Error("finalTraceLinkHash mismatch");
         }
       })
     );
@@ -335,7 +373,7 @@ async function main(): Promise<void> {
   lines.push("## Interface Contract Verification Status");
   lines.push("");
   lines.push("- Generated (UTC): " + utcStamp());
-  lines.push("- Scope: Error response samples + live `/agent/run` contract checks");
+  lines.push("- Scope: Error response samples + live `/agent/run` contract and determinism checks");
   lines.push("- Overall status: **" + overall + "**");
   lines.push("");
   lines.push("### Checks");
@@ -355,7 +393,7 @@ async function main(): Promise<void> {
   lines.push("");
   lines.push("- JSON Schema file is present and versioned.");
   lines.push("- Validation is implemented in TypeScript for cross-platform execution.");
-  lines.push("- Verification now includes live `/agent/run` success, invalid request, and `llm-live` stub checks.");
+  lines.push("- Verification now includes live `/agent/run` success, invalid request, `llm-live` stub checks, and repeated-request determinism checks.");
   lines.push("");
 
   const outPath = resolveRepoPath("CONTRACT_STATUS.md");
