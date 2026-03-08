@@ -154,7 +154,7 @@ export class LlmMockPlanner implements Planner {
             kind: "tool.call",
             toolId: "json/extract",
             input: {
-              text: { "__valueFromState": "normalizedJson.text" },
+              text: { "$ref": "state.values.normalizedJson.text" },
               path
             },
             outputKey: "extracted"

@@ -1,5 +1,5 @@
 import type { AgentState, AgentStep } from "./plan-types";
-import { ToolRegistry, toolEcho, toolMathAdd, toolTextNormalize, toolJsonExtract } from "./tools";
+import { ToolRegistry, toolEcho, toolJsonExtract, toolJsonSelectKeys, toolMathAdd, toolTextNormalize } from "./tools";
 
 export function createInitialAgentState(): AgentState {
   return {
@@ -126,15 +126,24 @@ function resolveInputRefs(value: unknown, state: AgentState): unknown {
     const obj = value as Record<string, unknown>;
     const keys = Object.keys(obj);
 
-    if (keys.length === 1 && keys[0] === "__valueFromState") {
-      const refExpr = String(obj.__valueFromState ?? "");
+    if (keys.length === 1 && (keys[0] === "__valueFromState" || keys[0] === "$ref")) {
+      const rawRef =
+        keys[0] === "$ref"
+          ? String(obj["$ref"] ?? "")
+          : String(obj.__valueFromState ?? "");
+
+      let refExpr = rawRef;
+      if (refExpr.startsWith("state.values.")) {
+        refExpr = refExpr.slice("state.values.".length);
+      }
+
       const firstDot = refExpr.indexOf(".");
       const stateKey = firstDot >= 0 ? refExpr.slice(0, firstDot) : refExpr;
       const nestedPath = firstDot >= 0 ? refExpr.slice(firstDot + 1) : "";
 
       const stored = state.values[stateKey];
       if (typeof stored !== "string") {
-        throw new Error("tool_input_ref_not_found: " + refExpr);
+        throw new Error("tool_input_ref_not_found: " + rawRef);
       }
 
       if (nestedPath.length === 0) {
@@ -145,7 +154,7 @@ function resolveInputRefs(value: unknown, state: AgentState): unknown {
       try {
         parsed = JSON.parse(stored);
       } catch {
-        throw new Error("tool_input_ref_invalid_json: " + refExpr);
+        throw new Error("tool_input_ref_invalid_json: " + rawRef);
       }
 
       return getPathValue(parsed, nestedPath);
@@ -161,7 +170,7 @@ function resolveInputRefs(value: unknown, state: AgentState): unknown {
   return value;
 }
 
-const TOOL_REGISTRY = new ToolRegistry([toolEcho, toolMathAdd, toolTextNormalize, toolJsonExtract]);
+const TOOL_REGISTRY = new ToolRegistry([toolEcho, toolJsonExtract, toolJsonSelectKeys, toolMathAdd, toolTextNormalize]);
 
 export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
   const next: AgentState = {

@@ -71,6 +71,16 @@ function canonicalizeJsonValue(value: unknown, context: string): unknown {
   if (t === "object") {
     const o = value as Record<string, unknown>;
     const keys = Object.keys(o).sort();
+
+    if (keys.length === 1 && (keys[0] === "$ref" || keys[0] === "__valueFromState")) {
+      const refValue = o[keys[0]];
+      if (typeof refValue !== "string" || refValue.trim().length === 0) {
+        throw new Error(context + "." + keys[0] + " must be a non-empty string");
+      }
+      const out: Record<string, unknown> = {};
+      out[keys[0]] = refValue.normalize("NFC").trim();
+      return out;
+    }
     const out: Record<string, unknown> = {};
     for (const k of keys) {
       const v = o[k];

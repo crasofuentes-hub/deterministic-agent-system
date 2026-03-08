@@ -19,8 +19,26 @@ function isHttpUrl(value: unknown): value is string {
   return value.startsWith("http://") || value.startsWith("https://");
 }
 
+
+function isStateRefObject(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const o = value as Record<string, unknown>;
+  const keys = Object.keys(o);
+  if (keys.length !== 1) return false;
+
+  if (keys[0] === "$ref") {
+    return typeof o["$ref"] === "string" && String(o["$ref"]).trim().length > 0;
+  }
+
+  if (keys[0] === "__valueFromState") {
+    return typeof o.__valueFromState === "string" && String(o.__valueFromState).trim().length > 0;
+  }
+
+  return false;
+}
 function isJsonValue(value: unknown): boolean {
   if (value === null) return true;
+  if (isStateRefObject(value)) return true;
   const t = typeof value;
   if (t === "string" || t === "boolean") return true;
   if (t === "number") return Number.isFinite(value as any);
