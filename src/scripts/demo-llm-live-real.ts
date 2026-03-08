@@ -32,6 +32,35 @@ function detectPathUsed(body: JsonRecord): "stub" | "real-provider" {
   return typeof body.llmPlanText === "string" ? "stub" : "real-provider";
 }
 
+function buildSafeEvidence(body: JsonRecord): JsonRecord {
+  const hasStub = typeof body.llmPlanText === "string";
+  const envBaseUrl = String(process.env.DAS_OPENAI_COMPAT_BASE_URL ?? "").trim();
+  const envApiKey = String(process.env.DAS_OPENAI_COMPAT_API_KEY ?? "").trim();
+  const envModel = String(process.env.DAS_OPENAI_COMPAT_MODEL ?? "").trim();
+  const reqModel = String(body.llmModel ?? "").trim();
+
+  const providerConfigPresent =
+    envBaseUrl.length > 0 &&
+    envApiKey.length > 0 &&
+    (reqModel.length > 0 || envModel.length > 0);
+
+  let modelResolvedFrom: "request" | "env" | "none" = "none";
+  if (reqModel.length > 0) {
+    modelResolvedFrom = "request";
+  } else if (envModel.length > 0) {
+    modelResolvedFrom = "env";
+  }
+
+  return {
+    materializationSource: hasStub ? "explicit-plan-text" : "provider-materialization",
+    providerConfigPresent,
+    baseUrlConfigured: envBaseUrl.length > 0,
+    apiKeyConfigured: envApiKey.length > 0,
+    modelResolvedFrom,
+    cacheEligible: true,
+  };
+}
+
 async function main(): Promise<void> {
   const running = await startServer({ port: 0 });
 
@@ -57,17 +86,19 @@ async function main(): Promise<void> {
     }
 
     const pathUsed = detectPathUsed(body);
+    const safeEvidence = buildSafeEvidence(body);
     const r = await postJson(base, "/agent/run", body);
 
     if (r.status !== 200) {
       const errObj = isObject(r.json) && isObject(r.json.error) ? r.json.error : {};
       const failure = {
         ok: false,
-        pathUsed,
         goal: body.goal,
         provider: body.llmProvider,
         model: body.llmModel,
+        pathUsed,
         usedStubPlanText: typeof body.llmPlanText === "string",
+        safeEvidence,
         status: r.status,
         errorCode: errObj.code ?? null,
         errorMessage: errObj.message ?? null,
@@ -82,11 +113,12 @@ async function main(): Promise<void> {
     if (!isObject(r.json) || r.json.ok !== true || !isObject(r.json.result)) {
       const failure = {
         ok: false,
-        pathUsed,
         goal: body.goal,
         provider: body.llmProvider,
         model: body.llmModel,
+        pathUsed,
         usedStubPlanText: typeof body.llmPlanText === "string",
+        safeEvidence,
         status: r.status,
         body: r.json,
       };
@@ -105,6 +137,7 @@ async function main(): Promise<void> {
       model: body.llmModel,
       pathUsed,
       usedStubPlanText: typeof body.llmPlanText === "string",
+      safeEvidence,
       planId: result.planId,
       planHash: result.planHash,
       executionHash: result.executionHash,
