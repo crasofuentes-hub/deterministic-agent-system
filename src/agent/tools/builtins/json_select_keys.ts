@@ -41,6 +41,17 @@ function toJson(value: unknown): Json {
 export const toolJsonSelectKeys: Tool<SelectKeysIn, SelectKeysOut> = {
   id: "json/select-keys",
   version: 1,
+  meta: {
+    pluginId: "builtin.json-select-keys",
+    pluginVersion: 1,
+    displayName: "JSON Select Keys",
+    description: "Selects a deterministic subset of top-level keys from a JSON object.",
+    capabilities: ["json.select"],
+    inputSchemaHint: {
+      type: "object",
+      required: ["text", "keys"]
+    }
+  },
   validateInput: (x: unknown): x is SelectKeysIn => {
     if (typeof x !== "object" || x === null) return false;
     const o = x as Record<string, unknown>;

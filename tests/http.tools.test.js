@@ -29,18 +29,31 @@ test("http GET /tools returns deterministic tool registry", async () => {
     assert.equal(r1.body.ok, true);
     assert.ok(Array.isArray(r1.body.result.tools));
 
-    const ids = r1.body.result.tools.map((t) => t.id);
+    const tools = r1.body.result.tools;
+    const ids = tools.map((t) => t.id);
     const sorted = ids.slice().sort();
     assert.deepEqual(ids, sorted);
 
-    assert.deepEqual(r1.body.result.tools, [
-      { id: "echo", version: 1 },
-      { id: "json/extract", version: 1 },
-      { id: "json/merge", version: 1 },
-      { id: "json/select-keys", version: 1 },
-      { id: "math/add", version: 1 },
-      { id: "text/normalize", version: 1 }
+    assert.deepEqual(ids, [
+      "echo",
+      "json/extract",
+      "json/merge",
+      "json/select-keys",
+      "math/add",
+      "text/normalize"
     ]);
+
+    for (const tool of tools) {
+      assert.equal(typeof tool.id, "string");
+      assert.equal(tool.version, 1);
+      assert.equal(typeof tool.pluginId, "string");
+      assert.equal(tool.pluginVersion, 1);
+      assert.equal(typeof tool.displayName, "string");
+      assert.equal(typeof tool.description, "string");
+      assert.ok(Array.isArray(tool.capabilities));
+      assert.equal(tool.inputSchemaHint.type, "object");
+      assert.ok(Array.isArray(tool.inputSchemaHint.required));
+    }
   } finally {
     await running.close();
   }

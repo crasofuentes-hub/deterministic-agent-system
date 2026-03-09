@@ -1,13 +1,22 @@
-import type { ServerResponse } from "node:http";
-import { sendJson } from "../responses";
+import { success } from "../../core/contracts";
 import { listAgentToolInfo } from "../../agent/tools";
 
-type ToolInfo = { readonly id: string; readonly version: number };
+type ToolInfo = {
+  id: string;
+  version: 1;
+  pluginId: string;
+  pluginVersion: 1;
+  displayName: string;
+  description: string;
+  capabilities: readonly string[];
+  inputSchemaHint: { type: "object"; required: readonly string[] };
+};
 
-export async function handleTools(res: ServerResponse): Promise<void> {
-  
-
+export function handleTools(): { statusCode: number; body: unknown } {
   const tools: ToolInfo[] = listAgentToolInfo();
 
-  sendJson(res, 200, { ok: true, result: { tools } });
+  return {
+    statusCode: 200,
+    body: success({ tools }, { mode: "mock" }),
+  };
 }

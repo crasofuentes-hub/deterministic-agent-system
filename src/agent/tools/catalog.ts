@@ -19,7 +19,16 @@ export function createAgentToolRegistry(): ToolRegistry {
   return new ToolRegistry([...AGENT_TOOL_DEFS]);
 }
 
-export function listAgentToolInfo(): Array<{ id: string; version: 1 }> {
+export function listAgentToolInfo(): Array<{
+  id: string;
+  version: 1;
+  pluginId: string;
+  pluginVersion: 1;
+  displayName: string;
+  description: string;
+  capabilities: readonly string[];
+  inputSchemaHint: { type: "object"; required: readonly string[] };
+}> {
   const reg = createAgentToolRegistry();
   return reg.listIds().map((id) => {
     const tool = reg.get(id);
@@ -29,6 +38,15 @@ export function listAgentToolInfo(): Array<{ id: string; version: 1 }> {
     return {
       id: tool.id,
       version: tool.version,
+      pluginId: tool.meta.pluginId,
+      pluginVersion: tool.meta.pluginVersion,
+      displayName: tool.meta.displayName,
+      description: tool.meta.description,
+      capabilities: [...tool.meta.capabilities],
+      inputSchemaHint: {
+        type: tool.meta.inputSchemaHint.type,
+        required: [...tool.meta.inputSchemaHint.required],
+      },
     };
   });
 }

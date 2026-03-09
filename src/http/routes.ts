@@ -376,8 +376,9 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
         return;
       }
 
+      const result = handleTools();
       withRequestId(res, requestId);
-      await handleTools(res);
+      sendHttpJsonResult(res, result, requestId);
       logEnd(req, res, requestId, startedAt);
       return;
     }

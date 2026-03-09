@@ -14,6 +14,17 @@ type NormalizeOut = Readonly<{
 export const toolTextNormalize: Tool<NormalizeIn, NormalizeOut> = {
   id: "text/normalize",
   version: 1,
+  meta: {
+    pluginId: "builtin.text-normalize",
+    pluginVersion: 1,
+    displayName: "Text Normalize",
+    description: "Normalizes text deterministically using trim, lowercase, and whitespace collapse options.",
+    capabilities: ["text.normalize"],
+    inputSchemaHint: {
+      type: "object",
+      required: ["text"]
+    }
+  },
   validateInput: (x: unknown): x is NormalizeIn => {
     if (typeof x !== "object" || x === null) return false;
     const o = x as Record<string, unknown>;

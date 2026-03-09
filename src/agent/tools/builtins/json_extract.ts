@@ -73,6 +73,17 @@ function extractPath(root: unknown, path: string): unknown {
 export const toolJsonExtract: Tool<ExtractIn, ExtractOut> = {
   id: "json/extract",
   version: 1,
+  meta: {
+    pluginId: "builtin.json-extract",
+    pluginVersion: 1,
+    displayName: "JSON Extract",
+    description: "Extracts a value from JSON text using a deterministic dotted path.",
+    capabilities: ["json.extract"],
+    inputSchemaHint: {
+      type: "object",
+      required: ["text", "path"]
+    }
+  },
   validateInput: (x: unknown): x is ExtractIn => {
     if (typeof x !== "object" || x === null) return false;
     const o = x as Record<string, unknown>;

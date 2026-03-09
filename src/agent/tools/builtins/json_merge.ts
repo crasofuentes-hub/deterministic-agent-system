@@ -68,6 +68,17 @@ function parseMergeSide(value: MergeSide, label: string): JsonObject {
 export const toolJsonMerge: Tool<MergeIn, MergeOut> = {
   id: "json/merge",
   version: 1,
+  meta: {
+    pluginId: "builtin.json-merge",
+    pluginVersion: 1,
+    displayName: "JSON Merge",
+    description: "Merges two JSON objects deterministically, with right side overriding left side on key collisions.",
+    capabilities: ["json.merge"],
+    inputSchemaHint: {
+      type: "object",
+      required: ["left", "right"]
+    }
+  },
   validateInput: (x: unknown): x is MergeIn => {
     if (typeof x !== "object" || x === null) return false;
     const o = x as Record<string, unknown>;
