@@ -24,6 +24,10 @@ export function synthesizeCapabilitiesFromGoal(goal: string): ToolCapability[] {
     out.push("json.extract");
   }
 
+  if (g.includes("select") || g.includes("pick keys")) {
+    out.push("json.select");
+  }
+
   if (g.includes("merge") || g.includes("combine")) {
     out.push("json.merge");
   }
