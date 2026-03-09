@@ -14,34 +14,52 @@ export function normalizeGoal(goal: string): string {
 
 /**
  * Deriva un "intent" estable a partir del goal.
- * Nota: aquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ NO usamos hash crypto; mantenemos determinismo puro sin depender de utilidades externas.
- * El intent es una clasificaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n simple y extensible.
  */
 export function deriveIntent(goal: string): string {
   const g = normalizeGoal(goal);
 
   if (g.includes("sandbox") || g.includes("browser") || g.includes("web")) return "sandbox";
   if (g.includes("sum") || g.includes("add") || g.includes("math")) return "compute";
-  if (g.includes("normalize extract merge") || g.includes("cap synth")) return "cap-synth";
-  if (g.includes("extract merge") || g.includes("extract and merge")) return "extract-merge";
+
   if (g.includes("extract chain") || g.includes("extract normalized")) return "extract-chain";
-  if (g.includes("extract") || g.includes("parse")) return "extract";
-  if (g.includes("normalize") || g.includes("clean")) return "normalize";
+
+  const mentionsNormalize = g.includes("normalize") || g.includes("clean");
+  const mentionsExtract = g.includes("extract") || g.includes("parse");
+  const mentionsSelect = g.includes("select") || g.includes("pick keys");
+  const mentionsMerge = g.includes("merge") || g.includes("combine");
+
+  const isSpecialExtractMerge =
+    (g.includes("extract merge") || g.includes("extract and merge")) &&
+    !mentionsNormalize &&
+    !mentionsSelect;
+
+  if (isSpecialExtractMerge) return "extract-merge";
+
+  if (mentionsNormalize || mentionsExtract || mentionsSelect || mentionsMerge) {
+    const count =
+      (mentionsNormalize ? 1 : 0) +
+      (mentionsExtract ? 1 : 0) +
+      (mentionsSelect ? 1 : 0) +
+      (mentionsMerge ? 1 : 0);
+
+    if (count >= 2) return "cap-synth";
+    if (mentionsSelect) return "cap-synth";
+    if (mentionsMerge) return "cap-synth";
+    if (mentionsExtract) return "extract";
+    if (mentionsNormalize) return "normalize";
+  }
+
   return "core";
 }
 
 /**
- * Construye un plan determinÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­stico a partir del input.
- * - planId estable (depende de demo + intent; NO incluye timestamps)
- * - pasos simples, extensibles
+ * Construye un plan determinÃƒÂ­stico a partir del input.
  */
 export function buildPlanFromGoal(input: AgentRunInput): DeterministicAgentPlan {
   const goal = normalizeGoal(input.goal);
   const intent = deriveIntent(goal);
 
   if (input.demo === "sandbox") {
-    // El planner/handler puede decidir el URL de fixture; aquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ no lo asumimos.
-    // Se espera que planners concretos reemplacen/inyecten url segÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºn entorno.
     return {
       planId: "agent-run-sandbox-v1:" + intent,
       version: 1,

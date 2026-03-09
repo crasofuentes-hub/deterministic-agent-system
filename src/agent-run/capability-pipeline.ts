@@ -1,6 +1,7 @@
 import type { DeterministicAgentPlan, AgentStep } from "../agent/plan-types";
 import type { ToolCapability } from "../agent/tools";
 import { resolveToolIdForCapability } from "../agent/tools";
+import { normalizeCapabilityPipeline, validateCapabilityPipeline } from "./capability-preconditions";
 
 function makeBaseSteps(goal: string, intent: string, plannedLog: string): AgentStep[] {
   return [
@@ -29,7 +30,12 @@ export function buildCapabilitySynthPlan(params: {
   capabilities: ToolCapability[];
 }): DeterministicAgentPlan {
   const { plannerPrefix, goal, intent, capabilities } = params;
-  const caps = capabilities.slice();
+  const caps = normalizeCapabilityPipeline(capabilities);
+  const validation = validateCapabilityPipeline(caps);
+
+  if (!validation.ok) {
+    throw new Error(validation.code + ": " + validation.message);
+  }
 
   const plannedLog = plannerPrefix === "llm-live" ? "llm-live:planned" : "llm-mock:plan";
   const steps: AgentStep[] = [...makeBaseSteps(goal, intent, plannedLog)];

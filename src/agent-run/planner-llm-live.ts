@@ -27,6 +27,7 @@ function computeKey(input: AgentRunInput): { keyHash: string; cacheDir: string }
   const provider = providerFromInput(input);
   const keyObj = {
     planner: "llm-live",
+    capabilitySynthesisVersion: "v2",
     provider,
     model: input.llmModel ?? "",
     temperature: typeof input.llmTemperature === "number" ? input.llmTemperature : null,
