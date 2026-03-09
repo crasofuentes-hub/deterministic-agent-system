@@ -1,9 +1,9 @@
 import type { ServerResponse } from "node:http";
 import { sendJson } from "../responses";
-import { ToolRegistry, toolEcho, toolJsonExtract, toolJsonSelectKeys, toolMathAdd, toolTextNormalize } from "../../agent/tools";
+import { createAgentToolRegistry } from "../../agent/tools";
 
 export async function handleAgentCapabilities(res: ServerResponse): Promise<void> {
-  const reg = new ToolRegistry([toolEcho, toolJsonExtract, toolJsonSelectKeys, toolMathAdd, toolTextNormalize]);
+  const reg = createAgentToolRegistry();
 
   sendJson(res, 200, {
     ok: true,

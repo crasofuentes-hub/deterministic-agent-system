@@ -1,5 +1,5 @@
 import type { AgentState, AgentStep } from "./plan-types";
-import { ToolRegistry, toolEcho, toolJsonExtract, toolJsonSelectKeys, toolMathAdd, toolTextNormalize } from "./tools";
+import { createAgentToolRegistry } from "./tools";
 
 export function createInitialAgentState(): AgentState {
   return {
@@ -170,7 +170,7 @@ function resolveInputRefs(value: unknown, state: AgentState): unknown {
   return value;
 }
 
-const TOOL_REGISTRY = new ToolRegistry([toolEcho, toolJsonExtract, toolJsonSelectKeys, toolMathAdd, toolTextNormalize]);
+const TOOL_REGISTRY = createAgentToolRegistry();
 
 export function applyMockStep(state: AgentState, step: AgentStep): AgentState {
   const next: AgentState = {
