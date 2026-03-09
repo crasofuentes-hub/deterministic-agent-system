@@ -1,6 +1,7 @@
 import type { DeterministicAgentPlan } from "../agent/plan-types";
 import type { AgentRunInput, Planner } from "./types";
 import { normalizeGoal, deriveIntent } from "./spec";
+import { resolveToolIdForCapability } from "../agent/tools";
 
 function parseTwoInts(goal: string): { a: number; b: number } | null {
   const m = goal.match(/\b(-?\d+)[^-0-9]+(-?\d+)\b/);
@@ -22,7 +23,6 @@ export class LlmMockPlanner implements Planner {
 
     const lastErr = s(input.lastErrorCode).trim();
 
-    // Replan logic (deterministic): if we have a TOOL_* failure, degrade to echo with evidence.
     if (lastErr.startsWith("TOOL_")) {
       const msg = "replan2:" + lastErr;
       return {
@@ -39,7 +39,6 @@ export class LlmMockPlanner implements Planner {
       };
     }
 
-    // Deterministic negative-path trigger: if goal includes "missingtool", simulate a "bad tool selection"
     if (goal.includes("missingtool")) {
       return {
         planId: "agent-run-llm-mock-v1:" + intent + ":missingtool",
@@ -96,8 +95,12 @@ export class LlmMockPlanner implements Planner {
         ]
       };
     }
+
     if (intent === "extract-merge") {
       const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "meta" : { "ok" : true } }  ';
+      const normalizeToolId = resolveToolIdForCapability("text.normalize");
+      const extractToolId = resolveToolIdForCapability("json.extract");
+      const mergeToolId = resolveToolIdForCapability("json.merge");
       const extraJson = JSON.stringify({ source: "llm-mock", workflow: "extract-merge" });
 
       return {
@@ -110,7 +113,7 @@ export class LlmMockPlanner implements Planner {
           {
             id: "d",
             kind: "tool.call",
-            toolId: "text/normalize",
+            toolId: normalizeToolId,
             input: {
               text: rawJson,
               trim: true,
@@ -122,7 +125,7 @@ export class LlmMockPlanner implements Planner {
           {
             id: "e",
             kind: "tool.call",
-            toolId: "json/extract",
+            toolId: extractToolId,
             input: {
               text: { "$ref": "state.values.normalizedJson.text" },
               path: "user"
@@ -132,7 +135,7 @@ export class LlmMockPlanner implements Planner {
           {
             id: "f",
             kind: "tool.call",
-            toolId: "json/merge",
+            toolId: mergeToolId,
             input: {
               left: { "$ref": "state.values.extractedUser.value" },
               right: extraJson
@@ -143,7 +146,6 @@ export class LlmMockPlanner implements Planner {
         ]
       };
     }
-
 
     if (intent === "extract") {
       const path =
@@ -174,6 +176,7 @@ export class LlmMockPlanner implements Planner {
         ]
       };
     }
+
     if (intent === "extract-chain") {
       const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "items" : [ { "id" : "a1" } , { "id" : "b2" } ] }  ';
       const path = goal.includes("role") ? "user.role" : "user.name";
@@ -211,7 +214,6 @@ export class LlmMockPlanner implements Planner {
         ]
       };
     }
-
 
     const msg = "llm-mock:" + intent;
     return {

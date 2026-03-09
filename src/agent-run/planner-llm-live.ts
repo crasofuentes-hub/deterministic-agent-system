@@ -4,6 +4,7 @@ import type { AgentRunInput, Planner, AsyncPlanner } from "./types";
 import type { AsyncModelAdapter } from "../integrations/provider-types";
 import { createModelAdapterSelection } from "../integrations";
 import { normalizeGoal, deriveIntent } from "./spec";
+import { resolveToolIdForCapability } from "../agent/tools";
 import { computeLlmLiveCacheKey, loadCachedPlan, saveCachedPlan } from "./llm-live-cache";
 
 function parseTwoInts(goal: string): { a: number; b: number } | null {
@@ -162,8 +163,12 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
       ]
     };
   }
+
   if (intent === "extract-merge") {
     const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "meta" : { "ok" : true } }  ';
+    const normalizeToolId = resolveToolIdForCapability("text.normalize");
+    const extractToolId = resolveToolIdForCapability("json.extract");
+    const mergeToolId = resolveToolIdForCapability("json.merge");
     const extraJson = JSON.stringify({ source: "llm-live", workflow: "extract-merge" });
 
     return {
@@ -176,7 +181,7 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
         {
           id: "d",
           kind: "tool.call",
-          toolId: "text/normalize",
+          toolId: normalizeToolId,
           input: {
             text: rawJson,
             trim: true,
@@ -188,7 +193,7 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
         {
           id: "e",
           kind: "tool.call",
-          toolId: "json/extract",
+          toolId: extractToolId,
           input: {
             text: { "$ref": "state.values.normalizedJson.text" },
             path: "user"
@@ -198,7 +203,7 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
         {
           id: "f",
           kind: "tool.call",
-          toolId: "json/merge",
+          toolId: mergeToolId,
           input: {
             left: { "$ref": "state.values.extractedUser.value" },
             right: extraJson
@@ -247,7 +252,6 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
       ]
     };
   }
-
 
   const msg = "llm-live:" + intent;
   return {

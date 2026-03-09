@@ -8,3 +8,4 @@ export * from "./builtins/json_extract";
 export * from "./builtins/json_select_keys";
 export * from "./catalog";
 export * from "./builtins/json_merge";
+export * from "./capability-selector";
