@@ -96,6 +96,54 @@ export class LlmMockPlanner implements Planner {
         ]
       };
     }
+    if (intent === "extract-merge") {
+      const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "meta" : { "ok" : true } }  ';
+      const extraJson = JSON.stringify({ source: "llm-mock", workflow: "extract-merge" });
+
+      return {
+        planId: "agent-run-llm-mock-v1:" + intent,
+        version: 1,
+        steps: [
+          { id: "a", kind: "set", key: "goal", value: goal },
+          { id: "b", kind: "set", key: "intent", value: intent },
+          { id: "c", kind: "append_log", value: "llm-mock:plan" },
+          {
+            id: "d",
+            kind: "tool.call",
+            toolId: "text/normalize",
+            input: {
+              text: rawJson,
+              trim: true,
+              lowercase: false,
+              collapseWhitespace: true
+            },
+            outputKey: "normalizedJson"
+          },
+          {
+            id: "e",
+            kind: "tool.call",
+            toolId: "json/extract",
+            input: {
+              text: { "$ref": "state.values.normalizedJson.text" },
+              path: "user"
+            },
+            outputKey: "extractedUser"
+          },
+          {
+            id: "f",
+            kind: "tool.call",
+            toolId: "json/merge",
+            input: {
+              left: { "$ref": "state.values.extractedUser.value" },
+              right: extraJson
+            },
+            outputKey: "merged"
+          },
+          { id: "g", kind: "append_log", value: "done" }
+        ]
+      };
+    }
+
 
     if (intent === "extract") {
       const path =

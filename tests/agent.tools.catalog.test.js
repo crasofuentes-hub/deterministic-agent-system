@@ -16,6 +16,7 @@ test("agent tool catalog yields deterministic registry and info", () => {
   assert.deepEqual(info, [
     { id: "echo", version: 1 },
     { id: "json/extract", version: 1 },
+    { id: "json/merge", version: 1 },
     { id: "json/select-keys", version: 1 },
     { id: "math/add", version: 1 },
     { id: "text/normalize", version: 1 }

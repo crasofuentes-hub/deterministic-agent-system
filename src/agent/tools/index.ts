@@ -7,3 +7,4 @@ export * from "./builtins/text_normalize";
 export * from "./builtins/json_extract";
 export * from "./builtins/json_select_keys";
 export * from "./catalog";
+export * from "./builtins/json_merge";

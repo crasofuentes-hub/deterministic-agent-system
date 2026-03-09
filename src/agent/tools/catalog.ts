@@ -1,15 +1,15 @@
 import { ToolRegistry } from "./registry";
-import {
-  toolEcho,
-  toolJsonExtract,
-  toolJsonSelectKeys,
-  toolMathAdd,
-  toolTextNormalize,
-} from "./index";
+import { toolEcho } from "./builtins/echo";
+import { toolMathAdd } from "./builtins/math_add";
+import { toolTextNormalize } from "./builtins/text_normalize";
+import { toolJsonExtract } from "./builtins/json_extract";
+import { toolJsonSelectKeys } from "./builtins/json_select_keys";
+import { toolJsonMerge } from "./builtins/json_merge";
 
 export const AGENT_TOOL_DEFS = [
   toolEcho,
   toolJsonExtract,
+  toolJsonMerge,
   toolJsonSelectKeys,
   toolMathAdd,
   toolTextNormalize,
