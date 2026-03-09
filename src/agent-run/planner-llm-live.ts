@@ -6,6 +6,7 @@ import { createModelAdapterSelection } from "../integrations";
 import { normalizeGoal, deriveIntent } from "./spec";
 import { resolveToolIdForCapability } from "../agent/tools";
 import { computeLlmLiveCacheKey, loadCachedPlan, saveCachedPlan } from "./llm-live-cache";
+import { synthesizeCapabilitiesFromGoal } from "./capability-synthesis";
 
 function parseTwoInts(goal: string): { a: number; b: number } | null {
   const m = goal.match(/\b(-?\d+)[^-0-9]+(-?\d+)\b/);
@@ -163,6 +164,55 @@ function buildPlanViaMockProvider(input: AgentRunInput): DeterministicAgentPlan 
       ]
     };
   }
+  if (intent === "cap-synth") {
+    const caps = synthesizeCapabilitiesFromGoal(goal);
+    const toolIds = caps.map((cap) => resolveToolIdForCapability(cap));
+    const extraJson = JSON.stringify({ source: "llm-live", workflow: "cap-synth" });
+
+    return {
+      planId: "agent-run-llm-live-mock-v1:" + intent,
+      version: 1,
+      steps: [
+        { id: "a", kind: "set", key: "goal", value: goal },
+        { id: "b", kind: "set", key: "intent", value: intent },
+        { id: "c", kind: "append_log", value: "llm-live:planned" },
+        {
+          id: "d",
+          kind: "tool.call",
+          toolId: toolIds[0],
+          input: {
+            text: '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } }  ',
+            trim: true,
+            lowercase: false,
+            collapseWhitespace: true
+          },
+          outputKey: "normalizedJson"
+        },
+        {
+          id: "e",
+          kind: "tool.call",
+          toolId: toolIds[1],
+          input: {
+            text: { "$ref": "state.values.normalizedJson.text" },
+            path: "user"
+          },
+          outputKey: "extractedUser"
+        },
+        {
+          id: "f",
+          kind: "tool.call",
+          toolId: toolIds[2],
+          input: {
+            left: { "$ref": "state.values.extractedUser.value" },
+            right: extraJson
+          },
+          outputKey: "merged"
+        },
+        { id: "g", kind: "append_log", value: "done" }
+      ]
+    };
+  }
+
 
   if (intent === "extract-merge") {
     const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "meta" : { "ok" : true } }  ';
