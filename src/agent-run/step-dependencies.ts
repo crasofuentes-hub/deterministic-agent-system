@@ -7,6 +7,22 @@ export interface StepDependencyRef {
   nestedPath: string;
 }
 
+export interface StepDependencyEdge {
+  consumerStepId: string;
+  consumerStepIndex: number;
+  producerOutputKey: string;
+  producerStepId: string;
+  producerStepIndex: number;
+  refKind: "$ref" | "__valueFromState";
+  refExpr: string;
+  nestedPath: string;
+}
+
+export interface StepDependencyAnalysis {
+  producedOutputKeys: string[];
+  edges: StepDependencyEdge[];
+}
+
 export type StepDependencyValidationResult =
   | { ok: true }
   | { ok: false; code: string; message: string };
@@ -95,10 +111,10 @@ function isProducerStep(step: AgentStep): boolean {
   );
 }
 
-export function validateStepDependencies(
+function collectProducedOutputKeys(
   steps: AgentStep[]
-): StepDependencyValidationResult {
-  const producedAtStepIndex = new Map<string, number>();
+): Map<string, { stepId: string; stepIndex: number }> | { error: StepDependencyValidationResult } {
+  const produced = new Map<string, { stepId: string; stepIndex: number }>();
 
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i];
@@ -109,61 +125,107 @@ export function validateStepDependencies(
 
     const outputKey = String(step.outputKey).trim();
 
-    if (producedAtStepIndex.has(outputKey)) {
-      const firstIndex = producedAtStepIndex.get(outputKey)!;
+    if (produced.has(outputKey)) {
+      const first = produced.get(outputKey)!;
       return {
-        ok: false,
-        code: "DUPLICATE_STEP_OUTPUT_KEY",
-        message:
-          'outputKey "' +
-          outputKey +
-          '" is produced more than once (step indices ' +
-          firstIndex +
-          " and " +
-          i +
-          ")",
+        error: {
+          ok: false,
+          code: "DUPLICATE_STEP_OUTPUT_KEY",
+          message:
+            'outputKey "' +
+            outputKey +
+            '" is produced more than once (step indices ' +
+            first.stepIndex +
+            " and " +
+            i +
+            ")",
+        },
       };
     }
 
-    producedAtStepIndex.set(outputKey, i);
+    produced.set(outputKey, { stepId: step.id, stepIndex: i });
   }
+
+  return produced;
+}
+
+export function analyzeStepDependencies(
+  steps: AgentStep[]
+): StepDependencyAnalysis | { error: StepDependencyValidationResult } {
+  const produced = collectProducedOutputKeys(steps);
+  if (produced instanceof Map === false) {
+    return produced;
+  }
+
+  const producedOutputKeys = Array.from(produced.keys());
+  const edges: StepDependencyEdge[] = [];
 
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i];
     const refs = collectStepDependencyRefs(step.input);
 
     for (const ref of refs) {
-      const producerIndex = producedAtStepIndex.get(ref.outputKey);
+      const producer = produced.get(ref.outputKey);
 
-      if (producerIndex === undefined) {
+      if (!producer) {
         return {
-          ok: false,
-          code: "STEP_DEPENDENCY_PRODUCER_NOT_FOUND",
-          message:
-            'step "' +
-            step.id +
-            '" references missing outputKey "' +
-            ref.outputKey +
-            '" via ' +
-            ref.refKind +
-            " = " +
-            JSON.stringify(ref.refExpr),
+          error: {
+            ok: false,
+            code: "STEP_DEPENDENCY_PRODUCER_NOT_FOUND",
+            message:
+              'step "' +
+              step.id +
+              '" references missing outputKey "' +
+              ref.outputKey +
+              '" via ' +
+              ref.refKind +
+              " = " +
+              JSON.stringify(ref.refExpr),
+          },
         };
       }
 
-      if (producerIndex >= i) {
+      if (producer.stepIndex >= i) {
         return {
-          ok: false,
-          code: "STEP_DEPENDENCY_OUT_OF_ORDER",
-          message:
-            'step "' +
-            step.id +
-            '" references outputKey "' +
-            ref.outputKey +
-            '" before it is produced',
+          error: {
+            ok: false,
+            code: "STEP_DEPENDENCY_OUT_OF_ORDER",
+            message:
+              'step "' +
+              step.id +
+              '" references outputKey "' +
+              ref.outputKey +
+              '" before it is produced',
+          },
         };
       }
+
+      edges.push({
+        consumerStepId: step.id,
+        consumerStepIndex: i,
+        producerOutputKey: ref.outputKey,
+        producerStepId: producer.stepId,
+        producerStepIndex: producer.stepIndex,
+        refKind: ref.refKind,
+        refExpr: ref.refExpr,
+        nestedPath: ref.nestedPath,
+      });
     }
+  }
+
+  return {
+    producedOutputKeys,
+    edges,
+  };
+}
+
+export function validateStepDependencies(
+  steps: AgentStep[]
+): StepDependencyValidationResult {
+  const analysis = analyzeStepDependencies(steps);
+
+  if ("error" in analysis) {
+    return analysis.error;
   }
 
   return { ok: true };
