@@ -5,6 +5,7 @@ import {
   bindStepInputRef,
   collectStepDependencyRefs,
   makeStepStateRef,
+  validateRequiredDerivedInputs,
   validateStepDependencies,
 } from "../../src/agent-run/step-dependencies";
 
@@ -122,6 +123,106 @@ describe("step-dependencies", () => {
           nestedPath: "value",
         },
       ],
+    });
+  });
+
+  it("accepts canonical derived input ref", () => {
+    const steps: AgentStep[] = [
+      {
+        id: "a",
+        kind: "tool.call",
+        toolId: "tool.normalize",
+        input: { text: "raw" },
+        outputKey: "normalizedJson",
+      },
+      {
+        id: "b",
+        kind: "tool.call",
+        toolId: "tool.extract",
+        input: { text: { $ref: "state.values.normalizedJson.text" }, path: "user" },
+        outputKey: "extractedUser",
+      },
+    ];
+
+    expect(
+      validateRequiredDerivedInputs(steps, [
+        {
+          consumerToolId: "tool.extract",
+          inputKey: "text",
+          producerOutputKey: "normalizedJson",
+          nestedPath: "text",
+        },
+      ])
+    ).toEqual({ ok: true });
+  });
+
+  it("rejects raw value when derived ref is required", () => {
+    const steps: AgentStep[] = [
+      {
+        id: "a",
+        kind: "tool.call",
+        toolId: "tool.normalize",
+        input: { text: "raw" },
+        outputKey: "normalizedJson",
+      },
+      {
+        id: "b",
+        kind: "tool.call",
+        toolId: "tool.extract",
+        input: { text: "raw", path: "user" },
+        outputKey: "extractedUser",
+      },
+    ];
+
+    expect(
+      validateRequiredDerivedInputs(steps, [
+        {
+          consumerToolId: "tool.extract",
+          inputKey: "text",
+          producerOutputKey: "normalizedJson",
+          nestedPath: "text",
+        },
+      ])
+    ).toEqual({
+      ok: false,
+      code: "STEP_DERIVED_INPUT_MUST_USE_REF",
+      message:
+        'step "b" must bind input "text" from outputKey "normalizedJson" via "state.values.normalizedJson.text"',
+    });
+  });
+
+  it("rejects mismatched derived ref", () => {
+    const steps: AgentStep[] = [
+      {
+        id: "a",
+        kind: "tool.call",
+        toolId: "tool.normalize",
+        input: { text: "raw" },
+        outputKey: "normalizedJson",
+      },
+      {
+        id: "b",
+        kind: "tool.call",
+        toolId: "tool.extract",
+        input: { text: { $ref: "state.values.normalizedJson.value" }, path: "user" },
+        outputKey: "extractedUser",
+      },
+    ];
+
+    expect(
+      validateRequiredDerivedInputs(steps, [
+        {
+          consumerToolId: "tool.extract",
+          inputKey: "text",
+          producerOutputKey: "normalizedJson",
+          nestedPath: "text",
+        },
+      ])
+    ).toEqual({
+      ok: false,
+      code: "STEP_DERIVED_INPUT_REF_MISMATCH",
+      message:
+        'step "b" must bind input "text" from outputKey "normalizedJson" via "state.values.normalizedJson.text"',
     });
   });
 

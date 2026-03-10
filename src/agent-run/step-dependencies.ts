@@ -23,16 +23,23 @@ export interface StepDependencyAnalysis {
   edges: StepDependencyEdge[];
 }
 
-export type StepDependencyValidationResult =
-  | { ok: true }
-  | { ok: false; code: string; message: string };
-
 export interface BindStepInputRefParams {
   steps: AgentStep[];
   outputKey: string;
   nestedPath?: string;
   fallbackValue: unknown;
 }
+
+export interface RequiredDerivedInputRule {
+  consumerToolId: string;
+  inputKey: string;
+  producerOutputKey: string;
+  nestedPath?: string;
+}
+
+export type StepDependencyValidationResult =
+  | { ok: true }
+  | { ok: false; code: string; message: string };
 
 function isSingleRefObject(
   value: unknown
@@ -264,4 +271,83 @@ export function bindStepInputRef(params: BindStepInputRefParams): unknown {
   }
 
   return makeStepStateRef(outputKey, nestedPath);
+}
+
+function getObjectProperty(value: unknown, key: string): unknown {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const obj = value as Record<string, unknown>;
+  return obj[key];
+}
+
+export function validateRequiredDerivedInputs(
+  steps: AgentStep[],
+  rules: RequiredDerivedInputRule[]
+): StepDependencyValidationResult {
+  const analysis = analyzeStepDependencies(steps);
+  if ("error" in analysis) {
+    return analysis.error;
+  }
+
+  for (let i = 0; i < steps.length; i += 1) {
+    const step = steps[i];
+
+    if (step.kind !== "tool.call" || typeof step.toolId !== "string") {
+      continue;
+    }
+
+    for (const rule of rules) {
+      if (step.toolId !== rule.consumerToolId) {
+        continue;
+      }
+
+      const producerExists = analysis.producedOutputKeys.includes(rule.producerOutputKey);
+      if (!producerExists) {
+        continue;
+      }
+
+      const actualValue = getObjectProperty(step.input, rule.inputKey);
+      const expectedRef = makeStepStateRef(rule.producerOutputKey, rule.nestedPath);
+      const actualRef = parseStepDependencyRef(actualValue);
+
+      if (!actualRef) {
+        return {
+          ok: false,
+          code: "STEP_DERIVED_INPUT_MUST_USE_REF",
+          message:
+            'step "' +
+            step.id +
+            '" must bind input "' +
+            rule.inputKey +
+            '" from outputKey "' +
+            rule.producerOutputKey +
+            '" via ' +
+            JSON.stringify(expectedRef.$ref),
+        };
+      }
+
+      if (
+        actualRef.outputKey !== rule.producerOutputKey ||
+        actualRef.nestedPath !== (rule.nestedPath ?? "")
+      ) {
+        return {
+          ok: false,
+          code: "STEP_DERIVED_INPUT_REF_MISMATCH",
+          message:
+            'step "' +
+            step.id +
+            '" must bind input "' +
+            rule.inputKey +
+            '" from outputKey "' +
+            rule.producerOutputKey +
+            '" via ' +
+            JSON.stringify(expectedRef.$ref),
+        };
+      }
+    }
+  }
+
+  return { ok: true };
 }
