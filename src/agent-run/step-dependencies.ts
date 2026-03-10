@@ -27,6 +27,13 @@ export type StepDependencyValidationResult =
   | { ok: true }
   | { ok: false; code: string; message: string };
 
+export interface BindStepInputRefParams {
+  steps: AgentStep[];
+  outputKey: string;
+  nestedPath?: string;
+  fallbackValue: unknown;
+}
+
 function isSingleRefObject(
   value: unknown
 ): value is { $ref?: unknown; __valueFromState?: unknown } {
@@ -153,7 +160,7 @@ export function analyzeStepDependencies(
   steps: AgentStep[]
 ): StepDependencyAnalysis | { error: StepDependencyValidationResult } {
   const produced = collectProducedOutputKeys(steps);
-  if (produced instanceof Map === false) {
+  if (!(produced instanceof Map)) {
     return produced;
   }
 
@@ -229,4 +236,32 @@ export function validateStepDependencies(
   }
 
   return { ok: true };
+}
+
+export function makeStepStateRef(outputKey: string, nestedPath?: string): { $ref: string } {
+  const key = String(outputKey).trim();
+  const path = typeof nestedPath === "string" ? nestedPath.trim() : "";
+
+  if (key.length === 0) {
+    throw new Error("INVALID_STEP_OUTPUT_KEY_REF");
+  }
+
+  return {
+    $ref: path.length > 0 ? "state.values." + key + "." + path : "state.values." + key,
+  };
+}
+
+export function bindStepInputRef(params: BindStepInputRefParams): unknown {
+  const { steps, outputKey, nestedPath, fallbackValue } = params;
+  const analysis = analyzeStepDependencies(steps);
+
+  if ("error" in analysis) {
+    return fallbackValue;
+  }
+
+  if (!analysis.producedOutputKeys.includes(outputKey)) {
+    return fallbackValue;
+  }
+
+  return makeStepStateRef(outputKey, nestedPath);
 }

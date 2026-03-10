@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { AgentStep } from "../../src/agent/plan-types";
 import {
   analyzeStepDependencies,
+  bindStepInputRef,
   collectStepDependencyRefs,
+  makeStepStateRef,
   validateStepDependencies,
 } from "../../src/agent-run/step-dependencies";
 
@@ -29,6 +31,46 @@ describe("step-dependencies", () => {
         nestedPath: "value",
       },
     ]);
+  });
+
+  it("creates canonical state ref", () => {
+    expect(makeStepStateRef("normalizedJson", "text")).toEqual({
+      $ref: "state.values.normalizedJson.text",
+    });
+  });
+
+  it("binds raw value when producer is not yet present", () => {
+    expect(
+      bindStepInputRef({
+        steps: [],
+        outputKey: "normalizedJson",
+        nestedPath: "text",
+        fallbackValue: "raw-json",
+      })
+    ).toBe("raw-json");
+  });
+
+  it("binds ref when producer already exists", () => {
+    const steps: AgentStep[] = [
+      {
+        id: "a",
+        kind: "tool.call",
+        toolId: "tool.normalize",
+        input: { text: "x" },
+        outputKey: "normalizedJson",
+      },
+    ];
+
+    expect(
+      bindStepInputRef({
+        steps,
+        outputKey: "normalizedJson",
+        nestedPath: "text",
+        fallbackValue: "raw-json",
+      })
+    ).toEqual({
+      $ref: "state.values.normalizedJson.text",
+    });
   });
 
   it("analyzes producer and consumer edges deterministically", () => {

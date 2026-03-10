@@ -2,7 +2,7 @@ import type { DeterministicAgentPlan, AgentStep } from "../agent/plan-types";
 import type { ToolCapability } from "../agent/tools";
 import { resolveToolIdForCapability } from "../agent/tools";
 import { normalizeCapabilityPipeline, validateCapabilityPipeline } from "./capability-preconditions";
-import { validateStepDependencies } from "./step-dependencies";
+import { bindStepInputRef, validateStepDependencies } from "./step-dependencies";
 
 function makeBaseSteps(goal: string, intent: string, plannedLog: string): AgentStep[] {
   return [
@@ -116,7 +116,13 @@ export function buildCapabilitySynthPlan(params: {
       },
       outputKey: "normalizedJson"
     });
-    currentTextRef = { "$ref": "state.values.normalizedJson.text" };
+
+    currentTextRef = bindStepInputRef({
+      steps,
+      outputKey: "normalizedJson",
+      nestedPath: "text",
+      fallbackValue: rawJson,
+    });
   }
 
   if (hasExtract) {
@@ -130,7 +136,13 @@ export function buildCapabilitySynthPlan(params: {
       },
       outputKey: "extractedUser"
     });
-    currentObjectRef = { "$ref": "state.values.extractedUser.value" };
+
+    currentObjectRef = bindStepInputRef({
+      steps,
+      outputKey: "extractedUser",
+      nestedPath: "value",
+      fallbackValue: undefined,
+    });
   }
 
   if (hasSelect) {
@@ -144,7 +156,13 @@ export function buildCapabilitySynthPlan(params: {
       },
       outputKey: "selected"
     });
-    currentObjectRef = { "$ref": "state.values.selected.value" };
+
+    currentObjectRef = bindStepInputRef({
+      steps,
+      outputKey: "selected",
+      nestedPath: "value",
+      fallbackValue: undefined,
+    });
   }
 
   if (hasMerge) {
