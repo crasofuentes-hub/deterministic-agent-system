@@ -2,6 +2,7 @@ import type { DeterministicAgentPlan, AgentStep } from "../agent/plan-types";
 import type { ToolCapability } from "../agent/tools";
 import { resolveToolIdForCapability } from "../agent/tools";
 import { normalizeCapabilityPipeline, validateCapabilityPipeline } from "./capability-preconditions";
+import { validateStepDependencies } from "./step-dependencies";
 
 function makeBaseSteps(goal: string, intent: string, plannedLog: string): AgentStep[] {
   return [
@@ -64,6 +65,11 @@ export function buildCapabilitySynthPlan(params: {
     });
     steps.push({ id: nextId(), kind: "append_log", value: "done" });
 
+    const dependencyValidation = validateStepDependencies(steps);
+    if (!dependencyValidation.ok) {
+      throw new Error(dependencyValidation.code + ": " + dependencyValidation.message);
+    }
+
     return {
       planId: buildPlanId(plannerPrefix, intent),
       version: 1,
@@ -80,6 +86,11 @@ export function buildCapabilitySynthPlan(params: {
       outputKey: "output"
     });
     steps.push({ id: nextId(), kind: "append_log", value: "done" });
+
+    const dependencyValidation = validateStepDependencies(steps);
+    if (!dependencyValidation.ok) {
+      throw new Error(dependencyValidation.code + ": " + dependencyValidation.message);
+    }
 
     return {
       planId: buildPlanId(plannerPrefix, intent),
@@ -150,6 +161,11 @@ export function buildCapabilitySynthPlan(params: {
   }
 
   steps.push({ id: nextId(), kind: "append_log", value: "done" });
+
+  const dependencyValidation = validateStepDependencies(steps);
+  if (!dependencyValidation.ok) {
+    throw new Error(dependencyValidation.code + ": " + dependencyValidation.message);
+  }
 
   return {
     planId: buildPlanId(plannerPrefix, intent),
