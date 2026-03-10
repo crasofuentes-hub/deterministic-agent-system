@@ -2,7 +2,11 @@ import type { DeterministicAgentPlan, AgentStep } from "../agent/plan-types";
 import type { ToolCapability } from "../agent/tools";
 import { resolveToolIdForCapability } from "../agent/tools";
 import { normalizeCapabilityPipeline, validateCapabilityPipeline } from "./capability-preconditions";
-import { bindStepInputRef, validateStepDependencies } from "./step-dependencies";
+import {
+  bindStepInputRef,
+  validateRequiredDerivedInputs,
+  validateStepDependencies
+} from "./step-dependencies";
 
 function makeBaseSteps(goal: string, intent: string, plannedLog: string): AgentStep[] {
   return [
@@ -22,6 +26,33 @@ function buildPlanId(plannerPrefix: string, intent: string): string {
   }
 
   return "agent-run-" + plannerPrefix + "-v1:" + intent;
+}
+
+function validateCanonicalDerivedInputs(steps: AgentStep[]): void {
+  const derivedValidation = validateRequiredDerivedInputs(steps, [
+    {
+      consumerToolId: resolveToolIdForCapability("json.extract"),
+      inputKey: "text",
+      producerOutputKey: "normalizedJson",
+      nestedPath: "text",
+    },
+    {
+      consumerToolId: resolveToolIdForCapability("json.select"),
+      inputKey: "text",
+      producerOutputKey: "extractedUser",
+      nestedPath: "value",
+    },
+    {
+      consumerToolId: resolveToolIdForCapability("json.merge"),
+      inputKey: "left",
+      producerOutputKey: "selected",
+      nestedPath: "value",
+    },
+  ]);
+
+  if (!derivedValidation.ok) {
+    throw new Error(derivedValidation.code + ": " + derivedValidation.message);
+  }
 }
 
 export function buildCapabilitySynthPlan(params: {
@@ -70,6 +101,8 @@ export function buildCapabilitySynthPlan(params: {
       throw new Error(dependencyValidation.code + ": " + dependencyValidation.message);
     }
 
+    validateCanonicalDerivedInputs(steps);
+
     return {
       planId: buildPlanId(plannerPrefix, intent),
       version: 1,
@@ -91,6 +124,8 @@ export function buildCapabilitySynthPlan(params: {
     if (!dependencyValidation.ok) {
       throw new Error(dependencyValidation.code + ": " + dependencyValidation.message);
     }
+
+    validateCanonicalDerivedInputs(steps);
 
     return {
       planId: buildPlanId(plannerPrefix, intent),
@@ -184,6 +219,8 @@ export function buildCapabilitySynthPlan(params: {
   if (!dependencyValidation.ok) {
     throw new Error(dependencyValidation.code + ": " + dependencyValidation.message);
   }
+
+  validateCanonicalDerivedInputs(steps);
 
   return {
     planId: buildPlanId(plannerPrefix, intent),
