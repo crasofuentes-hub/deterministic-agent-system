@@ -1,7 +1,10 @@
 import type { DeterministicAgentPlan, AgentStep } from "../agent/plan-types";
 import type { ToolCapability } from "../agent/tools";
 import { resolveToolIdForCapability } from "../agent/tools";
-import { normalizeCapabilityPipeline, validateCapabilityPipeline } from "./capability-preconditions";
+import {
+  normalizeCapabilityPipelineDetailed,
+  validateCapabilityPipeline
+} from "./capability-preconditions";
 import {
   bindStepInputRef,
   validateRequiredDerivedInputs,
@@ -55,6 +58,19 @@ function validateCanonicalDerivedInputs(steps: AgentStep[]): void {
   }
 }
 
+function appendInsertedCapabilityLog(steps: AgentStep[], inserted: ToolCapability[]): void {
+  if (inserted.length === 0) {
+    return;
+  }
+
+  const normalizedInserted = [...inserted].sort();
+  steps.push({
+    id: "z",
+    kind: "append_log",
+    value: "capabilities:auto-inserted:" + normalizedInserted.join(",")
+  });
+}
+
 export function buildCapabilitySynthPlan(params: {
   plannerPrefix: string;
   goal: string;
@@ -62,7 +78,8 @@ export function buildCapabilitySynthPlan(params: {
   capabilities: ToolCapability[];
 }): DeterministicAgentPlan {
   const { plannerPrefix, goal, intent, capabilities } = params;
-  const caps = normalizeCapabilityPipeline(capabilities);
+  const normalized = normalizeCapabilityPipelineDetailed(capabilities);
+  const caps = normalized.capabilities;
   const validation = validateCapabilityPipeline(caps);
 
   if (!validation.ok) {
@@ -94,6 +111,8 @@ export function buildCapabilitySynthPlan(params: {
       input: { a: 2, b: 3 },
       outputKey: "sum"
     });
+
+    appendInsertedCapabilityLog(steps, normalized.inserted);
     steps.push({ id: nextId(), kind: "append_log", value: "done" });
 
     const dependencyValidation = validateStepDependencies(steps);
@@ -118,6 +137,8 @@ export function buildCapabilitySynthPlan(params: {
       input: { value: plannerPrefix + ":" + intent },
       outputKey: "output"
     });
+
+    appendInsertedCapabilityLog(steps, normalized.inserted);
     steps.push({ id: nextId(), kind: "append_log", value: "done" });
 
     const dependencyValidation = validateStepDependencies(steps);
@@ -213,6 +234,7 @@ export function buildCapabilitySynthPlan(params: {
     });
   }
 
+  appendInsertedCapabilityLog(steps, normalized.inserted);
   steps.push({ id: nextId(), kind: "append_log", value: "done" });
 
   const dependencyValidation = validateStepDependencies(steps);

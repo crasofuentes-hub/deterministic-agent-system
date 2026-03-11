@@ -1,6 +1,11 @@
 import type { ToolCapability } from "../agent/tools";
 import { insertRequiredCapabilities } from "./capability-dependency-rules";
 
+export interface NormalizedCapabilityPipelineResult {
+  capabilities: ToolCapability[];
+  inserted: ToolCapability[];
+}
+
 function uniqueStable(items: ToolCapability[]): ToolCapability[] {
   const seen = new Set<string>();
   const out: ToolCapability[] = [];
@@ -13,22 +18,37 @@ function uniqueStable(items: ToolCapability[]): ToolCapability[] {
   return out;
 }
 
-export function normalizeCapabilityPipeline(capabilities: ToolCapability[]): ToolCapability[] {
+export function normalizeCapabilityPipelineDetailed(
+  capabilities: ToolCapability[]
+): NormalizedCapabilityPipelineResult {
   const caps = uniqueStable(capabilities);
 
   const hasMath = caps.includes("math.add");
   const hasEcho = caps.includes("echo");
 
   if (hasMath) {
-    return ["math.add"];
+    return {
+      capabilities: ["math.add"],
+      inserted: [],
+    };
   }
 
   if (hasEcho && caps.length === 1) {
-    return ["echo"];
+    return {
+      capabilities: ["echo"],
+      inserted: [],
+    };
   }
 
   const insertion = insertRequiredCapabilities(caps);
-  return insertion.capabilities;
+  return {
+    capabilities: insertion.capabilities,
+    inserted: insertion.inserted,
+  };
+}
+
+export function normalizeCapabilityPipeline(capabilities: ToolCapability[]): ToolCapability[] {
+  return normalizeCapabilityPipelineDetailed(capabilities).capabilities;
 }
 
 export function validateCapabilityPipeline(capabilities: ToolCapability[]): { ok: true } | { ok: false; code: string; message: string } {
