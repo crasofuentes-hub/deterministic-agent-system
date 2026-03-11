@@ -1,4 +1,5 @@
 import type { ToolCapability } from "../agent/tools";
+import { insertRequiredCapabilities } from "./capability-dependency-rules";
 
 function uniqueStable(items: ToolCapability[]): ToolCapability[] {
   const seen = new Set<string>();
@@ -14,12 +15,7 @@ function uniqueStable(items: ToolCapability[]): ToolCapability[] {
 
 export function normalizeCapabilityPipeline(capabilities: ToolCapability[]): ToolCapability[] {
   const caps = uniqueStable(capabilities);
-  const out: ToolCapability[] = [];
 
-  const hasNormalize = caps.includes("text.normalize");
-  const hasExtract = caps.includes("json.extract");
-  const hasSelect = caps.includes("json.select");
-  const hasMerge = caps.includes("json.merge");
   const hasMath = caps.includes("math.add");
   const hasEcho = caps.includes("echo");
 
@@ -31,23 +27,8 @@ export function normalizeCapabilityPipeline(capabilities: ToolCapability[]): Too
     return ["echo"];
   }
 
-  if (hasNormalize) {
-    out.push("text.normalize");
-  }
-
-  if (hasExtract || hasSelect || hasMerge) {
-    out.push("json.extract");
-  }
-
-  if (hasSelect) {
-    out.push("json.select");
-  }
-
-  if (hasMerge) {
-    out.push("json.merge");
-  }
-
-  return uniqueStable(out);
+  const insertion = insertRequiredCapabilities(caps);
+  return insertion.capabilities;
 }
 
 export function validateCapabilityPipeline(capabilities: ToolCapability[]): { ok: true } | { ok: false; code: string; message: string } {
@@ -88,6 +69,14 @@ export function validateCapabilityPipeline(capabilities: ToolCapability[]): { ok
       ok: false,
       code: "MISSING_EXTRACT_PRECONDITION",
       message: "json.select/json.merge require json.extract in normalized pipeline"
+    };
+  }
+
+  if (hasMerge && !hasSelect) {
+    return {
+      ok: false,
+      code: "MISSING_SELECT_PRECONDITION",
+      message: "json.merge requires json.select in normalized pipeline"
     };
   }
 
