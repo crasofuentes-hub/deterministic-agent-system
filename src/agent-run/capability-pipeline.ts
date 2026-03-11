@@ -31,6 +31,43 @@ function buildPlanId(plannerPrefix: string, intent: string): string {
   return "agent-run-" + plannerPrefix + "-v1:" + intent;
 }
 
+function classifyPipelineFamily(caps: ToolCapability[]): string {
+  if (caps.length === 1 && caps[0] === "math.add") {
+    return "math";
+  }
+
+  if (caps.length === 1 && caps[0] === "echo") {
+    return "echo";
+  }
+
+  if (caps.includes("json.merge")) {
+    return "json-merge";
+  }
+
+  if (caps.includes("json.select")) {
+    return "json-select";
+  }
+
+  if (caps.includes("json.extract")) {
+    return "json-extract";
+  }
+
+  if (caps.includes("text.normalize")) {
+    return "text-normalize";
+  }
+
+  return "generic";
+}
+
+function buildPlanMetadata(requested: ToolCapability[], normalized: ToolCapability[], inserted: ToolCapability[]) {
+  return {
+    requestedCapabilities: [...requested],
+    normalizedCapabilities: [...normalized],
+    autoInsertedCapabilities: [...inserted].sort(),
+    pipelineFamily: classifyPipelineFamily(normalized),
+  };
+}
+
 function validateCanonicalDerivedInputs(steps: AgentStep[]): void {
   const derivedValidation = validateRequiredDerivedInputs(steps, [
     {
@@ -78,8 +115,10 @@ export function buildCapabilitySynthPlan(params: {
   capabilities: ToolCapability[];
 }): DeterministicAgentPlan {
   const { plannerPrefix, goal, intent, capabilities } = params;
+  const requestedCaps = [...capabilities];
   const normalized = normalizeCapabilityPipelineDetailed(capabilities);
   const caps = normalized.capabilities;
+  const metadata = buildPlanMetadata(requestedCaps, caps, normalized.inserted);
   const validation = validateCapabilityPipeline(caps);
 
   if (!validation.ok) {
@@ -126,6 +165,7 @@ export function buildCapabilitySynthPlan(params: {
       planId: buildPlanId(plannerPrefix, intent),
       version: 1,
       steps,
+      metadata,
     };
   }
 
@@ -152,6 +192,7 @@ export function buildCapabilitySynthPlan(params: {
       planId: buildPlanId(plannerPrefix, intent),
       version: 1,
       steps,
+      metadata,
     };
   }
 
@@ -248,5 +289,6 @@ export function buildCapabilitySynthPlan(params: {
     planId: buildPlanId(plannerPrefix, intent),
     version: 1,
     steps,
+    metadata,
   };
 }

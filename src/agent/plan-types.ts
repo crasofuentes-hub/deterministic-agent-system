@@ -34,10 +34,18 @@ export interface AgentStep {
   maxIterations?: number;
 }
 
+export interface DeterministicAgentPlanMetadata {
+  requestedCapabilities?: string[];
+  normalizedCapabilities?: string[];
+  autoInsertedCapabilities?: string[];
+  pipelineFamily?: string;
+}
+
 export interface DeterministicAgentPlan {
   planId: string;
   version: 1;
   steps: AgentStep[];
+  metadata?: DeterministicAgentPlanMetadata;
 }
 
 export interface AgentState {
