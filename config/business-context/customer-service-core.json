@@ -1,0 +1,96 @@
+{
+  "contextId": "customer-service-core-v1",
+  "domain": "customer-service",
+  "businessName": "Generic Customer Service",
+  "supportedIntents": [
+    {
+      "intentId": "consult-status",
+      "description": "Consult the status of an existing case or request.",
+      "requiredEntities": ["caseId"],
+      "optionalEntities": [],
+      "workflowId": "case-status-flow"
+    },
+    {
+      "intentId": "request-human-handoff",
+      "description": "Request transfer to a human agent.",
+      "requiredEntities": [],
+      "optionalEntities": [],
+      "workflowId": "handoff-flow"
+    },
+    {
+      "intentId": "close-conversation",
+      "description": "Close the current conversation.",
+      "requiredEntities": [],
+      "optionalEntities": [],
+      "workflowId": "closure-flow"
+    }
+  ],
+  "entitySchema": [
+    {
+      "entityId": "caseId",
+      "entityType": "string",
+      "required": true
+    }
+  ],
+  "workflowRules": [
+    {
+      "workflowId": "case-status-flow",
+      "stages": ["start", "collect-case-id", "resolve-status", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "handoff-flow",
+      "stages": ["start", "handoff-requested", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "closure-flow",
+      "stages": ["start", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    }
+  ],
+  "canonicalResponses": [
+    {
+      "responseId": "consult-status-missing-case-id",
+      "intentId": "consult-status",
+      "stage": "collect-case-id",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide your case ID so I can review the status."
+    },
+    {
+      "responseId": "handoff-requested",
+      "intentId": "request-human-handoff",
+      "stage": "handoff-requested",
+      "status": "handoff",
+      "messageTemplate": "Your conversation will be transferred to a human agent."
+    },
+    {
+      "responseId": "conversation-closed",
+      "intentId": "close-conversation",
+      "stage": "done",
+      "status": "closed",
+      "messageTemplate": "Your conversation has been closed."
+    }
+  ],
+  "handoffRules": [
+    {
+      "ruleId": "explicit-human-request",
+      "whenIntentIds": ["request-human-handoff"],
+      "requiresHuman": true,
+      "queue": "general"
+    }
+  ],
+  "tonePolicy": {
+    "toneId": "default-neutral",
+    "style": "neutral",
+    "brevity": "medium"
+  },
+  "sessionPolicy": {
+    "inactivityTimeoutMinutes": 30,
+    "allowResume": true,
+    "maxTurnsBeforeClosure": 100
+  }
+}
