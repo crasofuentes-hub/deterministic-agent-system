@@ -18,7 +18,12 @@ export type ToolCapability =
   | "json.select"
   | "json.merge"
   | "math.add"
-  | "echo";
+  | "echo"
+  | "catalog.product-find"
+  | "catalog.price-find"
+  | "catalog.availability-find"
+  | "orders.find-by-id"
+  | "kb.find-by-product-name";
 
 export type ToolInputSchemaHint = Readonly<{
   type: "object";

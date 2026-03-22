@@ -1,17 +1,27 @@
 import { ToolRegistry } from "./registry";
+import { toolCatalogAvailabilityFind } from "./builtins/catalog_availability_find";
+import { toolCatalogPriceFind } from "./builtins/catalog_price_find";
+import { toolCatalogProductFind } from "./builtins/catalog_product_find";
 import { toolEcho } from "./builtins/echo";
-import { toolMathAdd } from "./builtins/math_add";
-import { toolTextNormalize } from "./builtins/text_normalize";
 import { toolJsonExtract } from "./builtins/json_extract";
-import { toolJsonSelectKeys } from "./builtins/json_select_keys";
 import { toolJsonMerge } from "./builtins/json_merge";
+import { toolJsonSelectKeys } from "./builtins/json_select_keys";
+import { toolKbFindByProductName } from "./builtins/kb_find_by_product_name";
+import { toolMathAdd } from "./builtins/math_add";
+import { toolOrdersFindById } from "./builtins/orders_find_by_id";
+import { toolTextNormalize } from "./builtins/text_normalize";
 
 export const AGENT_TOOL_DEFS = [
+  toolCatalogAvailabilityFind,
+  toolCatalogPriceFind,
+  toolCatalogProductFind,
   toolEcho,
   toolJsonExtract,
   toolJsonMerge,
   toolJsonSelectKeys,
+  toolKbFindByProductName,
   toolMathAdd,
+  toolOrdersFindById,
   toolTextNormalize,
 ] as const;
 
