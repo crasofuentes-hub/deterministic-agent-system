@@ -18,40 +18,51 @@ describe("customer-service-agent", () => {
     expect(result.responseText).toBe("Please provide the product name so I can help you.");
   });
 
-  it("resolves price when product name is present in user text", () => {
+  it("returns real price data when product name is present", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-001",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Cual es el precio de laptop x pro",
+      userMessageText: "Cual es el precio de Laptop X Pro",
     });
 
     expect(result.resolvedIntentId).toBe("consult-price");
     expect(result.responseId).toBe("consult-price-resolved");
     expect(result.status).toBe("resolved");
-    expect(result.responseText).toBe("The product price has been retrieved.");
+    expect(result.responseText).toBe("Product: Laptop X Pro | Price: 1499.99 USD");
   });
 
-  it("resolves order status when order id is present in user text", () => {
+  it("returns real availability data", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
-        sessionId: "S-001",
+        sessionId: "S-002",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "Tienen disponibilidad de Laptop X Pro",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-availability");
+    expect(result.responseText).toBe("Product: Laptop X Pro | Availability: in-stock | Stock: 12");
+  });
+
+  it("returns real order status data", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-003",
         businessContextId: "customer-service-core-v2",
       }),
       userMessageText: "Quiero saber el estado de mi pedido ORDER-12345",
     });
 
     expect(result.resolvedIntentId).toBe("consult-order-status");
-    expect(result.responseId).toBe("consult-order-status-resolved");
-    expect(result.status).toBe("resolved");
-    expect(result.responseText).toBe("Your order status has been retrieved.");
+    expect(result.responseText).toBe("Order ID: ORDER-12345 | Status: processing | Updated: 2026-03-10T10:00:00Z");
   });
 
   it("requests human handoff deterministically", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
-        sessionId: "S-001",
+        sessionId: "S-004",
         businessContextId: "customer-service-core-v2",
       }),
       userMessageText: "Quiero hablar con un humano",

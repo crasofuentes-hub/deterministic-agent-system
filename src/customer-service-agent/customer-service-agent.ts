@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { BusinessContextPack } from "../business-context/context-pack";
 import { orchestrateConversationTurn } from "../conversation-orchestrator/conversation-orchestrator";
+import { findOrderById } from "../data-layer/order-repository";
+import { findProductByName } from "../data-layer/product-repository";
 import { extractEntitiesFromText } from "../entity-extractor/entity-extractor";
 import { resolveIntentFromText } from "../intent-resolver/intent-resolver";
 import type { SessionState } from "../session-state/session-state";
@@ -25,6 +27,106 @@ function loadCustomerServicePack(): BusinessContextPack {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as BusinessContextPack;
 }
 
+function findEntityValue(session: SessionState, entityId: string): string | undefined {
+  return session.collectedEntities.find((item) => item.entityId === entityId)?.value;
+}
+
+function buildResolvedResponse(
+  resolvedIntentId: string,
+  responseId: string,
+  session: SessionState
+): string | undefined {
+  if (resolvedIntentId === "consult-price") {
+    const productName = findEntityValue(session, "productName");
+    if (!productName) {
+      return undefined;
+    }
+
+    const product = findProductByName(productName);
+    if (!product) {
+      return "The product was not found.";
+    }
+
+    return (
+      "Product: " +
+      product.name +
+      " | Price: " +
+      product.price.toFixed(2) +
+      " " +
+      product.currency
+    );
+  }
+
+  if (resolvedIntentId === "consult-availability") {
+    const productName = findEntityValue(session, "productName");
+    if (!productName) {
+      return undefined;
+    }
+
+    const product = findProductByName(productName);
+    if (!product) {
+      return "The product was not found.";
+    }
+
+    return (
+      "Product: " +
+      product.name +
+      " | Availability: " +
+      product.availability +
+      " | Stock: " +
+      String(product.stockQuantity)
+    );
+  }
+
+  if (resolvedIntentId === "consult-product") {
+    const productName = findEntityValue(session, "productName");
+    if (!productName) {
+      return undefined;
+    }
+
+    const product = findProductByName(productName);
+    if (!product) {
+      return "The product was not found.";
+    }
+
+    return (
+      "Product: " +
+      product.name +
+      " | SKU: " +
+      product.sku +
+      " | Price: " +
+      product.price.toFixed(2) +
+      " " +
+      product.currency +
+      " | Availability: " +
+      product.availability
+    );
+  }
+
+  if (resolvedIntentId === "consult-order-status") {
+    const orderId = findEntityValue(session, "orderId");
+    if (!orderId) {
+      return undefined;
+    }
+
+    const order = findOrderById(orderId);
+    if (!order) {
+      return "The order was not found.";
+    }
+
+    return (
+      "Order ID: " +
+      order.orderId +
+      " | Status: " +
+      order.status +
+      " | Updated: " +
+      order.updatedAtIso
+    );
+  }
+
+  return undefined;
+}
+
 export function runCustomerServiceAgent(params: {
   session: SessionState;
   userMessageText: string;
@@ -45,10 +147,16 @@ export function runCustomerServiceAgent(params: {
     intentId: resolvedIntent.intentId,
   });
 
+  const resolvedResponseText = buildResolvedResponse(
+    result.intentId,
+    result.responseId,
+    result.session
+  );
+
   return {
     session: result.session,
     resolvedIntentId: result.intentId,
-    responseText: result.responseText,
+    responseText: resolvedResponseText ?? result.responseText,
     responseId: result.responseId,
     stage: result.stage,
     status: result.status,
