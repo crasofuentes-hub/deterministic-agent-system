@@ -19,6 +19,82 @@ export interface ConversationOrchestratorResult {
   status: string;
 }
 
+function resolveMissingStage(intentId: string): string {
+  if (
+    intentId === "consult-product" ||
+    intentId === "consult-price" ||
+    intentId === "consult-availability"
+  ) {
+    return "collect-product-name";
+  }
+
+  if (intentId === "consult-order-status") {
+    return "collect-order-id";
+  }
+
+  return "collect-missing-data";
+}
+
+function resolveResolvedStage(intentId: string): string {
+  if (intentId === "consult-product") {
+    return "resolve-product";
+  }
+
+  if (intentId === "consult-price") {
+    return "resolve-price";
+  }
+
+  if (intentId === "consult-availability") {
+    return "resolve-availability";
+  }
+
+  if (intentId === "consult-order-status") {
+    return "resolve-order-status";
+  }
+
+  return "done";
+}
+
+function resolveMissingResponseId(intentId: string): string {
+  if (intentId === "consult-product") {
+    return "consult-product-missing-product-name";
+  }
+
+  if (intentId === "consult-price") {
+    return "consult-price-missing-product-name";
+  }
+
+  if (intentId === "consult-availability") {
+    return "consult-availability-missing-product-name";
+  }
+
+  if (intentId === "consult-order-status") {
+    return "consult-order-status-missing-order-id";
+  }
+
+  return "missing-data";
+}
+
+function resolveResolvedResponseId(intentId: string): string {
+  if (intentId === "consult-product") {
+    return "consult-product-resolved";
+  }
+
+  if (intentId === "consult-price") {
+    return "consult-price-resolved";
+  }
+
+  if (intentId === "consult-availability") {
+    return "consult-availability-resolved";
+  }
+
+  if (intentId === "consult-order-status") {
+    return "consult-order-status-resolved";
+  }
+
+  return "resolved";
+}
+
 export function orchestrateConversationTurn(params: {
   pack: BusinessContextPack;
   session: SessionState;
@@ -80,10 +156,11 @@ export function orchestrateConversationTurn(params: {
   const entityEvaluation = evaluateEntityCollection(pack, session, intent.intentId);
 
   if (!entityEvaluation.isComplete) {
+    const stage = resolveMissingStage(intent.intentId);
     const nextSession = setSessionIntent(session, {
       intentId: intent.intentId,
       workflowId: intent.workflowId,
-      stage: "collect-case-id",
+      stage,
       missingEntityIds: entityEvaluation.missingEntityIds,
     });
 
@@ -91,21 +168,22 @@ export function orchestrateConversationTurn(params: {
       session: nextSession,
       responseText: renderCanonicalResponseText(pack, {
         intentId: intent.intentId,
-        stage: "collect-case-id",
+        stage,
         status: "missing-entity",
       }),
-      responseId: "consult-status-missing-case-id",
+      responseId: resolveMissingResponseId(intent.intentId),
       intentId: intent.intentId,
       workflowId: intent.workflowId,
-      stage: "collect-case-id",
+      stage,
       status: "missing-entity",
     };
   }
 
+  const stage = resolveResolvedStage(intent.intentId);
   const nextSession = setSessionIntent(session, {
     intentId: intent.intentId,
     workflowId: intent.workflowId,
-    stage: "resolve-status",
+    stage,
     missingEntityIds: [],
   });
 
@@ -113,13 +191,13 @@ export function orchestrateConversationTurn(params: {
     session: nextSession,
     responseText: renderCanonicalResponseText(pack, {
       intentId: intent.intentId,
-      stage: "resolve-status",
+      stage,
       status: "resolved",
     }),
-    responseId: "consult-status-resolved",
+    responseId: resolveResolvedResponseId(intent.intentId),
     intentId: intent.intentId,
     workflowId: intent.workflowId,
-    stage: "resolve-status",
+    stage,
     status: "resolved",
   };
 }

@@ -18,35 +18,35 @@ function loadPack(): BusinessContextPack {
 }
 
 describe("conversation-orchestrator", () => {
-  it("asks for missing caseId deterministically", () => {
+  it("asks for missing product name deterministically", () => {
     const result = orchestrateConversationTurn({
       pack: loadPack(),
       session: createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
-      intentId: "consult-status",
+      intentId: "consult-product",
     });
 
-    expect(result.responseId).toBe("consult-status-missing-case-id");
-    expect(result.stage).toBe("collect-case-id");
+    expect(result.responseId).toBe("consult-product-missing-product-name");
+    expect(result.stage).toBe("collect-product-name");
     expect(result.status).toBe("missing-entity");
     expect(result.responseText).toBe(
-      "Please provide your case ID so I can review the status."
+      "Please provide the product name so I can help you."
     );
     expect(result.session.conversationStatus).toBe("waiting-user");
-    expect(result.session.missingEntityIds).toEqual(["caseId"]);
+    expect(result.session.missingEntityIds).toEqual(["productName"]);
   });
 
-  it("resolves consult-status when caseId is present", () => {
+  it("resolves consult-price when productName is present", () => {
     const session = upsertSessionEntity(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       {
-        entityId: "caseId",
-        value: "CASE-123",
+        entityId: "productName",
+        value: "Laptop X",
         confidence: "confirmed",
       }
     );
@@ -54,15 +54,34 @@ describe("conversation-orchestrator", () => {
     const result = orchestrateConversationTurn({
       pack: loadPack(),
       session,
-      intentId: "consult-status",
+      intentId: "consult-price",
     });
 
-    expect(result.responseId).toBe("consult-status-resolved");
-    expect(result.stage).toBe("resolve-status");
+    expect(result.responseId).toBe("consult-price-resolved");
+    expect(result.stage).toBe("resolve-price");
     expect(result.status).toBe("resolved");
-    expect(result.responseText).toBe("Your case status has been retrieved.");
+    expect(result.responseText).toBe("The product price has been retrieved.");
     expect(result.session.conversationStatus).toBe("active");
     expect(result.session.missingEntityIds).toEqual([]);
+  });
+
+  it("asks for missing orderId deterministically", () => {
+    const result = orchestrateConversationTurn({
+      pack: loadPack(),
+      session: createInitialSessionState({
+        sessionId: "S-001",
+        businessContextId: "customer-service-core-v2",
+      }),
+      intentId: "consult-order-status",
+    });
+
+    expect(result.responseId).toBe("consult-order-status-missing-order-id");
+    expect(result.stage).toBe("collect-order-id");
+    expect(result.status).toBe("missing-entity");
+    expect(result.responseText).toBe(
+      "Please provide your order ID so I can review the order status."
+    );
+    expect(result.session.missingEntityIds).toEqual(["orderId"]);
   });
 
   it("requests human handoff deterministically", () => {
@@ -70,7 +89,7 @@ describe("conversation-orchestrator", () => {
       pack: loadPack(),
       session: createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       intentId: "request-human-handoff",
     });
@@ -89,7 +108,7 @@ describe("conversation-orchestrator", () => {
       pack: loadPack(),
       session: createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       intentId: "close-conversation",
     });
