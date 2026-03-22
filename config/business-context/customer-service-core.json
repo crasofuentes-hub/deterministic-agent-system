@@ -1,14 +1,35 @@
 {
-  "contextId": "customer-service-core-v1",
+  "contextId": "customer-service-core-v2",
   "domain": "customer-service",
   "businessName": "Generic Customer Service",
   "supportedIntents": [
     {
-      "intentId": "consult-status",
-      "description": "Consult the status of an existing case or request.",
-      "requiredEntities": ["caseId"],
+      "intentId": "consult-product",
+      "description": "Consult information about a product.",
+      "requiredEntities": ["productName"],
+      "optionalEntities": ["sku"],
+      "workflowId": "product-consultation-flow"
+    },
+    {
+      "intentId": "consult-price",
+      "description": "Consult the price of a product.",
+      "requiredEntities": ["productName"],
+      "optionalEntities": ["sku"],
+      "workflowId": "price-consultation-flow"
+    },
+    {
+      "intentId": "consult-availability",
+      "description": "Consult the availability of a product.",
+      "requiredEntities": ["productName"],
+      "optionalEntities": ["sku"],
+      "workflowId": "availability-flow"
+    },
+    {
+      "intentId": "consult-order-status",
+      "description": "Consult the status of an order.",
+      "requiredEntities": ["orderId"],
       "optionalEntities": [],
-      "workflowId": "case-status-flow"
+      "workflowId": "order-status-flow"
     },
     {
       "intentId": "request-human-handoff",
@@ -27,15 +48,43 @@
   ],
   "entitySchema": [
     {
-      "entityId": "caseId",
+      "entityId": "productName",
       "entityType": "string",
-      "required": true
+      "required": false
+    },
+    {
+      "entityId": "sku",
+      "entityType": "string",
+      "required": false
+    },
+    {
+      "entityId": "orderId",
+      "entityType": "string",
+      "required": false
     }
   ],
   "workflowRules": [
     {
-      "workflowId": "case-status-flow",
-      "stages": ["start", "collect-case-id", "resolve-status", "done"],
+      "workflowId": "product-consultation-flow",
+      "stages": ["start", "collect-product-name", "resolve-product", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "price-consultation-flow",
+      "stages": ["start", "collect-product-name", "resolve-price", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "availability-flow",
+      "stages": ["start", "collect-product-name", "resolve-availability", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "order-status-flow",
+      "stages": ["start", "collect-order-id", "resolve-order-status", "done"],
       "initialStage": "start",
       "terminalStages": ["done"]
     },
@@ -54,18 +103,60 @@
   ],
   "canonicalResponses": [
     {
-      "responseId": "consult-status-missing-case-id",
-      "intentId": "consult-status",
-      "stage": "collect-case-id",
+      "responseId": "consult-product-missing-product-name",
+      "intentId": "consult-product",
+      "stage": "collect-product-name",
       "status": "missing-entity",
-      "messageTemplate": "Please provide your case ID so I can review the status."
+      "messageTemplate": "Please provide the product name so I can help you."
     },
     {
-      "responseId": "consult-status-resolved",
-      "intentId": "consult-status",
-      "stage": "resolve-status",
+      "responseId": "consult-product-resolved",
+      "intentId": "consult-product",
+      "stage": "resolve-product",
       "status": "resolved",
-      "messageTemplate": "Your case status has been retrieved."
+      "messageTemplate": "The product information has been retrieved."
+    },
+    {
+      "responseId": "consult-price-missing-product-name",
+      "intentId": "consult-price",
+      "stage": "collect-product-name",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide the product name so I can check the price."
+    },
+    {
+      "responseId": "consult-price-resolved",
+      "intentId": "consult-price",
+      "stage": "resolve-price",
+      "status": "resolved",
+      "messageTemplate": "The product price has been retrieved."
+    },
+    {
+      "responseId": "consult-availability-missing-product-name",
+      "intentId": "consult-availability",
+      "stage": "collect-product-name",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide the product name so I can check availability."
+    },
+    {
+      "responseId": "consult-availability-resolved",
+      "intentId": "consult-availability",
+      "stage": "resolve-availability",
+      "status": "resolved",
+      "messageTemplate": "The product availability has been retrieved."
+    },
+    {
+      "responseId": "consult-order-status-missing-order-id",
+      "intentId": "consult-order-status",
+      "stage": "collect-order-id",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide your order ID so I can review the order status."
+    },
+    {
+      "responseId": "consult-order-status-resolved",
+      "intentId": "consult-order-status",
+      "stage": "resolve-order-status",
+      "status": "resolved",
+      "messageTemplate": "Your order status has been retrieved."
     },
     {
       "responseId": "handoff-requested",

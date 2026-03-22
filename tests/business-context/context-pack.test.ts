@@ -12,7 +12,7 @@ describe("business context pack", () => {
     const raw = fs.readFileSync(filePath, "utf8");
     const pack = JSON.parse(raw);
 
-    expect(pack.contextId).toBe("customer-service-core-v1");
+    expect(pack.contextId).toBe("customer-service-core-v2");
     expect(pack.domain).toBe("customer-service");
     expect(pack.businessName).toBe("Generic Customer Service");
 
@@ -35,7 +35,7 @@ describe("business context pack", () => {
     });
   });
 
-  it("defines consult-status intent with required caseId", () => {
+  it("defines consult-product with required productName", () => {
     const filePath = path.resolve(
       process.cwd(),
       "config/business-context/customer-service-core.json"
@@ -45,15 +45,37 @@ describe("business context pack", () => {
     const pack = JSON.parse(raw);
 
     const intent = pack.supportedIntents.find(
-      (item: { intentId: string }) => item.intentId === "consult-status"
+      (item: { intentId: string }) => item.intentId === "consult-product"
     );
 
     expect(intent).toEqual({
-      intentId: "consult-status",
-      description: "Consult the status of an existing case or request.",
-      requiredEntities: ["caseId"],
+      intentId: "consult-product",
+      description: "Consult information about a product.",
+      requiredEntities: ["productName"],
+      optionalEntities: ["sku"],
+      workflowId: "product-consultation-flow"
+    });
+  });
+
+  it("defines consult-order-status with required orderId", () => {
+    const filePath = path.resolve(
+      process.cwd(),
+      "config/business-context/customer-service-core.json"
+    );
+
+    const raw = fs.readFileSync(filePath, "utf8");
+    const pack = JSON.parse(raw);
+
+    const intent = pack.supportedIntents.find(
+      (item: { intentId: string }) => item.intentId === "consult-order-status"
+    );
+
+    expect(intent).toEqual({
+      intentId: "consult-order-status",
+      description: "Consult the status of an order.",
+      requiredEntities: ["orderId"],
       optionalEntities: [],
-      workflowId: "case-status-flow"
+      workflowId: "order-status-flow"
     });
   });
 });
