@@ -1,0 +1,17 @@
+[
+  {
+    "topicId": "product-laptop-x-pro",
+    "productName": "Laptop X Pro",
+    "summary": "Laptop X Pro is a high-performance laptop for productivity and advanced workloads."
+  },
+  {
+    "topicId": "product-wireless-mouse-m1",
+    "productName": "Wireless Mouse M1",
+    "summary": "Wireless Mouse M1 is a compact wireless mouse for daily office use."
+  },
+  {
+    "topicId": "product-keyboard-k100",
+    "productName": "Keyboard K100",
+    "summary": "Keyboard K100 is a mechanical keyboard designed for durability and comfort."
+  }
+]
