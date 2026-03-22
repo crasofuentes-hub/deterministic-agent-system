@@ -1,0 +1,29 @@
+[
+  {
+    "productId": "prod-laptop-x-pro",
+    "sku": "LAP-X-PRO",
+    "name": "Laptop X Pro",
+    "price": 1499.99,
+    "currency": "USD",
+    "availability": "in-stock",
+    "stockQuantity": 12
+  },
+  {
+    "productId": "prod-mouse-wireless-m1",
+    "sku": "MOU-W-M1",
+    "name": "Wireless Mouse M1",
+    "price": 39.99,
+    "currency": "USD",
+    "availability": "low-stock",
+    "stockQuantity": 3
+  },
+  {
+    "productId": "prod-keyboard-k100",
+    "sku": "KEY-K100",
+    "name": "Keyboard K100",
+    "price": 89.5,
+    "currency": "USD",
+    "availability": "out-of-stock",
+    "stockQuantity": 0
+  }
+]
