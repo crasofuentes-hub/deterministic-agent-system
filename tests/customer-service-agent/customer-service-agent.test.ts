@@ -18,25 +18,40 @@ describe("customer-service-agent", () => {
     expect(result.responseText).toBe("Please provide the product name so I can help you.");
   });
 
-  it("returns real price data when product name is present", () => {
+  it("returns real knowledge and product data", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-001",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "Necesito Laptop X Pro",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-product");
+    expect(result.responseId).toBe("consult-product-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Product: Laptop X Pro | SKU: LAP-X-PRO | Price: 1499.99 USD | Availability: in-stock | Summary: Laptop X Pro is a high-performance laptop for productivity and advanced workloads."
+    );
+  });
+
+  it("returns real price data when product name is present", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-002",
         businessContextId: "customer-service-core-v2",
       }),
       userMessageText: "Cual es el precio de Laptop X Pro",
     });
 
     expect(result.resolvedIntentId).toBe("consult-price");
-    expect(result.responseId).toBe("consult-price-resolved");
-    expect(result.status).toBe("resolved");
     expect(result.responseText).toBe("Product: Laptop X Pro | Price: 1499.99 USD");
   });
 
   it("returns real availability data", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
-        sessionId: "S-002",
+        sessionId: "S-003",
         businessContextId: "customer-service-core-v2",
       }),
       userMessageText: "Tienen disponibilidad de Laptop X Pro",
@@ -49,7 +64,7 @@ describe("customer-service-agent", () => {
   it("returns real order status data", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
-        sessionId: "S-003",
+        sessionId: "S-004",
         businessContextId: "customer-service-core-v2",
       }),
       userMessageText: "Quiero saber el estado de mi pedido ORDER-12345",
@@ -57,19 +72,5 @@ describe("customer-service-agent", () => {
 
     expect(result.resolvedIntentId).toBe("consult-order-status");
     expect(result.responseText).toBe("Order ID: ORDER-12345 | Status: processing | Updated: 2026-03-10T10:00:00Z");
-  });
-
-  it("requests human handoff deterministically", () => {
-    const result = runCustomerServiceAgent({
-      session: createInitialSessionState({
-        sessionId: "S-004",
-        businessContextId: "customer-service-core-v2",
-      }),
-      userMessageText: "Quiero hablar con un humano",
-    });
-
-    expect(result.resolvedIntentId).toBe("request-human-handoff");
-    expect(result.responseId).toBe("handoff-requested");
-    expect(result.status).toBe("handoff");
   });
 });

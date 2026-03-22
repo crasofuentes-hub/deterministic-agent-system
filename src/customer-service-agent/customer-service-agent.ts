@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { BusinessContextPack } from "../business-context/context-pack";
 import { orchestrateConversationTurn } from "../conversation-orchestrator/conversation-orchestrator";
+import { findKnowledgeByProductName } from "../data-layer/knowledge-base-repository";
 import { findOrderById } from "../data-layer/order-repository";
 import { findProductByName } from "../data-layer/product-repository";
 import { extractEntitiesFromText } from "../entity-extractor/entity-extractor";
@@ -33,7 +34,6 @@ function findEntityValue(session: SessionState, entityId: string): string | unde
 
 function buildResolvedResponse(
   resolvedIntentId: string,
-  responseId: string,
   session: SessionState
 ): string | undefined {
   if (resolvedIntentId === "consult-price") {
@@ -89,6 +89,8 @@ function buildResolvedResponse(
       return "The product was not found.";
     }
 
+    const knowledge = findKnowledgeByProductName(productName);
+
     return (
       "Product: " +
       product.name +
@@ -99,7 +101,8 @@ function buildResolvedResponse(
       " " +
       product.currency +
       " | Availability: " +
-      product.availability
+      product.availability +
+      (knowledge ? " | Summary: " + knowledge.summary : "")
     );
   }
 
@@ -149,7 +152,6 @@ export function runCustomerServiceAgent(params: {
 
   const resolvedResponseText = buildResolvedResponse(
     result.intentId,
-    result.responseId,
     result.session
   );
 
