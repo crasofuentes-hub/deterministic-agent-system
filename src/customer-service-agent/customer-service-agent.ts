@@ -32,6 +32,18 @@ function findEntityValue(session: SessionState, entityId: string): string | unde
   return session.collectedEntities.find((item) => item.entityId === entityId)?.value;
 }
 
+function resolveEffectiveIntentId(session: SessionState, userMessageText: string): string {
+  if (
+    session.conversationStatus === "waiting-user" &&
+    typeof session.currentIntentId === "string" &&
+    session.currentIntentId.trim().length > 0
+  ) {
+    return session.currentIntentId;
+  }
+
+  return resolveIntentFromText(userMessageText).intentId;
+}
+
 function buildResolvedResponse(
   resolvedIntentId: string,
   session: SessionState
@@ -135,7 +147,7 @@ export function runCustomerServiceAgent(params: {
   userMessageText: string;
 }): CustomerServiceAgentResult {
   const pack = loadCustomerServicePack();
-  const resolvedIntent = resolveIntentFromText(params.userMessageText);
+  const effectiveIntentId = resolveEffectiveIntentId(params.session, params.userMessageText);
 
   let nextSession = params.session;
   const extractedEntities = extractEntitiesFromText(params.userMessageText);
@@ -147,7 +159,7 @@ export function runCustomerServiceAgent(params: {
   const result = orchestrateConversationTurn({
     pack,
     session: nextSession,
-    intentId: resolvedIntent.intentId,
+    intentId: effectiveIntentId,
   });
 
   const resolvedResponseText = buildResolvedResponse(
