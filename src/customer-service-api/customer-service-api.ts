@@ -3,6 +3,10 @@ import {
   appendSessionTurn,
   createInitialSessionState,
 } from "../session-state/session-state";
+import {
+  getStoredSession,
+  saveStoredSession,
+} from "../session-store/session-store";
 
 export interface CustomerServiceApiInput {
   sessionId: string;
@@ -25,10 +29,12 @@ export interface CustomerServiceApiOutput {
 export function runCustomerServiceApi(
   input: CustomerServiceApiInput
 ): CustomerServiceApiOutput {
-  let session = createInitialSessionState({
-    sessionId: input.sessionId,
-    businessContextId: input.businessContextId,
-  });
+  let session =
+    getStoredSession(input.sessionId, input.businessContextId) ??
+    createInitialSessionState({
+      sessionId: input.sessionId,
+      businessContextId: input.businessContextId,
+    });
 
   session = appendSessionTurn(session, {
     turnId: input.userTurnId ?? "user-turn-1",
@@ -41,6 +47,8 @@ export function runCustomerServiceApi(
     session,
     userMessageText: input.userMessageText,
   });
+
+  saveStoredSession(result.session);
 
   return {
     sessionId: result.session.sessionId,
