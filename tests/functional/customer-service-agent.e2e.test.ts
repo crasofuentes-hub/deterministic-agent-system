@@ -42,7 +42,7 @@ describe("customer-service-agent e2e", () => {
     });
   });
 
-  it("persists session across turns end-to-end", () => {
+  it("persists session across turns and returns real product knowledge", () => {
     const first = runCustomerServiceApi({
       sessionId: "E2E-003",
       businessContextId: "customer-service-core-v2",
@@ -74,7 +74,7 @@ describe("customer-service-agent e2e", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-product",
       responseId: "consult-product-resolved",
-      responseText: "Product: Laptop X Pro | SKU: LAP-X-PRO | Price: 1499.99 USD | Availability: in-stock",
+      responseText: "Product: Laptop X Pro | SKU: LAP-X-PRO | Price: 1499.99 USD | Availability: in-stock | Summary: Laptop X Pro is a high-performance laptop for productivity and advanced workloads.",
       stage: "resolve-product",
       status: "resolved",
     });
