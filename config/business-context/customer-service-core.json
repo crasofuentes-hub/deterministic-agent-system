@@ -61,6 +61,13 @@
       "messageTemplate": "Please provide your case ID so I can review the status."
     },
     {
+      "responseId": "consult-status-resolved",
+      "intentId": "consult-status",
+      "stage": "resolve-status",
+      "status": "resolved",
+      "messageTemplate": "Your case status has been retrieved."
+    },
+    {
       "responseId": "handoff-requested",
       "intentId": "request-human-handoff",
       "stage": "handoff-requested",
