@@ -23,6 +23,10 @@ export interface StepDependencyAnalysis {
   edges: StepDependencyEdge[];
 }
 
+export type StepDependencyValidationResult =
+  | { ok: true }
+  | { ok: false; code: string; message: string };
+
 export interface BindStepInputRefParams {
   steps: AgentStep[];
   outputKey: string;
@@ -37,60 +41,54 @@ export interface RequiredDerivedInputRule {
   nestedPath?: string;
 }
 
-export type StepDependencyValidationResult =
-  | { ok: true }
-  | { ok: false; code: string; message: string };
-
-function isSingleRefObject(
+function parseRefObject(
   value: unknown
-): value is { $ref?: unknown; __valueFromState?: unknown } {
+): { refKind: "$ref" | "__valueFromState"; refExpr: string } | undefined {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return false;
+    return undefined;
   }
 
   const obj = value as Record<string, unknown>;
   const keys = Object.keys(obj);
+
   if (keys.length !== 1) {
-    return false;
+    return undefined;
   }
 
-  return keys[0] === "$ref" || keys[0] === "__valueFromState";
+  if (keys[0] === "$ref" && typeof obj["$ref"] === "string") {
+    return { refKind: "$ref", refExpr: String(obj["$ref"]) };
+  }
+
+  if (keys[0] === "__valueFromState" && typeof obj.__valueFromState === "string") {
+    return { refKind: "__valueFromState", refExpr: String(obj.__valueFromState) };
+  }
+
+  return undefined;
 }
 
-function parseStepDependencyRef(value: unknown): StepDependencyRef | null {
-  if (!isSingleRefObject(value)) {
-    return null;
+export function parseStepDependencyRef(value: unknown): StepDependencyRef | undefined {
+  const parsed = parseRefObject(value);
+  if (!parsed) {
+    return undefined;
   }
 
-  const obj = value as Record<string, unknown>;
-  const refKind = Object.keys(obj)[0] as "$ref" | "__valueFromState";
-  const rawValue = obj[refKind];
-
-  if (typeof rawValue !== "string") {
-    return null;
+  let refExpr = parsed.refExpr;
+  if (refExpr.startsWith("state.values.")) {
+    refExpr = refExpr.slice("state.values.".length);
   }
 
-  const trimmed = rawValue.trim();
-  if (trimmed.length === 0) {
-    return null;
-  }
-
-  const normalized = trimmed.startsWith("state.values.")
-    ? trimmed.slice("state.values.".length)
-    : trimmed;
-
-  const firstDot = normalized.indexOf(".");
-  const outputKey = firstDot >= 0 ? normalized.slice(0, firstDot) : normalized;
-  const nestedPath = firstDot >= 0 ? normalized.slice(firstDot + 1) : "";
+  const firstDot = refExpr.indexOf(".");
+  const outputKey = firstDot >= 0 ? refExpr.slice(0, firstDot) : refExpr;
+  const nestedPath = firstDot >= 0 ? refExpr.slice(firstDot + 1) : "";
 
   if (outputKey.trim().length === 0) {
-    return null;
+    return undefined;
   }
 
   return {
-    refKind,
-    refExpr: trimmed,
-    outputKey,
+    refKind: parsed.refKind,
+    refExpr: parsed.refExpr,
+    outputKey: outputKey.trim(),
     nestedPath,
   };
 }
@@ -100,21 +98,21 @@ export function collectStepDependencyRefs(value: unknown): StepDependencyRef[] {
     return value.flatMap((item) => collectStepDependencyRefs(item));
   }
 
-  const directRef = parseStepDependencyRef(value);
-  if (directRef) {
-    return [directRef];
+  const parsed = parseStepDependencyRef(value);
+  if (parsed) {
+    return [parsed];
   }
 
-  if (typeof value === "object" && value !== null) {
-    const obj = value as Record<string, unknown>;
-    const out: StepDependencyRef[] = [];
-    for (const key of Object.keys(obj)) {
-      out.push(...collectStepDependencyRefs(obj[key]));
-    }
-    return out;
+  if (typeof value !== "object" || value === null) {
+    return [];
   }
 
-  return [];
+  const obj = value as Record<string, unknown>;
+  const out: StepDependencyRef[] = [];
+  for (const key of Object.keys(obj)) {
+    out.push(...collectStepDependencyRefs(obj[key]));
+  }
+  return out;
 }
 
 function isProducerStep(step: AgentStep): boolean {
@@ -132,6 +130,9 @@ function collectProducedOutputKeys(
 
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i];
+    if (!step) {
+      continue;
+    }
 
     if (!isProducerStep(step)) {
       continue;
@@ -176,6 +177,10 @@ export function analyzeStepDependencies(
 
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i];
+    if (!step) {
+      continue;
+    }
+
     const refs = collectStepDependencyRefs(step.input);
 
     for (const ref of refs) {
@@ -293,6 +298,9 @@ export function validateRequiredDerivedInputs(
 
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i];
+    if (!step) {
+      continue;
+    }
 
     if (step.kind !== "tool.call" || typeof step.toolId !== "string") {
       continue;

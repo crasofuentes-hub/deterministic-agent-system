@@ -9,7 +9,12 @@ function normalizeText(value: string): string {
 
 function extractOrderId(goal: string): string | undefined {
   const match = goal.match(/\b(?:order|purchase)\s*(?:id)?\s*[:#-]?\s*([A-Z0-9-]{4,})\b/i);
-  return match ? normalizeText(match[1]) : undefined;
+  const captured = match?.[1];
+  if (typeof captured !== "string" || captured.trim().length === 0) {
+    return undefined;
+  }
+
+  return normalizeText(captured);
 }
 
 function extractProductName(goal: string): string | undefined {
@@ -30,8 +35,12 @@ function extractProductName(goal: string): string | undefined {
 
   for (const pattern of patterns) {
     const match = normalized.match(pattern);
-    if (match && normalizeText(match[1]).length > 0) {
-      return normalizeText(match[1]);
+    const captured = match?.[1];
+    if (typeof captured === "string") {
+      const cleaned = normalizeText(captured);
+      if (cleaned.length > 0) {
+        return cleaned;
+      }
     }
   }
 

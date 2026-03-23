@@ -171,13 +171,13 @@ export async function runAgent(
       traceId: input.traceId,
     });
 
-    if (!response.ok || typeof response.output === "undefined") {
+    if (!response.ok || typeof response.result === "undefined") {
       return response;
     }
 
     return {
       ...response,
-      output: projectDomainResult(response.output) ?? response.output,
+      result: projectDomainResult(response.result) ?? response.result,
     };
   }
 
@@ -187,12 +187,12 @@ export async function runAgent(
     traceId: input.traceId,
   });
 
-  if (!response.ok || typeof response.output === "undefined") {
+  if (!response.ok || typeof response.result === "undefined") {
     return response;
   }
 
   return {
     ...response,
-    output: projectDomainResult(response.output) ?? response.output,
+    result: projectDomainResult(response.result) ?? response.result,
   };
 }

@@ -46,5 +46,5 @@ export function requireSingleMissingEntityPromptTarget(
     );
   }
 
-  return evaluation.missingEntityIds[0];
+  return evaluation.missingEntityIds[0] ?? "";
 }
