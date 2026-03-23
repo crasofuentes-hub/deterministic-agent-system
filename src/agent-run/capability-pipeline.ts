@@ -5,6 +5,7 @@ import {
   normalizeCapabilityPipelineDetailed,
   validateCapabilityPipeline
 } from "./capability-preconditions";
+import { extractGoalEntities } from "./goal-entity-extractor";
 import {
   bindStepInputRef,
   validateRequiredDerivedInputs,
@@ -79,7 +80,11 @@ function classifyPipelineFamily(caps: ToolCapability[]): string {
   return "generic";
 }
 
-function buildPlanMetadata(requested: ToolCapability[], normalized: ToolCapability[], inserted: ToolCapability[]) {
+function buildPlanMetadata(
+  requested: ToolCapability[],
+  normalized: ToolCapability[],
+  inserted: ToolCapability[]
+) {
   return {
     requestedCapabilities: [...requested],
     normalizedCapabilities: [...normalized],
@@ -139,6 +144,9 @@ export function buildCapabilitySynthPlan(params: {
   const normalized = normalizeCapabilityPipelineDetailed(capabilities);
   const caps = normalized.capabilities;
   const metadata = buildPlanMetadata(requestedCaps, caps, normalized.inserted);
+  const entities = extractGoalEntities(goal);
+  const productName = entities.productName ?? "Laptop X Pro";
+  const orderId = entities.orderId ?? "ORDER-12345";
   const validation = validateCapabilityPipeline(caps);
 
   if (!validation.ok) {
@@ -226,7 +234,7 @@ export function buildCapabilitySynthPlan(params: {
       id: nextId(),
       kind: "tool.call",
       toolId: resolveToolIdForCapability("catalog.product-find"),
-      input: { productName: "Laptop X Pro" },
+      input: { productName },
       outputKey: "productLookup"
     });
   }
@@ -236,7 +244,7 @@ export function buildCapabilitySynthPlan(params: {
       id: nextId(),
       kind: "tool.call",
       toolId: resolveToolIdForCapability("catalog.price-find"),
-      input: { productName: "Laptop X Pro" },
+      input: { productName },
       outputKey: "priceLookup"
     });
   }
@@ -246,7 +254,7 @@ export function buildCapabilitySynthPlan(params: {
       id: nextId(),
       kind: "tool.call",
       toolId: resolveToolIdForCapability("catalog.availability-find"),
-      input: { productName: "Laptop X Pro" },
+      input: { productName },
       outputKey: "availabilityLookup"
     });
   }
@@ -256,7 +264,7 @@ export function buildCapabilitySynthPlan(params: {
       id: nextId(),
       kind: "tool.call",
       toolId: resolveToolIdForCapability("orders.find-by-id"),
-      input: { orderId: "ORDER-12345" },
+      input: { orderId },
       outputKey: "orderLookup"
     });
   }
@@ -266,7 +274,7 @@ export function buildCapabilitySynthPlan(params: {
       id: nextId(),
       kind: "tool.call",
       toolId: resolveToolIdForCapability("kb.find-by-product-name"),
-      input: { productName: "Laptop X Pro" },
+      input: { productName },
       outputKey: "knowledgeLookup"
     });
   }
