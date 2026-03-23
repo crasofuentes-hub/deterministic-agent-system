@@ -32,6 +32,58 @@ export function synthesizeCapabilitiesFromGoal(goal: string): ToolCapability[] {
     out.push("json.merge");
   }
 
+  const mentionsProduct =
+    g.includes("product") ||
+    g.includes("catalog") ||
+    g.includes("item") ||
+    g.includes("sku");
+
+  const mentionsPrice =
+    g.includes("price") ||
+    g.includes("cost") ||
+    g.includes("cuesta") ||
+    g.includes("precio");
+
+  const mentionsAvailability =
+    g.includes("availability") ||
+    g.includes("available") ||
+    g.includes("stock") ||
+    g.includes("disponibilidad") ||
+    g.includes("disponible") ||
+    g.includes("existencia");
+
+  const mentionsOrder =
+    g.includes("order") ||
+    g.includes("pedido") ||
+    g.includes("orden");
+
+  const mentionsKnowledge =
+    g.includes("summary") ||
+    g.includes("about") ||
+    g.includes("details") ||
+    g.includes("informacion") ||
+    g.includes("información");
+
+  if (mentionsOrder) {
+    out.push("orders.find-by-id");
+  }
+
+  if (mentionsAvailability) {
+    out.push("catalog.availability-find");
+  }
+
+  if (mentionsPrice) {
+    out.push("catalog.price-find");
+  }
+
+  if (mentionsProduct && !mentionsPrice && !mentionsAvailability) {
+    out.push("catalog.product-find");
+  }
+
+  if (mentionsKnowledge || (mentionsProduct && !mentionsPrice && !mentionsAvailability)) {
+    out.push("kb.find-by-product-name");
+  }
+
   if ((g.includes("sum") || g.includes("add") || g.includes("math")) && out.length === 0) {
     out.push("math.add");
   }

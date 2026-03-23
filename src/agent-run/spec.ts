@@ -28,12 +28,54 @@ export function deriveIntent(goal: string): string {
   const mentionsSelect = g.includes("select") || g.includes("pick keys");
   const mentionsMerge = g.includes("merge") || g.includes("combine");
 
+  const mentionsProduct =
+    g.includes("product") ||
+    g.includes("catalog") ||
+    g.includes("item") ||
+    g.includes("sku");
+
+  const mentionsPrice =
+    g.includes("price") ||
+    g.includes("cost") ||
+    g.includes("cuesta") ||
+    g.includes("precio");
+
+  const mentionsAvailability =
+    g.includes("availability") ||
+    g.includes("available") ||
+    g.includes("stock") ||
+    g.includes("disponibilidad") ||
+    g.includes("disponible") ||
+    g.includes("existencia");
+
+  const mentionsOrder =
+    g.includes("order") ||
+    g.includes("pedido") ||
+    g.includes("orden");
+
+  const mentionsKnowledge =
+    g.includes("summary") ||
+    g.includes("about") ||
+    g.includes("details") ||
+    g.includes("informacion") ||
+    g.includes("información");
+
   const isSpecialExtractMerge =
     (g.includes("extract merge") || g.includes("extract and merge")) &&
     !mentionsNormalize &&
     !mentionsSelect;
 
   if (isSpecialExtractMerge) return "extract-merge";
+
+  if (
+    mentionsProduct ||
+    mentionsPrice ||
+    mentionsAvailability ||
+    mentionsOrder ||
+    mentionsKnowledge
+  ) {
+    return "cap-synth";
+  }
 
   if (mentionsNormalize || mentionsExtract || mentionsSelect || mentionsMerge) {
     const count =
@@ -53,7 +95,7 @@ export function deriveIntent(goal: string): string {
 }
 
 /**
- * Construye un plan determinÃƒÂ­stico a partir del input.
+ * Construye un plan determinístico a partir del input.
  */
 export function buildPlanFromGoal(input: AgentRunInput): DeterministicAgentPlan {
   const goal = normalizeGoal(input.goal);

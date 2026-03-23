@@ -40,6 +40,26 @@ function classifyPipelineFamily(caps: ToolCapability[]): string {
     return "echo";
   }
 
+  if (caps.includes("orders.find-by-id")) {
+    return "orders";
+  }
+
+  if (caps.includes("catalog.availability-find")) {
+    return "catalog-availability";
+  }
+
+  if (caps.includes("catalog.price-find")) {
+    return "catalog-price";
+  }
+
+  if (caps.includes("catalog.product-find")) {
+    return "catalog-product";
+  }
+
+  if (caps.includes("kb.find-by-product-name")) {
+    return "knowledge-base";
+  }
+
   if (caps.includes("json.merge")) {
     return "json-merge";
   }
@@ -134,6 +154,11 @@ export function buildCapabilitySynthPlan(params: {
   const hasMerge = caps.includes("json.merge");
   const hasMath = caps.includes("math.add");
   const hasEchoOnly = caps.length === 1 && caps[0] === "echo";
+  const hasCatalogProduct = caps.includes("catalog.product-find");
+  const hasCatalogPrice = caps.includes("catalog.price-find");
+  const hasCatalogAvailability = caps.includes("catalog.availability-find");
+  const hasOrdersFindById = caps.includes("orders.find-by-id");
+  const hasKbFindByProductName = caps.includes("kb.find-by-product-name");
 
   let nextIdCode = "d".charCodeAt(0);
   function nextId(): string {
@@ -194,6 +219,56 @@ export function buildCapabilitySynthPlan(params: {
       steps,
       metadata,
     };
+  }
+
+  if (hasCatalogProduct) {
+    steps.push({
+      id: nextId(),
+      kind: "tool.call",
+      toolId: resolveToolIdForCapability("catalog.product-find"),
+      input: { productName: "Laptop X Pro" },
+      outputKey: "productLookup"
+    });
+  }
+
+  if (hasCatalogPrice) {
+    steps.push({
+      id: nextId(),
+      kind: "tool.call",
+      toolId: resolveToolIdForCapability("catalog.price-find"),
+      input: { productName: "Laptop X Pro" },
+      outputKey: "priceLookup"
+    });
+  }
+
+  if (hasCatalogAvailability) {
+    steps.push({
+      id: nextId(),
+      kind: "tool.call",
+      toolId: resolveToolIdForCapability("catalog.availability-find"),
+      input: { productName: "Laptop X Pro" },
+      outputKey: "availabilityLookup"
+    });
+  }
+
+  if (hasOrdersFindById) {
+    steps.push({
+      id: nextId(),
+      kind: "tool.call",
+      toolId: resolveToolIdForCapability("orders.find-by-id"),
+      input: { orderId: "ORDER-12345" },
+      outputKey: "orderLookup"
+    });
+  }
+
+  if (hasKbFindByProductName) {
+    steps.push({
+      id: nextId(),
+      kind: "tool.call",
+      toolId: resolveToolIdForCapability("kb.find-by-product-name"),
+      input: { productName: "Laptop X Pro" },
+      outputKey: "knowledgeLookup"
+    });
   }
 
   const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "meta" : { "ok" : true } }  ';
