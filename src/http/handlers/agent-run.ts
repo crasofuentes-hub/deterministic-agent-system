@@ -70,11 +70,9 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
     if (sandboxUrl.length > 2048) return { ok: false, message: "sandboxUrl exceeds 2048 characters" };
   }
 
-  // Optional replan context
   const history = body.history;
   const lastErrorCode = body.lastErrorCode;
 
-  // Optional LLM config
   const llmProvider = body.llmProvider;
   const llmModel = body.llmModel;
   const llmTemperature = body.llmTemperature;
@@ -114,44 +112,76 @@ function selectPlanner(plannerId: string | undefined): Planner {
   return new DeterministicPlanner();
 }
 
+function attachDomainResult(result: unknown): unknown {
+  if (!isObject(result)) {
+    return result;
+  }
+
+  const ok = result.ok;
+  const output = result.output;
+
+  if (ok !== true || !isObject(output)) {
+    return result;
+  }
+
+  const finalState = output.finalState;
+  if (!isObject(finalState)) {
+    return result;
+  }
+
+  const values = finalState.values;
+  if (!isObject(values)) {
+    return result;
+  }
+
+  const domainResult = values.domainResult;
+  if (!isNonEmptyString(domainResult)) {
+    return result;
+  }
+
+  return {
+    ...result,
+    domainResult,
+  };
+}
+
 export async function handleAgentRun(res: ServerResponse, body: JsonObject): Promise<void> {
   const parsed = parseAgentRunInput(body);
   if (!parsed.ok) {
     sendInvalidRequest(res, "Request validation failed: " + parsed.message);
     return;
   }
-    if (parsed.value.planner === "det-replan2") {
-      // det-replan2: bounded deterministic replan (max 1) basado en TOOL_*
-      const first = await runAgent(
-        { ...parsed.value, planner: "llm-mock" },
-        new LlmMockPlanner()
-      );
 
-      if (first.ok) {
-        sendJson(res, 200, first);
-        return;
-      }
+  if (parsed.value.planner === "det-replan2") {
+    const first = await runAgent(
+      { ...parsed.value, planner: "llm-mock" },
+      new LlmMockPlanner()
+    );
 
-      const code = String((first as any).error?.code ?? "");
-      const isToolError = code.startsWith("TOOL_");
-      if (!isToolError) {
-        sendJson(res, 200, first);
-        return;
-      }
-
-      const second = await runAgent(
-        { ...parsed.value, planner: "llm-mock", lastErrorCode: code },
-        new LlmMockPlanner()
-      );
-      sendJson(res, 200, second);
+    if (first.ok) {
+      sendJson(res, 200, attachDomainResult(first) as JsonObject);
       return;
     }
 
+    const code = String((first as any).error?.code ?? "");
+    const isToolError = code.startsWith("TOOL_");
+    if (!isToolError) {
+      sendJson(res, 200, attachDomainResult(first) as JsonObject);
+      return;
+    }
+
+    const second = await runAgent(
+      { ...parsed.value, planner: "llm-mock", lastErrorCode: code },
+      new LlmMockPlanner()
+    );
+    sendJson(res, 200, attachDomainResult(second) as JsonObject);
+    return;
+  }
 
   try {
     const planner = selectPlanner(parsed.value.planner);
     const result = await runAgent(parsed.value, planner);
-    sendJson(res, 200, result);
+    sendJson(res, 200, attachDomainResult(result) as JsonObject);
   } catch (_err) {
     sendInternalError(res);
   }
