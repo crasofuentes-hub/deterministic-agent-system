@@ -9,12 +9,14 @@ export interface NormalizedCapabilityPipelineResult {
 function uniqueStable(items: ToolCapability[]): ToolCapability[] {
   const seen = new Set<string>();
   const out: ToolCapability[] = [];
+
   for (const item of items) {
     if (!seen.has(item)) {
       seen.add(item);
       out.push(item);
     }
   }
+
   return out;
 }
 
@@ -51,7 +53,9 @@ export function normalizeCapabilityPipeline(capabilities: ToolCapability[]): Too
   return normalizeCapabilityPipelineDetailed(capabilities).capabilities;
 }
 
-export function validateCapabilityPipeline(capabilities: ToolCapability[]): { ok: true } | { ok: false; code: string; message: string } {
+export function validateCapabilityPipeline(
+  capabilities: ToolCapability[]
+): { ok: true } | { ok: false; code: string; message: string } {
   const caps = uniqueStable(capabilities);
 
   if (caps.length === 0) {

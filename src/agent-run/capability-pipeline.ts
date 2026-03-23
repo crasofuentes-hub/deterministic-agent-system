@@ -198,8 +198,7 @@ export function buildCapabilitySynthPlan(params: {
       planId: buildPlanId(plannerPrefix, intent),
       version: 1,
       steps,
-      metadata,
-    };
+};
   }
 
   if (hasEchoOnly) {
@@ -225,8 +224,7 @@ export function buildCapabilitySynthPlan(params: {
       planId: buildPlanId(plannerPrefix, intent),
       version: 1,
       steps,
-      metadata,
-    };
+};
   }
 
   if (hasCatalogProduct) {
@@ -372,6 +370,5 @@ export function buildCapabilitySynthPlan(params: {
     planId: buildPlanId(plannerPrefix, intent),
     version: 1,
     steps,
-    metadata,
-  };
+};
 }

@@ -18,6 +18,10 @@ async function resolvePlan(
   return planner.plan(input);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 function tryParseStateValue(value: string | undefined): unknown {
   if (typeof value !== "string") {
     return undefined;
@@ -30,18 +34,30 @@ function tryParseStateValue(value: string | undefined): unknown {
   }
 }
 
-function projectDomainResult(execution: AgentExecutionResult): AgentExecutionResult {
-  const values = execution.finalState.values;
+function projectDomainResult(execution: AgentExecutionResult | undefined): AgentExecutionResult | undefined {
+  if (!execution || !isRecord(execution)) {
+    return execution;
+  }
 
-  const priceLookup = tryParseStateValue(values.priceLookup) as
+  const finalState = execution.finalState;
+  if (!isRecord(finalState)) {
+    return execution;
+  }
+
+  const values = finalState.values;
+  if (!isRecord(values)) {
+    return execution;
+  }
+
+  const priceLookup = tryParseStateValue(typeof values.priceLookup === "string" ? values.priceLookup : undefined) as
     | { found?: boolean; productName?: string; price?: number | null; currency?: string | null }
     | undefined;
 
-  const availabilityLookup = tryParseStateValue(values.availabilityLookup) as
+  const availabilityLookup = tryParseStateValue(typeof values.availabilityLookup === "string" ? values.availabilityLookup : undefined) as
     | { found?: boolean; productName?: string; availability?: string | null; stockQuantity?: number | null }
     | undefined;
 
-  const productLookup = tryParseStateValue(values.productLookup) as
+  const productLookup = tryParseStateValue(typeof values.productLookup === "string" ? values.productLookup : undefined) as
     | {
         found?: boolean;
         product?: null | {
@@ -56,7 +72,7 @@ function projectDomainResult(execution: AgentExecutionResult): AgentExecutionRes
       }
     | undefined;
 
-  const orderLookup = tryParseStateValue(values.orderLookup) as
+  const orderLookup = tryParseStateValue(typeof values.orderLookup === "string" ? values.orderLookup : undefined) as
     | {
         found?: boolean;
         order?: null | {
@@ -69,7 +85,7 @@ function projectDomainResult(execution: AgentExecutionResult): AgentExecutionRes
       }
     | undefined;
 
-  const knowledgeLookup = tryParseStateValue(values.knowledgeLookup) as
+  const knowledgeLookup = tryParseStateValue(typeof values.knowledgeLookup === "string" ? values.knowledgeLookup : undefined) as
     | {
         found?: boolean;
         record?: null | {
@@ -155,9 +171,13 @@ export async function runAgent(
       traceId: input.traceId,
     });
 
+    if (!response.ok || typeof response.output === "undefined") {
+      return response;
+    }
+
     return {
       ...response,
-      output: projectDomainResult(response.output),
+      output: projectDomainResult(response.output) ?? response.output,
     };
   }
 
@@ -167,8 +187,12 @@ export async function runAgent(
     traceId: input.traceId,
   });
 
+  if (!response.ok || typeof response.output === "undefined") {
+    return response;
+  }
+
   return {
     ...response,
-    output: projectDomainResult(response.output),
+    output: projectDomainResult(response.output) ?? response.output,
   };
 }

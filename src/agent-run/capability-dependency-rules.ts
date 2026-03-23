@@ -33,11 +33,37 @@ export function insertRequiredCapabilities(
   const hasMath = caps.includes("math.add");
   const hasEcho = caps.includes("echo");
 
+  const hasCatalogProduct = caps.includes("catalog.product-find");
+  const hasCatalogPrice = caps.includes("catalog.price-find");
+  const hasCatalogAvailability = caps.includes("catalog.availability-find");
+  const hasOrdersFindById = caps.includes("orders.find-by-id");
+  const hasKbFindByProductName = caps.includes("kb.find-by-product-name");
+
   if (hasMath || hasEcho) {
     return {
       capabilities: caps,
       inserted,
     };
+  }
+
+  if (hasCatalogProduct) {
+    out.push("catalog.product-find");
+  }
+
+  if (hasCatalogPrice) {
+    out.push("catalog.price-find");
+  }
+
+  if (hasCatalogAvailability) {
+    out.push("catalog.availability-find");
+  }
+
+  if (hasOrdersFindById) {
+    out.push("orders.find-by-id");
+  }
+
+  if (hasKbFindByProductName) {
+    out.push("kb.find-by-product-name");
   }
 
   if (hasNormalize) {
