@@ -6,7 +6,7 @@ describe("customer-service-agent e2e", () => {
     const result = runCustomerServiceApi({
       sessionId: "E2E-001",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "Cual es el precio de Laptop X Pro",
+      userMessageText: "What is the price of Laptop X Pro?",
       userTurnId: "u1",
       userCreatedAtIso: "2026-03-10T10:00:00Z",
     });
@@ -26,7 +26,7 @@ describe("customer-service-agent e2e", () => {
     const result = runCustomerServiceApi({
       sessionId: "E2E-002",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "Quiero saber el estado de mi pedido ORDER-12345",
+      userMessageText: "What is the status of order ORDER-12345?",
       userTurnId: "u1",
       userCreatedAtIso: "2026-03-10T10:05:00Z",
     });
@@ -46,7 +46,7 @@ describe("customer-service-agent e2e", () => {
     const first = runCustomerServiceApi({
       sessionId: "E2E-003",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "Quiero informacion de un producto",
+      userMessageText: "I want information about a product",
       userTurnId: "u1",
       userCreatedAtIso: "2026-03-10T10:10:00Z",
     });

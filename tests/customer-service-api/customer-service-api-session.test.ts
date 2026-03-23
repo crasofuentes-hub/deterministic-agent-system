@@ -11,7 +11,7 @@ describe("customer-service-api session persistence", () => {
 
     const result = runCustomerServiceApiWithSession({
       session,
-      userMessageText: "Quiero informacion de un producto",
+      userMessageText: "I want information about a product",
       userTurnId: "u1",
       userCreatedAtIso: "2026-03-10T10:00:00Z",
     });
@@ -30,7 +30,7 @@ describe("customer-service-api session persistence", () => {
     expect(result.session.missingEntityIds).toEqual(["productName"]);
   });
 
-  it("resolves on second turn when missing entity is provided", () => {
+  it("resolves on second turn when the missing entity is provided", () => {
     const initial = createInitialSessionState({
       sessionId: "S-101",
       businessContextId: "customer-service-core-v2",
@@ -38,7 +38,7 @@ describe("customer-service-api session persistence", () => {
 
     const first = runCustomerServiceApiWithSession({
       session: initial,
-      userMessageText: "Quiero informacion de un producto",
+      userMessageText: "I want information about a product",
       userTurnId: "u1",
       userCreatedAtIso: "2026-03-10T10:00:00Z",
     });
@@ -55,7 +55,7 @@ describe("customer-service-api session persistence", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-product",
       responseId: "consult-product-resolved",
-      responseText: "The product information has been retrieved.",
+      responseText: "Product: Laptop X Pro | SKU: LAP-X-PRO | Price: 1499.99 USD | Availability: in-stock | Summary: Laptop X Pro is a high-performance laptop for productivity and advanced workloads.",
       stage: "resolve-product",
       status: "resolved",
     });

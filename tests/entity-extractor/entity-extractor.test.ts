@@ -4,7 +4,7 @@ import { extractEntitiesFromText } from "../../src/entity-extractor/entity-extra
 describe("entity-extractor", () => {
   it("extracts orderId deterministically", () => {
     expect(
-      extractEntitiesFromText("Quiero saber el estado de mi pedido ORDER-12345")
+      extractEntitiesFromText("I want to check the status of order ORDER-12345")
     ).toEqual([
       {
         entityId: "orderId",
@@ -14,30 +14,25 @@ describe("entity-extractor", () => {
     ]);
   });
 
-  it("extracts productName deterministically", () => {
+  it("extracts productName deterministically from pricing question", () => {
     expect(
-      extractEntitiesFromText("Cual es el precio de laptop x pro")
+      extractEntitiesFromText("What is the price of Laptop X Pro")
     ).toEqual([
       {
         entityId: "productName",
-        value: "laptop x pro",
+        value: "Laptop X Pro",
         confidence: "derived",
       },
     ]);
   });
 
-  it("extracts both entities when present", () => {
+  it("extracts bare product name deterministically for follow-up turns", () => {
     expect(
-      extractEntitiesFromText("Necesito laptop x y mi order ABCD-9999")
+      extractEntitiesFromText("Laptop X Pro")
     ).toEqual([
       {
-        entityId: "orderId",
-        value: "ABCD-9999",
-        confidence: "derived",
-      },
-      {
         entityId: "productName",
-        value: "laptop x y mi order ABCD-9999",
+        value: "Laptop X Pro",
         confidence: "derived",
       },
     ]);

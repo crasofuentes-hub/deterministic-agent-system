@@ -36,14 +36,14 @@ describe("session-state", () => {
       appendSessionTurn(state, {
         turnId: "  T-001 ",
         speaker: "user",
-        messageText: "  Hola, necesito ayuda ",
+        messageText: "  Hello, I need help ",
         createdAtIso: " 2026-03-10T10:00:00Z ",
       }).turns
     ).toEqual([
       {
         turnId: "T-001",
         speaker: "user",
-        messageText: "Hola, necesito ayuda",
+        messageText: "Hello, I need help",
         createdAtIso: "2026-03-10T10:00:00Z",
       },
     ]);

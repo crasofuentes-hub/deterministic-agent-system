@@ -6,7 +6,7 @@ describe("customer-service-api", () => {
     const result = runCustomerServiceApi({
       sessionId: "S-001",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "Quiero informacion de un producto",
+      userMessageText: "I want information about a product",
     });
 
     expect(result).toEqual({
@@ -24,7 +24,7 @@ describe("customer-service-api", () => {
     const result = runCustomerServiceApi({
       sessionId: "S-002",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "Quiero saber el estado de mi pedido ORDER-12345",
+      userMessageText: "What is the status of order ORDER-12345?",
     });
 
     expect(result).toEqual({
@@ -32,7 +32,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-order-status",
       responseId: "consult-order-status-resolved",
-      responseText: "Your order status has been retrieved.",
+      responseText: "Order ID: ORDER-12345 | Status: processing | Updated: 2026-03-10T10:00:00Z",
       stage: "resolve-order-status",
       status: "resolved",
     });

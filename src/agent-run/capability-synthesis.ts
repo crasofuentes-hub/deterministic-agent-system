@@ -41,28 +41,24 @@ export function synthesizeCapabilitiesFromGoal(goal: string): ToolCapability[] {
   const mentionsPrice =
     g.includes("price") ||
     g.includes("cost") ||
-    g.includes("cuesta") ||
-    g.includes("precio");
+    g.includes("pricing");
 
   const mentionsAvailability =
     g.includes("availability") ||
     g.includes("available") ||
     g.includes("stock") ||
-    g.includes("disponibilidad") ||
-    g.includes("disponible") ||
-    g.includes("existencia");
+    g.includes("inventory") ||
+    g.includes("in stock");
 
   const mentionsOrder =
     g.includes("order") ||
-    g.includes("pedido") ||
-    g.includes("orden");
+    g.includes("purchase");
 
   const mentionsKnowledge =
     g.includes("summary") ||
     g.includes("about") ||
     g.includes("details") ||
-    g.includes("informacion") ||
-    g.includes("información");
+    g.includes("information");
 
   if (mentionsOrder) {
     out.push("orders.find-by-id");

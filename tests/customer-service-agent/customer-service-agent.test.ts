@@ -9,7 +9,7 @@ describe("customer-service-agent", () => {
         sessionId: "S-001",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Quiero informacion de un producto",
+      userMessageText: "I want information about a product",
     });
 
     expect(result.resolvedIntentId).toBe("consult-product");
@@ -24,7 +24,7 @@ describe("customer-service-agent", () => {
         sessionId: "S-001",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Necesito Laptop X Pro",
+      userMessageText: "I need Laptop X Pro",
     });
 
     expect(result.resolvedIntentId).toBe("consult-product");
@@ -41,7 +41,7 @@ describe("customer-service-agent", () => {
         sessionId: "S-002",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Cual es el precio de Laptop X Pro",
+      userMessageText: "What is the price of Laptop X Pro?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-price");
@@ -54,7 +54,7 @@ describe("customer-service-agent", () => {
         sessionId: "S-003",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Tienen disponibilidad de Laptop X Pro",
+      userMessageText: "Is Laptop X Pro in stock?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-availability");
@@ -67,7 +67,7 @@ describe("customer-service-agent", () => {
         sessionId: "S-004",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Quiero saber el estado de mi pedido ORDER-12345",
+      userMessageText: "What is the status of order ORDER-12345?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-order-status");

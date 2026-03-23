@@ -2,7 +2,7 @@ import type { DeterministicAgentPlan } from "../agent/plan-types";
 import type { AgentRunInput } from "./types";
 
 /**
- * Normaliza texto para determinismo:
+ * Normalize text deterministically:
  * - String()
  * - Unicode NFC
  * - trim
@@ -13,7 +13,7 @@ export function normalizeGoal(goal: string): string {
 }
 
 /**
- * Deriva un "intent" estable a partir del goal.
+ * Derive a stable intent from the goal.
  */
 export function deriveIntent(goal: string): string {
   const g = normalizeGoal(goal);
@@ -37,28 +37,24 @@ export function deriveIntent(goal: string): string {
   const mentionsPrice =
     g.includes("price") ||
     g.includes("cost") ||
-    g.includes("cuesta") ||
-    g.includes("precio");
+    g.includes("pricing");
 
   const mentionsAvailability =
     g.includes("availability") ||
     g.includes("available") ||
     g.includes("stock") ||
-    g.includes("disponibilidad") ||
-    g.includes("disponible") ||
-    g.includes("existencia");
+    g.includes("inventory") ||
+    g.includes("in stock");
 
   const mentionsOrder =
     g.includes("order") ||
-    g.includes("pedido") ||
-    g.includes("orden");
+    g.includes("purchase");
 
   const mentionsKnowledge =
     g.includes("summary") ||
     g.includes("about") ||
     g.includes("details") ||
-    g.includes("informacion") ||
-    g.includes("información");
+    g.includes("information");
 
   const isSpecialExtractMerge =
     (g.includes("extract merge") || g.includes("extract and merge")) &&
@@ -95,7 +91,7 @@ export function deriveIntent(goal: string): string {
 }
 
 /**
- * Construye un plan determinístico a partir del input.
+ * Build a deterministic plan from input.
  */
 export function buildPlanFromGoal(input: AgentRunInput): DeterministicAgentPlan {
   const goal = normalizeGoal(input.goal);
