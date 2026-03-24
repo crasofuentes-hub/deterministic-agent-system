@@ -17,6 +17,7 @@ export interface ResponseMeta {
 export interface SuccessResponse<T> {
   ok: true;
   result: T;
+  output?: T;
   meta: ResponseMeta;
 }
 

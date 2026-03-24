@@ -31,6 +31,12 @@ describe("http /agent/run domainResult", () => {
     const json = JSON.parse(res.body);
     expect(json.ok).toBe(true);
     expect(json.domainResult).toBe("Product: Laptop X Pro | Price: 1499.99 USD");
-    expect(json.output.finalState.values.domainResult).toBe("Product: Laptop X Pro | Price: 1499.99 USD");
+    expect(json.canonicalResponse).toBe("The price of Laptop X Pro is 1499.99 USD.");
+    expect(json.output.finalState.values.domainResult).toBe(
+      "Product: Laptop X Pro | Price: 1499.99 USD"
+    );
+    expect(json.output.finalState.values.canonicalResponse).toBe(
+      "The price of Laptop X Pro is 1499.99 USD."
+    );
   });
 });

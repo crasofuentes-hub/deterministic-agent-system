@@ -36,8 +36,8 @@ export class LlmMockPlanner implements Planner {
           { id: "c", kind: "set", key: "lastErrorCode", value: lastErr },
           { id: "d", kind: "append_log", value: msg },
           { id: "e", kind: "tool.call", toolId: "echo", input: { value: msg }, outputKey: "sum" },
-          { id: "f", kind: "append_log", value: "done" }
-        ]
+          { id: "f", kind: "append_log", value: "done" },
+        ],
       };
     }
 
@@ -50,8 +50,8 @@ export class LlmMockPlanner implements Planner {
           { id: "b", kind: "set", key: "intent", value: intent },
           { id: "c", kind: "append_log", value: "llm-mock:plan" },
           { id: "d", kind: "tool.call", toolId: "nope/tool", input: { x: 1 }, outputKey: "out" },
-          { id: "e", kind: "append_log", value: "done" }
-        ]
+          { id: "e", kind: "append_log", value: "done" },
+        ],
       };
     }
 
@@ -68,8 +68,8 @@ export class LlmMockPlanner implements Planner {
           { id: "b", kind: "set", key: "intent", value: intent },
           { id: "c", kind: "append_log", value: "llm-mock:plan" },
           { id: "d", kind: "tool.call", toolId: "math/add", input: { a, b }, outputKey: "sum" },
-          { id: "e", kind: "append_log", value: "done" }
-        ]
+          { id: "e", kind: "append_log", value: "done" },
+        ],
       };
     }
 
@@ -89,12 +89,12 @@ export class LlmMockPlanner implements Planner {
               text: goal,
               trim: true,
               lowercase: true,
-              collapseWhitespace: true
+              collapseWhitespace: true,
             },
-            outputKey: "normalized"
+            outputKey: "normalized",
           },
-          { id: "e", kind: "append_log", value: "done" }
-        ]
+          { id: "e", kind: "append_log", value: "done" },
+        ],
       };
     }
     if (intent === "cap-synth") {
@@ -103,13 +103,13 @@ export class LlmMockPlanner implements Planner {
         plannerPrefix: "llm-mock",
         goal,
         intent,
-        capabilities: caps
+        capabilities: caps,
       });
     }
 
-
     if (intent === "extract-merge") {
-      const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "meta" : { "ok" : true } }  ';
+      const rawJson =
+        '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "meta" : { "ok" : true } }  ';
       const normalizeToolId = resolveToolIdForCapability("text.normalize");
       const extractToolId = resolveToolIdForCapability("json.extract");
       const mergeToolId = resolveToolIdForCapability("json.merge");
@@ -130,44 +130,45 @@ export class LlmMockPlanner implements Planner {
               text: rawJson,
               trim: true,
               lowercase: false,
-              collapseWhitespace: true
+              collapseWhitespace: true,
             },
-            outputKey: "normalizedJson"
+            outputKey: "normalizedJson",
           },
           {
             id: "e",
             kind: "tool.call",
             toolId: extractToolId,
             input: {
-              text: { "$ref": "state.values.normalizedJson.text" },
-              path: "user"
+              text: { $ref: "state.values.normalizedJson.text" },
+              path: "user",
             },
-            outputKey: "extractedUser"
+            outputKey: "extractedUser",
           },
           {
             id: "f",
             kind: "tool.call",
             toolId: mergeToolId,
             input: {
-              left: { "$ref": "state.values.extractedUser.value" },
-              right: extraJson
+              left: { $ref: "state.values.extractedUser.value" },
+              right: extraJson,
             },
-            outputKey: "merged"
+            outputKey: "merged",
           },
-          { id: "g", kind: "append_log", value: "done" }
-        ]
+          { id: "g", kind: "append_log", value: "done" },
+        ],
       };
     }
 
     if (intent === "extract") {
-      const path =
-        goal.includes("name") ? "user.name" :
-        goal.includes("role") ? "user.role" :
-        "items.0.id";
+      const path = goal.includes("name")
+        ? "user.name"
+        : goal.includes("role")
+          ? "user.role"
+          : "items.0.id";
 
       const text = JSON.stringify({
         user: { name: "Oscar", role: "inventor" },
-        items: [{ id: "a1" }, { id: "b2" }]
+        items: [{ id: "a1" }, { id: "b2" }],
       });
 
       return {
@@ -182,15 +183,16 @@ export class LlmMockPlanner implements Planner {
             kind: "tool.call",
             toolId: "json/extract",
             input: { text, path },
-            outputKey: "extracted"
+            outputKey: "extracted",
           },
-          { id: "e", kind: "append_log", value: "done" }
-        ]
+          { id: "e", kind: "append_log", value: "done" },
+        ],
       };
     }
 
     if (intent === "extract-chain") {
-      const rawJson = '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "items" : [ { "id" : "a1" } , { "id" : "b2" } ] }  ';
+      const rawJson =
+        '  {  "user" : { "name" : "Oscar" , "role" : "inventor" } , "items" : [ { "id" : "a1" } , { "id" : "b2" } ] }  ';
       const path = goal.includes("role") ? "user.role" : "user.name";
 
       return {
@@ -208,22 +210,22 @@ export class LlmMockPlanner implements Planner {
               text: rawJson,
               trim: true,
               lowercase: false,
-              collapseWhitespace: true
+              collapseWhitespace: true,
             },
-            outputKey: "normalizedJson"
+            outputKey: "normalizedJson",
           },
           {
             id: "e",
             kind: "tool.call",
             toolId: "json/extract",
             input: {
-              text: { "$ref": "state.values.normalizedJson.text" },
-              path
+              text: { $ref: "state.values.normalizedJson.text" },
+              path,
             },
-            outputKey: "extracted"
+            outputKey: "extracted",
           },
-          { id: "f", kind: "append_log", value: "done" }
-        ]
+          { id: "f", kind: "append_log", value: "done" },
+        ],
       };
     }
 
@@ -236,8 +238,11 @@ export class LlmMockPlanner implements Planner {
         { id: "b", kind: "set", key: "intent", value: intent },
         { id: "c", kind: "append_log", value: "llm-mock:plan" },
         { id: "d", kind: "tool.call", toolId: "echo", input: { value: msg }, outputKey: "output" },
-        { id: "e", kind: "append_log", value: "done" }
-      ]
+        { id: "e", kind: "append_log", value: "done" },
+      ],
     };
   }
+}
+export function buildPlannerLlmMock(): Planner {
+  return new LlmMockPlanner();
 }

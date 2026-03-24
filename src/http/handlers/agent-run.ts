@@ -19,17 +19,21 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } | { ok: false; message: string } {
+function parseAgentRunInput(
+  body: unknown
+): { ok: true; value: AgentRunInput } | { ok: false; message: string } {
   if (!isObject(body)) return { ok: false, message: "Request body must be a JSON object" };
 
   const goal = body.goal;
   if (!isNonEmptyString(goal)) return { ok: false, message: "goal must be a non-empty string" };
 
   const demo = body.demo;
-  if (demo !== "core" && demo !== "sandbox") return { ok: false, message: "demo must be 'core' or 'sandbox'" };
+  if (demo !== "core" && demo !== "sandbox")
+    return { ok: false, message: "demo must be 'core' or 'sandbox'" };
 
   const mode = body.mode;
-  if (mode !== "mock" && mode !== "local") return { ok: false, message: "mode must be 'mock' or 'local'" };
+  if (mode !== "mock" && mode !== "local")
+    return { ok: false, message: "mode must be 'mock' or 'local'" };
 
   const maxSteps = body.maxSteps;
   if (typeof maxSteps !== "number" || !Number.isInteger(maxSteps) || maxSteps <= 0) {
@@ -57,17 +61,20 @@ function parseAgentRunInput(body: unknown): { ok: true; value: AgentRunInput } |
 
   const traceId = body.traceId;
   if (typeof traceId !== "undefined") {
-    if (!isNonEmptyString(traceId)) return { ok: false, message: "traceId must be a non-empty string when provided" };
+    if (!isNonEmptyString(traceId))
+      return { ok: false, message: "traceId must be a non-empty string when provided" };
     if (traceId.length > 256) return { ok: false, message: "traceId exceeds 256 characters" };
   }
 
   const sandboxUrl = body.sandboxUrl;
   if (typeof sandboxUrl !== "undefined") {
-    if (!isNonEmptyString(sandboxUrl)) return { ok: false, message: "sandboxUrl must be a non-empty string when provided" };
+    if (!isNonEmptyString(sandboxUrl))
+      return { ok: false, message: "sandboxUrl must be a non-empty string when provided" };
     if (!sandboxUrl.startsWith("http://") && !sandboxUrl.startsWith("https://")) {
       return { ok: false, message: "sandboxUrl must start with http:// or https://" };
     }
-    if (sandboxUrl.length > 2048) return { ok: false, message: "sandboxUrl exceeds 2048 characters" };
+    if (sandboxUrl.length > 2048)
+      return { ok: false, message: "sandboxUrl exceeds 2048 characters" };
   }
 
   const history = body.history;
@@ -118,31 +125,44 @@ function attachDomainResult(result: unknown): unknown {
   }
 
   const ok = result.ok;
-  const output = result.output;
+  const nestedResult = result.result;
 
-  if (ok !== true || !isObject(output)) {
+  if (ok !== true || !isObject(nestedResult)) {
     return result;
   }
 
-  const finalState = output.finalState;
+  const finalState = nestedResult.finalState;
   if (!isObject(finalState)) {
-    return result;
+    return {
+      ...result,
+      output: nestedResult,
+    };
   }
 
   const values = finalState.values;
   if (!isObject(values)) {
-    return result;
+    return {
+      ...result,
+      output: nestedResult,
+    };
   }
+
+  const enriched: Record<string, unknown> = {
+    ...result,
+    output: nestedResult,
+  };
 
   const domainResult = values.domainResult;
-  if (!isNonEmptyString(domainResult)) {
-    return result;
+  if (isNonEmptyString(domainResult)) {
+    enriched.domainResult = domainResult;
   }
 
-  return {
-    ...result,
-    domainResult,
-  };
+  const canonicalResponse = values.canonicalResponse;
+  if (isNonEmptyString(canonicalResponse)) {
+    enriched.canonicalResponse = canonicalResponse;
+  }
+
+  return enriched;
 }
 
 export async function handleAgentRun(res: ServerResponse, body: JsonObject): Promise<void> {
@@ -153,10 +173,7 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
   }
 
   if (parsed.value.planner === "det-replan2") {
-    const first = await runAgent(
-      { ...parsed.value, planner: "llm-mock" },
-      new LlmMockPlanner()
-    );
+    const first = await runAgent({ ...parsed.value, planner: "llm-mock" }, new LlmMockPlanner());
 
     if (first.ok) {
       sendJson(res, 200, attachDomainResult(first) as JsonObject);

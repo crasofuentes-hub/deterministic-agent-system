@@ -34,7 +34,9 @@ function tryParseStateValue(value: string | undefined): unknown {
   }
 }
 
-function projectDomainResult(execution: AgentExecutionResult | undefined): AgentExecutionResult | undefined {
+function projectDomainResult(
+  execution: AgentExecutionResult | undefined
+): AgentExecutionResult | undefined {
   if (!execution || !isRecord(execution)) {
     return execution;
   }
@@ -49,15 +51,26 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
     return execution;
   }
 
-  const priceLookup = tryParseStateValue(typeof values.priceLookup === "string" ? values.priceLookup : undefined) as
+  const priceLookup = tryParseStateValue(
+    typeof values.priceLookup === "string" ? values.priceLookup : undefined
+  ) as
     | { found?: boolean; productName?: string; price?: number | null; currency?: string | null }
     | undefined;
 
-  const availabilityLookup = tryParseStateValue(typeof values.availabilityLookup === "string" ? values.availabilityLookup : undefined) as
-    | { found?: boolean; productName?: string; availability?: string | null; stockQuantity?: number | null }
+  const availabilityLookup = tryParseStateValue(
+    typeof values.availabilityLookup === "string" ? values.availabilityLookup : undefined
+  ) as
+    | {
+        found?: boolean;
+        productName?: string;
+        availability?: string | null;
+        stockQuantity?: number | null;
+      }
     | undefined;
 
-  const productLookup = tryParseStateValue(typeof values.productLookup === "string" ? values.productLookup : undefined) as
+  const productLookup = tryParseStateValue(
+    typeof values.productLookup === "string" ? values.productLookup : undefined
+  ) as
     | {
         found?: boolean;
         product?: null | {
@@ -72,7 +85,9 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
       }
     | undefined;
 
-  const orderLookup = tryParseStateValue(typeof values.orderLookup === "string" ? values.orderLookup : undefined) as
+  const orderLookup = tryParseStateValue(
+    typeof values.orderLookup === "string" ? values.orderLookup : undefined
+  ) as
     | {
         found?: boolean;
         order?: null | {
@@ -85,7 +100,9 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
       }
     | undefined;
 
-  const knowledgeLookup = tryParseStateValue(typeof values.knowledgeLookup === "string" ? values.knowledgeLookup : undefined) as
+  const knowledgeLookup = tryParseStateValue(
+    typeof values.knowledgeLookup === "string" ? values.knowledgeLookup : undefined
+  ) as
     | {
         found?: boolean;
         record?: null | {
@@ -97,6 +114,7 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
     | undefined;
 
   let domainResult: string | undefined;
+  let canonicalResponse: string | undefined;
 
   if (priceLookup?.found && typeof priceLookup.productName === "string") {
     domainResult =
@@ -106,6 +124,15 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
       Number(priceLookup.price).toFixed(2) +
       " " +
       String(priceLookup.currency ?? "");
+
+    canonicalResponse =
+      "The price of " +
+      priceLookup.productName +
+      " is " +
+      Number(priceLookup.price).toFixed(2) +
+      " " +
+      String(priceLookup.currency ?? "") +
+      ".";
   } else if (availabilityLookup?.found && typeof availabilityLookup.productName === "string") {
     domainResult =
       "Product: " +
@@ -114,6 +141,14 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
       String(availabilityLookup.availability ?? "") +
       " | Stock: " +
       String(availabilityLookup.stockQuantity ?? "");
+
+    canonicalResponse =
+      availabilityLookup.productName +
+      " is currently " +
+      String(availabilityLookup.availability ?? "") +
+      " with stock " +
+      String(availabilityLookup.stockQuantity ?? "") +
+      ".";
   } else if (productLookup?.found && productLookup.product) {
     domainResult =
       "Product: " +
@@ -126,6 +161,18 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
       productLookup.product.currency +
       " | Availability: " +
       productLookup.product.availability;
+
+    canonicalResponse =
+      productLookup.product.name +
+      " (" +
+      productLookup.product.sku +
+      ") costs " +
+      Number(productLookup.product.price).toFixed(2) +
+      " " +
+      productLookup.product.currency +
+      " and is currently " +
+      productLookup.product.availability +
+      ".";
   } else if (orderLookup?.found && orderLookup.order) {
     domainResult =
       "Order ID: " +
@@ -134,12 +181,23 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
       orderLookup.order.status +
       " | Updated: " +
       orderLookup.order.updatedAtIso;
+
+    canonicalResponse =
+      "Order " +
+      orderLookup.order.orderId +
+      " is currently " +
+      orderLookup.order.status +
+      " as of " +
+      orderLookup.order.updatedAtIso +
+      ".";
   } else if (knowledgeLookup?.found && knowledgeLookup.record) {
     domainResult =
       "Product: " +
       knowledgeLookup.record.productName +
       " | Summary: " +
       knowledgeLookup.record.summary;
+
+    canonicalResponse = knowledgeLookup.record.productName + ": " + knowledgeLookup.record.summary;
   }
 
   if (!domainResult) {
@@ -153,6 +211,7 @@ function projectDomainResult(execution: AgentExecutionResult | undefined): Agent
       values: {
         ...execution.finalState.values,
         domainResult,
+        ...(canonicalResponse ? { canonicalResponse } : {}),
       },
     },
   };
@@ -191,8 +250,11 @@ export async function runAgent(
     return response;
   }
 
+  const projectedResult = projectDomainResult(response.result) ?? response.result;
+
   return {
     ...response,
-    result: projectDomainResult(response.result) ?? response.result,
+    result: projectedResult,
+    output: projectedResult,
   };
 }

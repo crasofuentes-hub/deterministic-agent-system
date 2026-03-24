@@ -32,16 +32,159 @@ function findEntityValue(session: SessionState, entityId: string): string | unde
   return session.collectedEntities.find((item) => item.entityId === entityId)?.value;
 }
 
+function normalizeLooseEntityText(value: string): string {
+  return value
+    .normalize("NFC")
+    .trim()
+    .replace(/[?!.,;:]+$/g, "")
+    .trim();
+}
+
+function sanitizeProductNameCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value);
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
+  const lowered = cleaned.toLowerCase();
+  const blocked = new Set([
+    "product",
+    "a product",
+    "an item",
+    "item",
+    "information about a product",
+    "i want information about a product",
+    "info about a product",
+    "details about a product",
+    "about a product",
+    "product information",
+    "information about product",
+    "details about product",
+  ]);
+
+  if (blocked.has(lowered)) {
+    return undefined;
+  }
+
+  if (/(order status|tracking|shipment|shipping|\border\b)/.test(lowered)) {
+    return undefined;
+  }
+
+  if (
+    /(information|info|details)/.test(lowered) &&
+    /(product|item)/.test(lowered) &&
+    !/[a-z0-9]+(?:\s+[a-z0-9]+){1,}/i.test(
+      cleaned
+        .replace(/\b(product|item|information|info|details|about|a|an|the|want|i)\b/gi, "")
+        .trim()
+    )
+  ) {
+    return undefined;
+  }
+
+  return cleaned;
+}
+
+function sanitizeOrderIdCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toUpperCase();
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
+  const blocked = new Set(["ORDER", "PURCHASE", "STATUS", "TRACKING", "UPDATE"]);
+
+  if (blocked.has(cleaned)) {
+    return undefined;
+  }
+
+  if (!/^[A-Z0-9][A-Z0-9-]{3,}$/.test(cleaned)) {
+    return undefined;
+  }
+
+  return cleaned;
+}
+
+function getAllowedEntityIdsForIntent(intentId: string): string[] {
+  if (intentId === "consult-price") {
+    return ["productName"];
+  }
+
+  if (intentId === "consult-availability") {
+    return ["productName"];
+  }
+
+  if (intentId === "consult-product") {
+    return ["productName"];
+  }
+
+  if (intentId === "consult-order-status") {
+    return ["orderId"];
+  }
+
+  return [];
+}
+
+function retainEntitiesCompatibleWithIntent(session: SessionState, intentId: string): SessionState {
+  const allowed = new Set(getAllowedEntityIdsForIntent(intentId));
+
+  return {
+    ...session,
+    collectedEntities: session.collectedEntities.filter((item) => allowed.has(item.entityId)),
+  };
+}
+
+function hasExplicitIntentSignal(userMessageText: string, intentId: string): boolean {
+  const text = userMessageText.trim().toLowerCase();
+
+  if (intentId === "request-human-handoff") {
+    return /human|agent|representative|person/.test(text);
+  }
+
+  if (intentId === "close-conversation") {
+    return /close|end conversation|finish conversation/.test(text);
+  }
+
+  if (intentId === "consult-order-status") {
+    return /order|status|tracking|shipment|shipping/.test(text);
+  }
+
+  if (intentId === "consult-price") {
+    return /price|cost|how much/.test(text);
+  }
+
+  if (intentId === "consult-availability") {
+    return /in stock|available|availability|stock/.test(text);
+  }
+
+  if (intentId === "consult-product") {
+    return /product|details|information|info|item/.test(text);
+  }
+
+  return false;
+}
+
 function resolveEffectiveIntentId(session: SessionState, userMessageText: string): string {
+  const resolved = resolveIntentFromText(userMessageText).intentId;
+
   if (
     session.conversationStatus === "waiting-user" &&
     typeof session.currentIntentId === "string" &&
     session.currentIntentId.trim().length > 0
   ) {
-    return session.currentIntentId;
+    const currentIntentId = session.currentIntentId;
+
+    if (resolved === currentIntentId) {
+      return currentIntentId;
+    }
+
+    if (hasExplicitIntentSignal(userMessageText, resolved)) {
+      return resolved;
+    }
+
+    return currentIntentId;
   }
 
-  return resolveIntentFromText(userMessageText).intentId;
+  return resolved;
 }
 
 function buildResolvedResponse(
@@ -49,7 +192,7 @@ function buildResolvedResponse(
   session: SessionState
 ): string | undefined {
   if (resolvedIntentId === "consult-price") {
-    const productName = findEntityValue(session, "productName");
+    const productName = sanitizeProductNameCandidate(findEntityValue(session, "productName") ?? "");
     if (!productName) {
       return undefined;
     }
@@ -60,17 +203,12 @@ function buildResolvedResponse(
     }
 
     return (
-      "Product: " +
-      product.name +
-      " | Price: " +
-      product.price.toFixed(2) +
-      " " +
-      product.currency
+      "Product: " + product.name + " | Price: " + product.price.toFixed(2) + " " + product.currency
     );
   }
 
   if (resolvedIntentId === "consult-availability") {
-    const productName = findEntityValue(session, "productName");
+    const productName = sanitizeProductNameCandidate(findEntityValue(session, "productName") ?? "");
     if (!productName) {
       return undefined;
     }
@@ -91,7 +229,7 @@ function buildResolvedResponse(
   }
 
   if (resolvedIntentId === "consult-product") {
-    const productName = findEntityValue(session, "productName");
+    const productName = sanitizeProductNameCandidate(findEntityValue(session, "productName") ?? "");
     if (!productName) {
       return undefined;
     }
@@ -119,7 +257,7 @@ function buildResolvedResponse(
   }
 
   if (resolvedIntentId === "consult-order-status") {
-    const orderId = findEntityValue(session, "orderId");
+    const orderId = sanitizeOrderIdCandidate(findEntityValue(session, "orderId") ?? "");
     if (!orderId) {
       return undefined;
     }
@@ -153,7 +291,24 @@ export function runCustomerServiceAgent(params: {
   const extractedEntities = extractEntitiesFromText(params.userMessageText);
 
   for (const entity of extractedEntities) {
-    nextSession = upsertSessionEntity(nextSession, entity);
+    let sanitizedValue: string | undefined;
+
+    if (entity.entityId === "productName") {
+      sanitizedValue = sanitizeProductNameCandidate(entity.value);
+    } else if (entity.entityId === "orderId") {
+      sanitizedValue = sanitizeOrderIdCandidate(entity.value);
+    } else {
+      sanitizedValue = normalizeLooseEntityText(entity.value);
+    }
+
+    if (!sanitizedValue) {
+      continue;
+    }
+
+    nextSession = upsertSessionEntity(nextSession, {
+      ...entity,
+      value: sanitizedValue,
+    });
   }
 
   const result = orchestrateConversationTurn({
@@ -162,10 +317,7 @@ export function runCustomerServiceAgent(params: {
     intentId: effectiveIntentId,
   });
 
-  const resolvedResponseText = buildResolvedResponse(
-    result.intentId,
-    result.session
-  );
+  const resolvedResponseText = buildResolvedResponse(result.intentId, result.session);
 
   return {
     session: result.session,
