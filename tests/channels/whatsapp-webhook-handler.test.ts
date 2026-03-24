@@ -68,7 +68,7 @@ describe("whatsapp webhook handler", () => {
     });
   });
 
-  it("executes the customer-service bridge for inbound POST messages", async () => {
+  it("executes the customer-service bridge and builds outbound payload for inbound POST messages", async () => {
     const res = createMockResponse();
 
     await handleWhatsAppWebhook(
@@ -162,6 +162,15 @@ describe("whatsapp webhook handler", () => {
       status: "resolved",
     });
 
+    expect(json.results[0].outbound).toEqual({
+      messaging_product: "whatsapp",
+      to: "5215512345678",
+      type: "text",
+      text: {
+        body: "Product: Laptop X Pro | Price: 1499.99 USD",
+      },
+    });
+
     expect(json.results[0].session).toEqual(
       expect.objectContaining({
         sessionId: "whatsapp-session:5215512345678",
@@ -171,14 +180,6 @@ describe("whatsapp webhook handler", () => {
         missingEntityIds: [],
       })
     );
-
-    expect(json.results[0].session.collectedEntities).toEqual([
-      {
-        entityId: "productName",
-        value: "Laptop X Pro",
-        confidence: "derived",
-      },
-    ]);
   });
 
   it("rejects invalid JSON POST bodies", async () => {

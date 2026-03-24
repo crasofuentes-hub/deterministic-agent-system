@@ -1,8 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { normalizeWhatsAppWebhook } from "../../channels/whatsapp/normalize";
 import { runWhatsAppCustomerServiceBridge } from "../../channels/whatsapp/agent-bridge";
-import { sendJson } from "../responses";
+import { normalizeWhatsAppWebhook } from "../../channels/whatsapp/normalize";
+import { buildWhatsAppTextOutbound } from "../../channels/whatsapp/send";
 import { createInitialSessionState, type SessionState } from "../../session-state/session-state";
+import { sendJson } from "../responses";
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -109,9 +110,15 @@ export async function handleWhatsAppWebhook(
       message,
     });
 
+    const outbound = buildWhatsAppTextOutbound({
+      to: bridge.output.customerId,
+      body: bridge.output.outboundText,
+    });
+
     return {
       message,
       agent: bridge.output,
+      outbound,
       session: bridge.session,
     };
   });
