@@ -29,6 +29,9 @@ import {
 } from "./responses";
 import { validateExecuteRequest } from "./request-validate";
 import type { JsonObject } from "../tools";
+import { handleWhatsAppWebhook } from "./handlers/whatsapp-webhook";
+import type { WhatsAppRuntimeConfig } from "../channels/whatsapp/runtime";
+import type { WhatsAppStore } from "../channels/whatsapp/store";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -72,12 +75,7 @@ function getRunRouteParts(
   const runId = parts[2];
   const action = parts[3];
 
-  if (
-    parts.length === 3 &&
-    segment1 === "runs" &&
-    typeof runId === "string" &&
-    runId.length > 0
-  ) {
+  if (parts.length === 3 && segment1 === "runs" && typeof runId === "string" && runId.length > 0) {
     return { runId };
   }
 
@@ -311,8 +309,19 @@ const ALLOWED_PUBLIC_PATHS = new Set<string>([
   "/schema/agent-run",
   "/schema/agent-capabilities",
   "/schema/replay-bundle",
+  "/webhooks/whatsapp",
 ]);
-export async function routeRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+
+export interface RouteRuntimeOptions {
+  whatsappRuntime?: WhatsAppRuntimeConfig;
+  whatsappStore?: WhatsAppStore;
+}
+
+export async function routeRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  runtimeOptions: RouteRuntimeOptions = {}
+): Promise<void> {
   const startedAt = Date.now();
   const requestId = createRequestId();
 
@@ -328,7 +337,7 @@ export async function routeRequest(req: IncomingMessage, res: ServerResponse): P
   try {
     const method = req.method ?? "GET";
     const rawUrl = req.url ?? "/";
-const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
+    const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
     const isRunsCollection = isRunsCollectionPath(url);
     const runRoute = getRunRouteParts(url);
 
@@ -346,11 +355,11 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
     }
 
     if (!isRunsCollection && !runRoute && !ALLOWED_PUBLIC_PATHS.has(url)) {
-  withRequestId(res, requestId);
-  sendNotFound(res);
-  logEnd(req, res, requestId, startedAt);
-  return;
-}
+      withRequestId(res, requestId);
+      sendNotFound(res);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
 
     if (runRoute && method === "GET") {
       if (typeof runRoute.action !== "undefined") {
@@ -367,7 +376,6 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       return;
     }
 
-
     if (url === "/tools") {
       if (method !== "GET") {
         withRequestId(res, requestId);
@@ -383,7 +391,6 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       return;
     }
 
-
     if (url === "/agent/capabilities") {
       if (method !== "GET") {
         withRequestId(res, requestId);
@@ -397,7 +404,6 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       logEnd(req, res, requestId, startedAt);
       return;
     }
-
 
     if (url === "/schema/agent-run") {
       if (method !== "GET") {
@@ -413,7 +419,6 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       return;
     }
 
-
     if (url === "/schema/agent-capabilities") {
       if (method !== "GET") {
         withRequestId(res, requestId);
@@ -428,7 +433,6 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       return;
     }
 
-
     if (url === "/schema/replay-bundle") {
       if (method !== "GET") {
         withRequestId(res, requestId);
@@ -439,6 +443,18 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
 
       withRequestId(res, requestId);
       await handleSchemaReplayBundle(res);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (url === "/webhooks/whatsapp" && method === "GET") {
+      withRequestId(res, requestId);
+      await handleWhatsAppWebhook(req, res, {
+        verifyToken: runtimeOptions.whatsappRuntime?.verifyToken ?? "",
+        deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
+        sender: runtimeOptions.whatsappRuntime?.sender,
+        store: runtimeOptions.whatsappStore,
+      });
       logEnd(req, res, requestId, startedAt);
       return;
     }
@@ -471,6 +487,19 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       return;
     }
 
+    if (url === "/webhooks/whatsapp") {
+      withRequestId(res, requestId);
+      await handleWhatsAppWebhook(req, res, {
+        verifyToken: runtimeOptions.whatsappRuntime?.verifyToken ?? "",
+        bodyText: raw,
+        deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
+        sender: runtimeOptions.whatsappRuntime?.sender,
+        store: runtimeOptions.whatsappStore,
+      });
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
     if (isRunsCollection) {
       const result = handleCreateRun(parsed);
       withRequestId(res, requestId);
@@ -493,7 +522,13 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
         const validation = validateExecuteRequest(parsed);
         if (!validation.ok) {
           withRequestId(res, requestId);
-          sendInvalidRequest(res, "Request validation failed: " + validation.error, undefined, undefined, validation.issues);
+          sendInvalidRequest(
+            res,
+            "Request validation failed: " + validation.error,
+            undefined,
+            undefined,
+            validation.issues
+          );
           logEnd(req, res, requestId, startedAt, { error: validation.error });
           return;
         }
@@ -520,7 +555,13 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       const validation = validateExecuteRequest(parsed);
       if (!validation.ok) {
         withRequestId(res, requestId);
-        sendInvalidRequest(res, "Request validation failed: " + validation.error, undefined, undefined, validation.issues);
+        sendInvalidRequest(
+          res,
+          "Request validation failed: " + validation.error,
+          undefined,
+          undefined,
+          validation.issues
+        );
         logEnd(req, res, requestId, startedAt, { error: validation.error });
         return;
       }
@@ -531,7 +572,7 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       return;
     }
 
-        if (url === "/agent/run") {
+    if (url === "/agent/run") {
       if (method !== "POST") {
         withRequestId(res, requestId);
         sendMethodNotAllowed(res);
@@ -552,7 +593,7 @@ const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
       logEnd(req, res, requestId, startedAt);
       return;
     }
-if (url === "/simulate") {
+    if (url === "/simulate") {
       const validation = validateSimulateRequest(parsed);
       if (!validation.ok) {
         withRequestId(res, requestId);
@@ -614,8 +655,3 @@ if (url === "/simulate") {
     });
   }
 }
-
-
-
-
-
