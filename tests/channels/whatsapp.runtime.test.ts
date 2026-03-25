@@ -1,19 +1,29 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolveWhatsAppRuntime } from "../../src/channels/whatsapp/runtime";
 import { buildWhatsAppTextOutbound } from "../../src/channels/whatsapp/send";
 
+function createTempDbPath(testName: string): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dass-whatsapp-runtime-"));
+  return path.join(dir, testName + ".sqlite");
+}
+
 describe("whatsapp runtime", () => {
-  it("resolves skipped mode by default", () => {
+  it("resolves skipped mode with memory store by default", () => {
     const runtime = resolveWhatsAppRuntime({
       env: {
         WHATSAPP_VERIFY_TOKEN: "verify-token-001",
       },
     });
 
-    expect(runtime).toEqual({
-      verifyToken: "verify-token-001",
-      deliveryMode: "skipped",
-    });
+    expect(runtime.verifyToken).toBe("verify-token-001");
+    expect(runtime.deliveryMode).toBe("skipped");
+    expect(runtime.sender).toBeUndefined();
+    expect(runtime.store.loadSession("5215512345678").sessionId).toBe(
+      "whatsapp-session:5215512345678"
+    );
   });
 
   it("resolves mock mode with sender", async () => {
@@ -109,6 +119,27 @@ describe("whatsapp runtime", () => {
     });
   });
 
+  it("resolves sqlite store mode", () => {
+    const dbPath = createTempDbPath("runtime-sqlite");
+    const runtime = resolveWhatsAppRuntime({
+      env: {
+        WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+        WHATSAPP_STORE_MODE: "sqlite",
+        WHATSAPP_SQLITE_PATH: dbPath,
+      },
+    });
+
+    const session = runtime.store.loadSession("5215512345678");
+    expect(session.sessionId).toBe("whatsapp-session:5215512345678");
+
+    runtime.store.markMessageProcessed("wamid.runtime.sqlite.001");
+    expect(runtime.store.hasProcessedMessage("wamid.runtime.sqlite.001")).toBe(true);
+
+    if ("close" in runtime.store && typeof runtime.store.close === "function") {
+      runtime.store.close();
+    }
+  });
+
   it("rejects missing verify token", () => {
     expect(() =>
       resolveWhatsAppRuntime({
@@ -126,6 +157,28 @@ describe("whatsapp runtime", () => {
         },
       })
     ).toThrow("WHATSAPP_DELIVERY_MODE must be one of: skipped, mock, http");
+  });
+
+  it("rejects invalid store mode", () => {
+    expect(() =>
+      resolveWhatsAppRuntime({
+        env: {
+          WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+          WHATSAPP_STORE_MODE: "banana",
+        },
+      })
+    ).toThrow("WHATSAPP_STORE_MODE must be one of: memory, sqlite");
+  });
+
+  it("rejects incomplete sqlite configuration", () => {
+    expect(() =>
+      resolveWhatsAppRuntime({
+        env: {
+          WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+          WHATSAPP_STORE_MODE: "sqlite",
+        },
+      })
+    ).toThrow("WHATSAPP_SQLITE_PATH is required for sqlite store mode");
   });
 
   it("rejects incomplete http configuration", () => {
