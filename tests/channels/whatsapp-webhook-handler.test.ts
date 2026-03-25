@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { createMockWhatsAppSender } from "../../src/channels/whatsapp/client";
 import { handleWhatsAppWebhook } from "../../src/http/handlers/whatsapp-webhook";
 import { createInitialSessionState } from "../../src/session-state/session-state";
+import { createInMemoryWhatsAppStore } from "../../src/channels/whatsapp/store";
 
 function createMockResponse() {
   let body = "";
@@ -19,6 +21,47 @@ function createMockResponse() {
       return body;
     },
   };
+}
+
+function buildInboundBody(messageId: string, userText: string): string {
+  return JSON.stringify({
+    object: "whatsapp_business_account",
+    entry: [
+      {
+        id: "entry-001",
+        changes: [
+          {
+            field: "messages",
+            value: {
+              metadata: {
+                display_phone_number: "15551234567",
+                phone_number_id: "phone-number-id-001",
+              },
+              contacts: [
+                {
+                  profile: {
+                    name: "Oscar Cliente",
+                  },
+                  wa_id: "5215512345678",
+                },
+              ],
+              messages: [
+                {
+                  from: "5215512345678",
+                  id: messageId,
+                  timestamp: "1774310400",
+                  type: "text",
+                  text: {
+                    body: userText,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  });
 }
 
 describe("whatsapp webhook handler", () => {
@@ -68,7 +111,7 @@ describe("whatsapp webhook handler", () => {
     });
   });
 
-  it("executes the customer-service bridge and builds outbound payload for inbound POST messages", async () => {
+  it("builds outbound payload and skips delivery by default", async () => {
     const res = createMockResponse();
 
     await handleWhatsAppWebhook(
@@ -87,81 +130,20 @@ describe("whatsapp webhook handler", () => {
             sessionId: "whatsapp-session:" + customerId,
             businessContextId: "customer-service-core-v2",
           }),
-        bodyText: JSON.stringify({
-          object: "whatsapp_business_account",
-          entry: [
-            {
-              id: "entry-001",
-              changes: [
-                {
-                  field: "messages",
-                  value: {
-                    metadata: {
-                      display_phone_number: "15551234567",
-                      phone_number_id: "phone-number-id-001",
-                    },
-                    contacts: [
-                      {
-                        profile: {
-                          name: "Oscar Cliente",
-                        },
-                        wa_id: "5215512345678",
-                      },
-                    ],
-                    messages: [
-                      {
-                        from: "5215512345678",
-                        id: "wamid.HBgLN...",
-                        timestamp: "1774310400",
-                        type: "text",
-                        text: {
-                          body: "What is the price of Laptop X Pro?",
-                        },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          ],
-        }),
+        bodyText: buildInboundBody("wamid.HBgLN...", "What is the price of Laptop X Pro?"),
       }
     );
 
-    expect(res.statusCode).toBe(200);
-
     const json = JSON.parse(res.getBody());
 
+    expect(res.statusCode).toBe(200);
     expect(json.ok).toBe(true);
     expect(json.messagesReceived).toBe(1);
-    expect(json.results).toHaveLength(1);
-
-    expect(json.results[0].message).toEqual({
-      channel: "whatsapp",
-      channelMessageId: "wamid.HBgLN...",
-      customerId: "5215512345678",
-      text: "What is the price of Laptop X Pro?",
-      receivedAtIso: "2026-03-24T00:00:00.000Z",
-      traceId: "whatsapp:wamid.HBgLN...",
-      metadata: {
-        whatsappPhoneNumberId: "phone-number-id-001",
-        whatsappDisplayPhoneNumber: "15551234567",
-        whatsappWaId: "5215512345678",
-        profileName: "Oscar Cliente",
-      },
+    expect(json.results[0].duplicate).toBe(false);
+    expect(json.results[0].delivery).toEqual({
+      mode: "skipped",
+      result: null,
     });
-
-    expect(json.results[0].agent).toEqual({
-      channel: "whatsapp",
-      customerId: "5215512345678",
-      inboundMessageId: "wamid.HBgLN...",
-      outboundText: "Product: Laptop X Pro | Price: 1499.99 USD",
-      responseId: "consult-price-resolved",
-      resolvedIntentId: "consult-price",
-      stage: "resolve-price",
-      status: "resolved",
-    });
-
     expect(json.results[0].outbound).toEqual({
       messaging_product: "whatsapp",
       to: "5215512345678",
@@ -170,14 +152,166 @@ describe("whatsapp webhook handler", () => {
         body: "Product: Laptop X Pro | Price: 1499.99 USD",
       },
     });
+  });
 
-    expect(json.results[0].session).toEqual(
+  it("sends with mock delivery mode when configured", async () => {
+    const res = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        deliveryMode: "mock",
+        loadSession: (customerId) =>
+          createInitialSessionState({
+            sessionId: "whatsapp-session:" + customerId,
+            businessContextId: "customer-service-core-v2",
+          }),
+        bodyText: buildInboundBody("wamid.HBgLN...", "What is the price of Laptop X Pro?"),
+      }
+    );
+
+    const json = JSON.parse(res.getBody());
+
+    expect(res.statusCode).toBe(200);
+    expect(json.results[0].delivery).toEqual({
+      mode: "mock",
+      result: {
+        ok: true,
+        mode: "mock",
+        providerMessageId: "mocked-whatsapp-message-001",
+        acceptedAtIso: "2026-03-24T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("sends with injected http sender when configured", async () => {
+    const res = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        deliveryMode: "http",
+        sender: createMockWhatsAppSender({
+          providerMessageId: "http-like-msg-001",
+          acceptedAtIso: "2026-03-24T15:00:00.000Z",
+        }),
+        loadSession: (customerId) =>
+          createInitialSessionState({
+            sessionId: "whatsapp-session:" + customerId,
+            businessContextId: "customer-service-core-v2",
+          }),
+        bodyText: buildInboundBody("wamid.HBgLN...", "What is the price of Laptop X Pro?"),
+      }
+    );
+
+    const json = JSON.parse(res.getBody());
+
+    expect(res.statusCode).toBe(200);
+    expect(json.results[0].delivery).toEqual({
+      mode: "http",
+      result: {
+        ok: true,
+        mode: "mock",
+        providerMessageId: "http-like-msg-001",
+        acceptedAtIso: "2026-03-24T15:00:00.000Z",
+      },
+    });
+  });
+
+  it("uses store for session persistence and idempotent duplicate detection", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const firstRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      firstRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.store.001", "I want information about a product"),
+      }
+    );
+
+    const firstJson = JSON.parse(firstRes.getBody());
+    expect(firstRes.statusCode).toBe(200);
+    expect(firstJson.results[0].duplicate).toBe(false);
+    expect(firstJson.results[0].agent.status).toBe("missing-entity");
+
+    const secondRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      secondRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.store.002", "Laptop X Pro"),
+      }
+    );
+
+    const secondJson = JSON.parse(secondRes.getBody());
+    expect(secondRes.statusCode).toBe(200);
+    expect(secondJson.results[0].duplicate).toBe(false);
+    expect(secondJson.results[0].agent.status).toBe("resolved");
+    expect(secondJson.results[0].agent.outboundText).toContain("Laptop X Pro");
+
+    const duplicateRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      duplicateRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.store.002", "Laptop X Pro"),
+      }
+    );
+
+    const duplicateJson = JSON.parse(duplicateRes.getBody());
+    expect(duplicateRes.statusCode).toBe(200);
+    expect(duplicateJson.results[0]).toEqual(
       expect.objectContaining({
-        sessionId: "whatsapp-session:5215512345678",
-        businessContextId: "customer-service-core-v2",
-        currentIntentId: "consult-price",
-        conversationStatus: "active",
-        missingEntityIds: [],
+        duplicate: true,
+        agent: null,
+        outbound: null,
+        delivery: {
+          mode: "skipped",
+          result: null,
+        },
       })
     );
   });

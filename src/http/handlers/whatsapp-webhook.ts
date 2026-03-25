@@ -1,7 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { runWhatsAppCustomerServiceBridge } from "../../channels/whatsapp/agent-bridge";
+import { createMockWhatsAppSender, type WhatsAppSender } from "../../channels/whatsapp/client";
 import { normalizeWhatsAppWebhook } from "../../channels/whatsapp/normalize";
 import { buildWhatsAppTextOutbound } from "../../channels/whatsapp/send";
+import type { WhatsAppStore } from "../../channels/whatsapp/store";
 import { createInitialSessionState, type SessionState } from "../../session-state/session-state";
 import { sendJson } from "../responses";
 
@@ -18,6 +20,9 @@ export interface HandleWhatsAppWebhookOptions {
   verifyToken: string;
   bodyText?: string;
   loadSession?: (customerId: string) => SessionState;
+  deliveryMode?: "skipped" | "mock" | "http";
+  sender?: WhatsAppSender;
+  store?: WhatsAppStore;
 }
 
 export async function handleWhatsAppWebhook(
@@ -97,31 +102,81 @@ export async function handleWhatsAppWebhook(
     });
   }
 
-  const results = normalized.value.map((message) => {
-    const session =
-      options.loadSession?.(message.customerId) ??
-      createInitialSessionState({
-        sessionId: "whatsapp-session:" + message.customerId,
-        businessContextId: "customer-service-core-v2",
+  const deliveryMode = options.deliveryMode ?? "skipped";
+  const sender =
+    deliveryMode === "mock"
+      ? createMockWhatsAppSender()
+      : deliveryMode === "http"
+        ? options.sender
+        : undefined;
+
+  if (deliveryMode === "http" && !sender) {
+    return sendJson(response, 500, {
+      ok: false,
+      error: "http delivery mode requires sender",
+    });
+  }
+
+  const results = await Promise.all(
+    normalized.value.map(async (message) => {
+      if (options.store?.hasProcessedMessage(message.channelMessageId)) {
+        return {
+          message,
+          duplicate: true,
+          agent: null,
+          outbound: null,
+          delivery: {
+            mode: "skipped",
+            result: null,
+          },
+          session: options.store.loadSession(message.customerId),
+        };
+      }
+
+      const session = options.store
+        ? options.store.loadSession(message.customerId)
+        : (options.loadSession?.(message.customerId) ??
+          createInitialSessionState({
+            sessionId: "whatsapp-session:" + message.customerId,
+            businessContextId: "customer-service-core-v2",
+          }));
+
+      const bridge = runWhatsAppCustomerServiceBridge({
+        session,
+        message,
       });
 
-    const bridge = runWhatsAppCustomerServiceBridge({
-      session,
-      message,
-    });
+      const outbound = buildWhatsAppTextOutbound({
+        to: bridge.output.customerId,
+        body: bridge.output.outboundText,
+      });
 
-    const outbound = buildWhatsAppTextOutbound({
-      to: bridge.output.customerId,
-      body: bridge.output.outboundText,
-    });
+      const delivery =
+        deliveryMode === "skipped"
+          ? {
+              mode: "skipped" as const,
+              result: null,
+            }
+          : {
+              mode: deliveryMode,
+              result: await sender!.send(outbound),
+            };
 
-    return {
-      message,
-      agent: bridge.output,
-      outbound,
-      session: bridge.session,
-    };
-  });
+      if (options.store) {
+        options.store.saveSession(message.customerId, bridge.session);
+        options.store.markMessageProcessed(message.channelMessageId);
+      }
+
+      return {
+        message,
+        duplicate: false,
+        agent: bridge.output,
+        outbound,
+        delivery,
+        session: bridge.session,
+      };
+    })
+  );
 
   return sendJson(response, 200, {
     ok: true,
