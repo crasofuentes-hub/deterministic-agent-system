@@ -23,22 +23,36 @@ describe("intent-resolver", () => {
     });
   });
 
-  it("resolves availability deterministically", () => {
-    expect(resolveIntentFromText("Is Laptop X Pro available in stock?")).toEqual({
+  it("resolves availability from natural inventory phrasing", () => {
+    expect(resolveIntentFromText("Do you have Laptop X Pro?")).toEqual({
+      intentId: "consult-availability",
+      confidence: "rule",
+    });
+  });
+
+  it("resolves availability from explicit stock phrasing", () => {
+    expect(resolveIntentFromText("Is Laptop X Pro in stock?")).toEqual({
       intentId: "consult-availability",
       confidence: "rule",
     });
   });
 
   it("resolves price deterministically", () => {
-    expect(resolveIntentFromText("How much does Laptop X Pro cost?")).toEqual({
+    expect(resolveIntentFromText("What can you tell me about Laptop X Pro pricing?")).toEqual({
       intentId: "consult-price",
       confidence: "rule",
     });
   });
 
+  it("resolves product information deterministically", () => {
+    expect(resolveIntentFromText("Can you tell me about Laptop X Pro?")).toEqual({
+      intentId: "consult-product",
+      confidence: "rule",
+    });
+  });
+
   it("falls back to consult-product deterministically", () => {
-    expect(resolveIntentFromText("I need product information about Laptop X Pro")).toEqual({
+    expect(resolveIntentFromText("Laptop X Pro")).toEqual({
       intentId: "consult-product",
       confidence: "rule",
     });
