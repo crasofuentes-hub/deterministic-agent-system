@@ -40,3 +40,6 @@ artifacts/agent-demo/
 .llm-live-cache/
 *.tgz
 replay-bundle.json
+.runtime-data/
+backups/
+release-notes-v0.3.0.md
