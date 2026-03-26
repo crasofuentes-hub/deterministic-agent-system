@@ -16,6 +16,26 @@ function readQueryParam(url: URL, key: string): string | undefined {
   return isNonEmptyString(value) ? value.trim() : undefined;
 }
 
+function getRequestId(request: IncomingMessage): string | undefined {
+  const value = request.headers["x-request-id"];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function extractProviderMessageId(result: unknown): string | null {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+
+  const typed = result as {
+    ok?: boolean;
+    providerMessageId?: string;
+  };
+
+  return typeof typed.providerMessageId === "string" && typed.providerMessageId.trim().length > 0
+    ? typed.providerMessageId.trim()
+    : null;
+}
+
 function logDeliveryEvent(event: Record<string, unknown>): void {
   console.log(
     JSON.stringify({
@@ -41,6 +61,7 @@ export async function handleWhatsAppWebhook(
   options: HandleWhatsAppWebhookOptions
 ): Promise<void> {
   const method = request.method ?? "GET";
+  const requestId = getRequestId(request);
 
   if (method === "GET") {
     const host = request.headers.host ?? "localhost";
@@ -130,6 +151,18 @@ export async function handleWhatsAppWebhook(
   const results = await Promise.all(
     normalized.value.map(async (message) => {
       if (options.store?.hasProcessedMessage(message.channelMessageId)) {
+        logDeliveryEvent({
+          event: "delivery.duplicate",
+          requestId,
+          channelMessageId: message.channelMessageId,
+          customerId: message.customerId,
+          duplicate: true,
+          deliveryMode: "skipped",
+          deliveryStatus: "skipped",
+          providerMessageId: null,
+          deliveryError: null,
+        });
+
         return {
           message,
           duplicate: true,
@@ -191,10 +224,13 @@ export async function handleWhatsAppWebhook(
 
         logDeliveryEvent({
           event: "delivery.attempt",
+          requestId,
           channelMessageId: message.channelMessageId,
           customerId: message.customerId,
+          duplicate: false,
           deliveryMode,
           deliveryStatus: delivery.deliveryStatus,
+          providerMessageId: extractProviderMessageId(result),
           deliveryError: delivery.deliveryError,
         });
       }

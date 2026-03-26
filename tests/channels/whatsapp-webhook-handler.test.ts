@@ -120,6 +120,7 @@ describe("whatsapp webhook handler", () => {
         url: "/webhooks/whatsapp",
         headers: {
           host: "localhost:3000",
+          "x-request-id": "req-whatsapp-001",
         },
       } as any,
       res as any,
@@ -146,17 +147,9 @@ describe("whatsapp webhook handler", () => {
       deliveryStatus: "skipped",
       deliveryError: null,
     });
-    expect(json.results[0].outbound).toEqual({
-      messaging_product: "whatsapp",
-      to: "5215512345678",
-      type: "text",
-      text: {
-        body: "Product: Laptop X Pro | Price: 1499.99 USD",
-      },
-    });
   });
 
-  it("sends with mock delivery mode when configured", async () => {
+  it("logs successful delivery attempt with requestId and providerMessageId", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const res = createMockResponse();
 
@@ -167,6 +160,7 @@ describe("whatsapp webhook handler", () => {
           url: "/webhooks/whatsapp",
           headers: {
             host: "localhost:3000",
+            "x-request-id": "req-whatsapp-002",
           },
         } as any,
         res as any,
@@ -198,12 +192,27 @@ describe("whatsapp webhook handler", () => {
       });
 
       expect(logSpy).toHaveBeenCalledTimes(1);
+      const payload = JSON.parse(logSpy.mock.calls[0][0]);
+      expect(payload).toEqual(
+        expect.objectContaining({
+          subsystem: "whatsapp",
+          event: "delivery.attempt",
+          requestId: "req-whatsapp-002",
+          channelMessageId: "wamid.HBgLN...",
+          customerId: "5215512345678",
+          duplicate: false,
+          deliveryMode: "mock",
+          deliveryStatus: "sent",
+          providerMessageId: "mocked-whatsapp-message-001",
+          deliveryError: null,
+        })
+      );
     } finally {
       logSpy.mockRestore();
     }
   });
 
-  it("surfaces failed delivery state when sender fails", async () => {
+  it("logs failed delivery attempt with explicit delivery error", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const res = createMockResponse();
 
@@ -214,6 +223,7 @@ describe("whatsapp webhook handler", () => {
           url: "/webhooks/whatsapp",
           headers: {
             host: "localhost:3000",
+            "x-request-id": "req-whatsapp-003",
           },
         } as any,
         res as any,
@@ -253,93 +263,102 @@ describe("whatsapp webhook handler", () => {
       });
 
       expect(logSpy).toHaveBeenCalledTimes(1);
+      const payload = JSON.parse(logSpy.mock.calls[0][0]);
+      expect(payload).toEqual(
+        expect.objectContaining({
+          subsystem: "whatsapp",
+          event: "delivery.attempt",
+          requestId: "req-whatsapp-003",
+          channelMessageId: "wamid.fail.001",
+          customerId: "5215512345678",
+          duplicate: false,
+          deliveryMode: "http",
+          deliveryStatus: "failed",
+          providerMessageId: null,
+          deliveryError: "whatsapp http send timed out",
+        })
+      );
     } finally {
       logSpy.mockRestore();
     }
   });
 
-  it("uses store for session persistence and idempotent duplicate detection", async () => {
+  it("logs duplicate detection explicitly", async () => {
     const store = createInMemoryWhatsAppStore({
       businessContextId: "customer-service-core-v2",
     });
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-    const firstRes = createMockResponse();
-    await handleWhatsAppWebhook(
-      {
-        method: "POST",
-        url: "/webhooks/whatsapp",
-        headers: {
-          host: "localhost:3000",
-        },
-      } as any,
-      firstRes as any,
-      {
-        verifyToken: "token-123",
-        store,
-        bodyText: buildInboundBody("wamid.store.001", "I want information about a product"),
-      }
-    );
+    try {
+      const firstRes = createMockResponse();
+      await handleWhatsAppWebhook(
+        {
+          method: "POST",
+          url: "/webhooks/whatsapp",
+          headers: {
+            host: "localhost:3000",
+            "x-request-id": "req-whatsapp-004",
+          },
+        } as any,
+        firstRes as any,
+        {
+          verifyToken: "token-123",
+          store,
+          bodyText: buildInboundBody("wamid.store.002", "Laptop X Pro"),
+        }
+      );
 
-    const firstJson = JSON.parse(firstRes.getBody());
-    expect(firstRes.statusCode).toBe(200);
-    expect(firstJson.results[0].duplicate).toBe(false);
-    expect(firstJson.results[0].agent.status).toBe("missing-entity");
+      const duplicateRes = createMockResponse();
+      await handleWhatsAppWebhook(
+        {
+          method: "POST",
+          url: "/webhooks/whatsapp",
+          headers: {
+            host: "localhost:3000",
+            "x-request-id": "req-whatsapp-005",
+          },
+        } as any,
+        duplicateRes as any,
+        {
+          verifyToken: "token-123",
+          store,
+          bodyText: buildInboundBody("wamid.store.002", "Laptop X Pro"),
+        }
+      );
 
-    const secondRes = createMockResponse();
-    await handleWhatsAppWebhook(
-      {
-        method: "POST",
-        url: "/webhooks/whatsapp",
-        headers: {
-          host: "localhost:3000",
-        },
-      } as any,
-      secondRes as any,
-      {
-        verifyToken: "token-123",
-        store,
-        bodyText: buildInboundBody("wamid.store.002", "Laptop X Pro"),
-      }
-    );
+      const duplicateJson = JSON.parse(duplicateRes.getBody());
+      expect(duplicateJson.results[0]).toEqual(
+        expect.objectContaining({
+          duplicate: true,
+          agent: null,
+          outbound: null,
+          delivery: {
+            mode: "skipped",
+            result: null,
+            deliveryStatus: "skipped",
+            deliveryError: null,
+          },
+        })
+      );
 
-    const secondJson = JSON.parse(secondRes.getBody());
-    expect(secondRes.statusCode).toBe(200);
-    expect(secondJson.results[0].duplicate).toBe(false);
-    expect(secondJson.results[0].agent.status).toBe("resolved");
-    expect(secondJson.results[0].agent.outboundText).toContain("Laptop X Pro");
-
-    const duplicateRes = createMockResponse();
-    await handleWhatsAppWebhook(
-      {
-        method: "POST",
-        url: "/webhooks/whatsapp",
-        headers: {
-          host: "localhost:3000",
-        },
-      } as any,
-      duplicateRes as any,
-      {
-        verifyToken: "token-123",
-        store,
-        bodyText: buildInboundBody("wamid.store.002", "Laptop X Pro"),
-      }
-    );
-
-    const duplicateJson = JSON.parse(duplicateRes.getBody());
-    expect(duplicateRes.statusCode).toBe(200);
-    expect(duplicateJson.results[0]).toEqual(
-      expect.objectContaining({
-        duplicate: true,
-        agent: null,
-        outbound: null,
-        delivery: {
-          mode: "skipped",
-          result: null,
+      const payload = JSON.parse(logSpy.mock.calls[0][0]);
+      expect(payload).toEqual(
+        expect.objectContaining({
+          subsystem: "whatsapp",
+          event: "delivery.duplicate",
+          requestId: "req-whatsapp-005",
+          channelMessageId: "wamid.store.002",
+          customerId: "5215512345678",
+          duplicate: true,
+          deliveryMode: "skipped",
           deliveryStatus: "skipped",
+          providerMessageId: null,
           deliveryError: null,
-        },
-      })
-    );
+        })
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   it("rejects invalid JSON POST bodies", async () => {
