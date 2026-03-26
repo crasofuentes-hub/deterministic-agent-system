@@ -13,6 +13,7 @@ export type WhatsAppHttpFetch = (
     method: string;
     headers: Record<string, string>;
     body: string;
+    signal?: AbortSignal;
   }
 ) => Promise<WhatsAppHttpFetchResponse>;
 
@@ -21,6 +22,7 @@ export interface CreateHttpWhatsAppSenderOptions {
   phoneNumberId: string;
   accessToken: string;
   fetchImpl: WhatsAppHttpFetch;
+  timeoutMs?: number;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -63,35 +65,62 @@ export function createHttpWhatsAppSender(options: CreateHttpWhatsAppSenderOption
 
   const url = buildMessagesUrl(options.apiVersion, options.phoneNumberId);
   const token = options.accessToken.trim();
+  const timeoutMs =
+    typeof options.timeoutMs === "number" && Number.isFinite(options.timeoutMs)
+      ? options.timeoutMs
+      : 10000;
+
+  if (timeoutMs <= 0) {
+    throw new Error("timeoutMs must be greater than 0");
+  }
 
   return {
     async send(payload: WhatsAppTextOutboundPayload): Promise<WhatsAppSendResult> {
-      const response = await options.fetchImpl(url, {
-        method: "POST",
-        headers: {
-          authorization: "Bearer " + token,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-      const body = await response.json();
+      try {
+        const response = await options.fetchImpl(url, {
+          method: "POST",
+          headers: {
+            authorization: "Bearer " + token,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
+        const body = await response.json();
+
+        if (!response.ok) {
+          return {
+            ok: false,
+            mode: "http",
+            error: "whatsapp http send failed",
+            statusCode: response.status,
+          };
+        }
+
+        return {
+          ok: true,
+          mode: "http",
+          providerMessageId: extractProviderMessageId(body) ?? "whatsapp-http-message-unknown",
+          acceptedAtIso: "2026-03-24T00:00:00.000Z",
+        };
+      } catch (error) {
+        const message =
+          error instanceof Error && error.name === "AbortError"
+            ? "whatsapp http send timed out"
+            : "whatsapp http send threw network error";
+
         return {
           ok: false,
           mode: "http",
-          error: "whatsapp http send failed",
-          statusCode: response.status,
+          error: message,
         };
+      } finally {
+        clearTimeout(timer);
       }
-
-      return {
-        ok: true,
-        mode: "http",
-        providerMessageId: extractProviderMessageId(body) ?? "whatsapp-http-message-unknown",
-        acceptedAtIso: "2026-03-24T00:00:00.000Z",
-      };
     },
   };
 }

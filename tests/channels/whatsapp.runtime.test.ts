@@ -97,19 +97,15 @@ describe("whatsapp runtime", () => {
 
     const result = await runtime.sender!.send(payload);
 
-    expect(calls).toEqual([
-      {
-        input: "https://graph.facebook.com/v22.0/1234567890/messages",
-        init: {
-          method: "POST",
-          headers: {
-            authorization: "Bearer access-token-001",
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
-      },
-    ]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].input).toBe("https://graph.facebook.com/v22.0/1234567890/messages");
+    expect(calls[0].init.method).toBe("POST");
+    expect(calls[0].init.headers).toEqual({
+      authorization: "Bearer access-token-001",
+      "content-type": "application/json",
+    });
+    expect(calls[0].init.body).toBe(JSON.stringify(payload));
+    expect(calls[0].init.signal).toBeDefined();
 
     expect(result).toEqual({
       ok: true,

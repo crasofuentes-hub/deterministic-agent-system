@@ -16,6 +16,16 @@ function readQueryParam(url: URL, key: string): string | undefined {
   return isNonEmptyString(value) ? value.trim() : undefined;
 }
 
+function logDeliveryEvent(event: Record<string, unknown>): void {
+  console.log(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      subsystem: "whatsapp",
+      ...event,
+    })
+  );
+}
+
 export interface HandleWhatsAppWebhookOptions {
   verifyToken: string;
   bodyText?: string;
@@ -128,6 +138,8 @@ export async function handleWhatsAppWebhook(
           delivery: {
             mode: "skipped",
             result: null,
+            deliveryStatus: "skipped",
+            deliveryError: null,
           },
           session: options.store.loadSession(message.customerId),
         };
@@ -151,16 +163,41 @@ export async function handleWhatsAppWebhook(
         body: bridge.output.outboundText,
       });
 
-      const delivery =
-        deliveryMode === "skipped"
-          ? {
-              mode: "skipped" as const,
-              result: null,
-            }
-          : {
-              mode: deliveryMode,
-              result: await sender!.send(outbound),
-            };
+      let delivery:
+        | {
+            mode: "skipped" | "mock" | "http";
+            result: unknown;
+            deliveryStatus: "skipped" | "sent" | "failed";
+            deliveryError: string | null;
+          }
+        | undefined;
+
+      if (deliveryMode === "skipped") {
+        delivery = {
+          mode: "skipped",
+          result: null,
+          deliveryStatus: "skipped",
+          deliveryError: null,
+        };
+      } else {
+        const result = await sender!.send(outbound);
+
+        delivery = {
+          mode: deliveryMode,
+          result,
+          deliveryStatus: result.ok ? "sent" : "failed",
+          deliveryError: result.ok ? null : result.error,
+        };
+
+        logDeliveryEvent({
+          event: "delivery.attempt",
+          channelMessageId: message.channelMessageId,
+          customerId: message.customerId,
+          deliveryMode,
+          deliveryStatus: delivery.deliveryStatus,
+          deliveryError: delivery.deliveryError,
+        });
+      }
 
       if (options.store) {
         options.store.saveSession(message.customerId, bridge.session);

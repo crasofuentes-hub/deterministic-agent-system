@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMockWhatsAppSender } from "../../src/channels/whatsapp/client";
 import { handleWhatsAppWebhook } from "../../src/http/handlers/whatsapp-webhook";
 import { createInitialSessionState } from "../../src/session-state/session-state";
@@ -143,6 +143,8 @@ describe("whatsapp webhook handler", () => {
     expect(json.results[0].delivery).toEqual({
       mode: "skipped",
       result: null,
+      deliveryStatus: "skipped",
+      deliveryError: null,
     });
     expect(json.results[0].outbound).toEqual({
       messaging_product: "whatsapp",
@@ -155,83 +157,105 @@ describe("whatsapp webhook handler", () => {
   });
 
   it("sends with mock delivery mode when configured", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const res = createMockResponse();
 
-    await handleWhatsAppWebhook(
-      {
-        method: "POST",
-        url: "/webhooks/whatsapp",
-        headers: {
-          host: "localhost:3000",
-        },
-      } as any,
-      res as any,
-      {
-        verifyToken: "token-123",
-        deliveryMode: "mock",
-        loadSession: (customerId) =>
-          createInitialSessionState({
-            sessionId: "whatsapp-session:" + customerId,
-            businessContextId: "customer-service-core-v2",
-          }),
-        bodyText: buildInboundBody("wamid.HBgLN...", "What is the price of Laptop X Pro?"),
-      }
-    );
+    try {
+      await handleWhatsAppWebhook(
+        {
+          method: "POST",
+          url: "/webhooks/whatsapp",
+          headers: {
+            host: "localhost:3000",
+          },
+        } as any,
+        res as any,
+        {
+          verifyToken: "token-123",
+          deliveryMode: "mock",
+          loadSession: (customerId) =>
+            createInitialSessionState({
+              sessionId: "whatsapp-session:" + customerId,
+              businessContextId: "customer-service-core-v2",
+            }),
+          bodyText: buildInboundBody("wamid.HBgLN...", "What is the price of Laptop X Pro?"),
+        }
+      );
 
-    const json = JSON.parse(res.getBody());
+      const json = JSON.parse(res.getBody());
 
-    expect(res.statusCode).toBe(200);
-    expect(json.results[0].delivery).toEqual({
-      mode: "mock",
-      result: {
-        ok: true,
+      expect(res.statusCode).toBe(200);
+      expect(json.results[0].delivery).toEqual({
         mode: "mock",
-        providerMessageId: "mocked-whatsapp-message-001",
-        acceptedAtIso: "2026-03-24T00:00:00.000Z",
-      },
-    });
+        result: {
+          ok: true,
+          mode: "mock",
+          providerMessageId: "mocked-whatsapp-message-001",
+          acceptedAtIso: "2026-03-24T00:00:00.000Z",
+        },
+        deliveryStatus: "sent",
+        deliveryError: null,
+      });
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
-  it("sends with injected http sender when configured", async () => {
+  it("surfaces failed delivery state when sender fails", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const res = createMockResponse();
 
-    await handleWhatsAppWebhook(
-      {
-        method: "POST",
-        url: "/webhooks/whatsapp",
-        headers: {
-          host: "localhost:3000",
+    try {
+      await handleWhatsAppWebhook(
+        {
+          method: "POST",
+          url: "/webhooks/whatsapp",
+          headers: {
+            host: "localhost:3000",
+          },
+        } as any,
+        res as any,
+        {
+          verifyToken: "token-123",
+          deliveryMode: "http",
+          sender: {
+            async send() {
+              return {
+                ok: false,
+                mode: "http",
+                error: "whatsapp http send timed out",
+              };
+            },
+          },
+          loadSession: (customerId) =>
+            createInitialSessionState({
+              sessionId: "whatsapp-session:" + customerId,
+              businessContextId: "customer-service-core-v2",
+            }),
+          bodyText: buildInboundBody("wamid.fail.001", "What is the price of Laptop X Pro?"),
+        }
+      );
+
+      const json = JSON.parse(res.getBody());
+
+      expect(res.statusCode).toBe(200);
+      expect(json.results[0].delivery).toEqual({
+        mode: "http",
+        result: {
+          ok: false,
+          mode: "http",
+          error: "whatsapp http send timed out",
         },
-      } as any,
-      res as any,
-      {
-        verifyToken: "token-123",
-        deliveryMode: "http",
-        sender: createMockWhatsAppSender({
-          providerMessageId: "http-like-msg-001",
-          acceptedAtIso: "2026-03-24T15:00:00.000Z",
-        }),
-        loadSession: (customerId) =>
-          createInitialSessionState({
-            sessionId: "whatsapp-session:" + customerId,
-            businessContextId: "customer-service-core-v2",
-          }),
-        bodyText: buildInboundBody("wamid.HBgLN...", "What is the price of Laptop X Pro?"),
-      }
-    );
+        deliveryStatus: "failed",
+        deliveryError: "whatsapp http send timed out",
+      });
 
-    const json = JSON.parse(res.getBody());
-
-    expect(res.statusCode).toBe(200);
-    expect(json.results[0].delivery).toEqual({
-      mode: "http",
-      result: {
-        ok: true,
-        mode: "mock",
-        providerMessageId: "http-like-msg-001",
-        acceptedAtIso: "2026-03-24T15:00:00.000Z",
-      },
-    });
+      expect(logSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   it("uses store for session persistence and idempotent duplicate detection", async () => {
@@ -311,6 +335,8 @@ describe("whatsapp webhook handler", () => {
         delivery: {
           mode: "skipped",
           result: null,
+          deliveryStatus: "skipped",
+          deliveryError: null,
         },
       })
     );
