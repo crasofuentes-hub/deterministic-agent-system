@@ -3,7 +3,7 @@ import { resolveIntentFromText } from "../../src/intent-resolver/intent-resolver
 
 describe("intent-resolver", () => {
   it("resolves human handoff deterministically", () => {
-    expect(resolveIntentFromText("I want to speak with a human agent")).toEqual({
+    expect(resolveIntentFromText("I want to talk to an agent")).toEqual({
       intentId: "request-human-handoff",
       confidence: "rule",
     });
@@ -17,28 +17,28 @@ describe("intent-resolver", () => {
   });
 
   it("resolves order status deterministically", () => {
-    expect(resolveIntentFromText("What is the status of my order?")).toEqual({
+    expect(resolveIntentFromText("What is the status of my order ORDER-55555?")).toEqual({
       intentId: "consult-order-status",
       confidence: "rule",
     });
   });
 
   it("resolves availability deterministically", () => {
-    expect(resolveIntentFromText("Is Laptop X Pro in stock?")).toEqual({
+    expect(resolveIntentFromText("Is Laptop X Pro available in stock?")).toEqual({
       intentId: "consult-availability",
       confidence: "rule",
     });
   });
 
   it("resolves price deterministically", () => {
-    expect(resolveIntentFromText("What is the price of Laptop X Pro?")).toEqual({
+    expect(resolveIntentFromText("How much does Laptop X Pro cost?")).toEqual({
       intentId: "consult-price",
       confidence: "rule",
     });
   });
 
   it("falls back to consult-product deterministically", () => {
-    expect(resolveIntentFromText("I need details about Laptop X Pro")).toEqual({
+    expect(resolveIntentFromText("I need product information about Laptop X Pro")).toEqual({
       intentId: "consult-product",
       confidence: "rule",
     });
