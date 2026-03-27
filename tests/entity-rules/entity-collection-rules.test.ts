@@ -26,52 +26,48 @@ describe("entity-collection-rules", () => {
     const state = upsertSessionEntity(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       {
-        entityId: " caseId ",
-        value: " CASE-123 ",
+        entityId: " orderId ",
+        value: " ORDER-55555 ",
         confidence: "confirmed",
       }
     );
 
-    expect(listCollectedEntityIds(state)).toEqual(["caseId"]);
+    expect(listCollectedEntityIds(state)).toEqual(["orderId"]);
   });
 
-  it("detects missing required entity for consult-status", () => {
+  it("detects missing required entity for consult-order-status", () => {
     const state = createInitialSessionState({
       sessionId: "S-001",
-      businessContextId: "customer-service-core-v1",
+      businessContextId: "customer-service-core-v2",
     });
 
-    expect(
-      evaluateEntityCollection(loadPack(), state, "consult-status")
-    ).toEqual({
-      intentId: "consult-status",
+    expect(evaluateEntityCollection(loadPack(), state, "consult-order-status")).toEqual({
+      intentId: "consult-order-status",
       presentEntityIds: [],
-      missingEntityIds: ["caseId"],
+      missingEntityIds: ["orderId"],
       isComplete: false,
     });
   });
 
-  it("detects completed entity collection for consult-status", () => {
+  it("detects completed entity collection for consult-order-status", () => {
     const state = upsertSessionEntity(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       {
-        entityId: "caseId",
-        value: "CASE-123",
+        entityId: "orderId",
+        value: "ORDER-55555",
         confidence: "confirmed",
       }
     );
 
-    expect(
-      evaluateEntityCollection(loadPack(), state, "consult-status")
-    ).toEqual({
-      intentId: "consult-status",
-      presentEntityIds: ["caseId"],
+    expect(evaluateEntityCollection(loadPack(), state, "consult-order-status")).toEqual({
+      intentId: "consult-order-status",
+      presentEntityIds: ["orderId"],
       missingEntityIds: [],
       isComplete: true,
     });
@@ -80,18 +76,18 @@ describe("entity-collection-rules", () => {
   it("returns the single missing prompt target deterministically", () => {
     expect(
       requireSingleMissingEntityPromptTarget({
-        intentId: "consult-status",
+        intentId: "consult-order-status",
         presentEntityIds: [],
-        missingEntityIds: ["caseId"],
+        missingEntityIds: ["orderId"],
         isComplete: false,
       })
-    ).toBe("caseId");
+    ).toBe("orderId");
   });
 
   it("throws stable error when missing target is not singular", () => {
     expect(() =>
       requireSingleMissingEntityPromptTarget({
-        intentId: "consult-status",
+        intentId: "consult-order-status",
         presentEntityIds: [],
         missingEntityIds: [],
         isComplete: true,

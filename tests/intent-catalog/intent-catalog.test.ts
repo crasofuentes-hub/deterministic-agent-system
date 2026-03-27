@@ -22,37 +22,36 @@ function loadPack(): BusinessContextPack {
 describe("intent-catalog", () => {
   it("lists stable intent ids", () => {
     expect(listBusinessIntentIds(loadPack())).toEqual([
-      "consult-status",
+      "consult-product",
+      "consult-price",
+      "consult-availability",
+      "consult-order-status",
       "request-human-handoff",
       "close-conversation",
     ]);
   });
 
   it("gets intent by id deterministically", () => {
-    expect(getBusinessIntentById(loadPack(), " consult-status ")).toEqual({
-      intentId: "consult-status",
-      description: "Consult the status of an existing case or request.",
-      requiredEntities: ["caseId"],
+    expect(getBusinessIntentById(loadPack(), " consult-order-status ")).toEqual({
+      intentId: "consult-order-status",
+      description: "Consult the status of an order.",
+      requiredEntities: ["orderId"],
       optionalEntities: [],
-      workflowId: "case-status-flow",
+      workflowId: "order-status-flow",
     });
   });
 
   it("lists required entities deterministically", () => {
-    expect(
-      listRequiredEntityIdsForIntent(loadPack(), "consult-status")
-    ).toEqual(["caseId"]);
+    expect(listRequiredEntityIdsForIntent(loadPack(), "consult-order-status")).toEqual(["orderId"]);
   });
 
   it("lists optional entities deterministically", () => {
-    expect(
-      listOptionalEntityIdsForIntent(loadPack(), "consult-status")
-    ).toEqual([]);
+    expect(listOptionalEntityIdsForIntent(loadPack(), "consult-order-status")).toEqual([]);
   });
 
   it("throws stable error for unknown intent", () => {
-    expect(() =>
-      requireBusinessIntentById(loadPack(), "unknown-intent")
-    ).toThrow('BUSINESS_INTENT_NOT_FOUND: intentId="unknown-intent"');
+    expect(() => requireBusinessIntentById(loadPack(), "unknown-intent")).toThrow(
+      'BUSINESS_INTENT_NOT_FOUND: intentId="unknown-intent"'
+    );
   });
 });

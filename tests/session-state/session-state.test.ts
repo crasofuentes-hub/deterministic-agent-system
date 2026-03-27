@@ -13,11 +13,11 @@ describe("session-state", () => {
     expect(
       createInitialSessionState({
         sessionId: "  S-001  ",
-        businessContextId: " customer-service-core-v1 ",
+        businessContextId: " customer-service-core-v2 ",
       })
     ).toEqual({
       sessionId: "S-001",
-      businessContextId: "customer-service-core-v1",
+      businessContextId: "customer-service-core-v2",
       conversationStatus: "active",
       collectedEntities: [],
       missingEntityIds: [],
@@ -29,7 +29,7 @@ describe("session-state", () => {
   it("appends normalized turns", () => {
     const state = createInitialSessionState({
       sessionId: "S-001",
-      businessContextId: "customer-service-core-v1",
+      businessContextId: "customer-service-core-v2",
     });
 
     expect(
@@ -53,26 +53,26 @@ describe("session-state", () => {
     const base = setSessionIntent(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       {
-        intentId: "consult-status",
-        workflowId: "case-status-flow",
-        stage: "collect-case-id",
-        missingEntityIds: ["caseId"],
+        intentId: "consult-order-status",
+        workflowId: "order-status-flow",
+        stage: "collect-order-id",
+        missingEntityIds: ["orderId"],
       }
     );
 
     const updated = upsertSessionEntity(base, {
-      entityId: " caseId ",
-      value: " CASE-123 ",
+      entityId: " orderId ",
+      value: " ORDER-55555 ",
       confidence: "confirmed",
     });
 
     expect(updated.collectedEntities).toEqual([
       {
-        entityId: "caseId",
-        value: "CASE-123",
+        entityId: "orderId",
+        value: "ORDER-55555",
         confidence: "confirmed",
       },
     ]);
@@ -84,19 +84,19 @@ describe("session-state", () => {
     const state = setSessionIntent(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       {
-        intentId: "consult-status",
-        workflowId: "case-status-flow",
-        stage: "collect-case-id",
-        missingEntityIds: ["caseId"],
+        intentId: "consult-order-status",
+        workflowId: "order-status-flow",
+        stage: "collect-order-id",
+        missingEntityIds: ["orderId"],
       }
     );
 
-    expect(state.currentIntentId).toBe("consult-status");
-    expect(state.currentWorkflowId).toBe("case-status-flow");
-    expect(state.currentStage).toBe("collect-case-id");
+    expect(state.currentIntentId).toBe("consult-order-status");
+    expect(state.currentWorkflowId).toBe("order-status-flow");
+    expect(state.currentStage).toBe("collect-order-id");
     expect(state.conversationStatus).toBe("waiting-user");
   });
 
@@ -104,7 +104,7 @@ describe("session-state", () => {
     const state = setSessionIntent(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       }),
       {
         intentId: "close-conversation",
@@ -121,7 +121,7 @@ describe("session-state", () => {
     const state = requestHumanHandoff(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       })
     );
 
@@ -133,7 +133,7 @@ describe("session-state", () => {
     const state = closeSessionState(
       createInitialSessionState({
         sessionId: "S-001",
-        businessContextId: "customer-service-core-v1",
+        businessContextId: "customer-service-core-v2",
       })
     );
 
