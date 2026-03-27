@@ -71,6 +71,8 @@ describe("customer-service-agent", () => {
     });
 
     expect(result.resolvedIntentId).toBe("consult-order-status");
-    expect(result.responseText).toBe("Order ID: ORDER-12345 | Status: processing | Updated: 2026-03-10T10:00:00Z");
+    expect(result.responseText).toBe(
+      "Order ORDER-12345 is currently processing. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time."
+    );
   });
 });

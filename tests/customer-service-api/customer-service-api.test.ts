@@ -32,7 +32,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-order-status",
       responseId: "consult-order-status-resolved",
-      responseText: "Order ID: ORDER-12345 | Status: processing | Updated: 2026-03-10T10:00:00Z",
+      responseText: "Order ORDER-12345 is currently processing. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time.",
       stage: "resolve-order-status",
       status: "resolved",
     });

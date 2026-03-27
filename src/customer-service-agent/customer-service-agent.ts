@@ -63,6 +63,7 @@ function sanitizeProductNameCandidate(value: string): string | undefined {
     .replace(/^details for\s+/i, "")
     .replace(/^i need product information about\s+/i, "")
     .replace(/^i need information about\s+/i, "")
+    .replace(/^i need\s+/i, "")
     .replace(/^i want information about\s+/i, "")
     .replace(/^can you tell me about\s+/i, "")
     .replace(/^what can you tell me about\s+/i, "")
@@ -294,12 +295,13 @@ function buildResolvedResponse(
     }
 
     return (
-      "Order ID: " +
+      "Order " +
       order.orderId +
-      " | Status: " +
+      " is currently " +
       order.status +
-      " | Updated: " +
-      order.updatedAtIso
+      ". Last update: " +
+      order.updatedAtIso +
+      ". No additional action is required at this time."
     );
   }
 
