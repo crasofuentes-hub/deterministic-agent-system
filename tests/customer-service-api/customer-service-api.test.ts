@@ -55,4 +55,18 @@ describe("customer-service-api", () => {
       status: "resolved",
     });
   });
+
+  it("returns canonical invalid-order-id response for order-status consultation", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "S-004",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "What is the status of order ORDER-??",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-order-status");
+    expect(result.status).toBe("missing-entity");
+    expect(result.responseText).toBe(
+      "The provided order ID format is invalid. Please provide a valid order ID and try again."
+    );
+  });
 });

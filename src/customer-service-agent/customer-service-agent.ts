@@ -131,6 +131,20 @@ function sanitizeOrderIdCandidate(value: string): string | undefined {
   return cleaned;
 }
 
+function hasMalformedOrderIdSignal(userMessageText: string): boolean {
+  const cleaned = normalizeLooseEntityText(userMessageText).toUpperCase();
+
+  if (!/\bORDER\b/.test(cleaned)) {
+    return false;
+  }
+
+  if (sanitizeOrderIdCandidate(cleaned)) {
+    return false;
+  }
+
+  return /[A-Z0-9]/.test(cleaned);
+}
+
 function getAllowedEntityIdsForIntent(intentId: string): string[] {
   if (intentId === "consult-price") {
     return ["productName"];
@@ -350,6 +364,11 @@ export function runCustomerServiceAgent(params: {
     });
   }
 
+  const hasInvalidOrderIdAttempt =
+    effectiveIntentId === "consult-order-status" &&
+    !findEntityValue(nextSession, "orderId") &&
+    hasMalformedOrderIdSignal(params.userMessageText);
+
   const result = orchestrateConversationTurn({
     pack,
     session: nextSession,
@@ -357,6 +376,22 @@ export function runCustomerServiceAgent(params: {
   });
 
   const resolvedResponseText = buildResolvedResponse(result.intentId, result.session);
+
+  if (
+    hasInvalidOrderIdAttempt &&
+    result.intentId === "consult-order-status" &&
+    result.status === "missing-entity"
+  ) {
+    return {
+      session: result.session,
+      resolvedIntentId: result.intentId,
+      responseText:
+        "The provided order ID format is invalid. Please provide a valid order ID and try again.",
+      responseId: result.responseId,
+      stage: result.stage,
+      status: result.status,
+    };
+  }
 
   return {
     session: result.session,
