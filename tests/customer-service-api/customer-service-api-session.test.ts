@@ -106,4 +106,82 @@ describe("customer-service-api session behavior", () => {
     expect(second.status).toBe("handoff");
     expect(second.session.conversationStatus).toBe("handoff-requested");
   });
+
+  it("switches cleanly from waiting order-status flow to product flow", () => {
+    const session = createInitialSessionState({
+      sessionId: "session-005",
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const first = runCustomerServiceAgent({
+      session,
+      userMessageText: "What is my order status?",
+    });
+
+    const second = runCustomerServiceAgent({
+      session: first.session,
+      userMessageText: "I need product information about Laptop X Pro",
+    });
+
+    expect(first.resolvedIntentId).toBe("consult-order-status");
+    expect(first.status).toBe("missing-entity");
+    expect(first.session.conversationStatus).toBe("waiting-user");
+    expect(first.session.missingEntityIds).toEqual(["orderId"]);
+
+    expect(second.resolvedIntentId).toBe("consult-product");
+    expect(second.status).toBe("resolved");
+    expect(second.responseText).toContain("Laptop X Pro");
+    expect(second.session.conversationStatus).toBe("active");
+    expect(second.session.missingEntityIds).toEqual([]);
+    expect(second.session.collectedEntities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          entityId: "productName",
+          value: "Laptop X Pro",
+        }),
+      ])
+    );
+    expect(
+      second.session.collectedEntities.find((item) => item.entityId === "orderId")
+    ).toBeUndefined();
+  });
+
+  it("switches cleanly from waiting product flow to order-status flow", () => {
+    const session = createInitialSessionState({
+      sessionId: "session-006",
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const first = runCustomerServiceAgent({
+      session,
+      userMessageText: "I need product information",
+    });
+
+    const second = runCustomerServiceAgent({
+      session: first.session,
+      userMessageText: "What is the status of my order ORDER-55555?",
+    });
+
+    expect(first.resolvedIntentId).toBe("consult-product");
+    expect(first.status).toBe("missing-entity");
+    expect(first.session.conversationStatus).toBe("waiting-user");
+    expect(first.session.missingEntityIds).toEqual(["productName"]);
+
+    expect(second.resolvedIntentId).toBe("consult-order-status");
+    expect(second.status).toBe("resolved");
+    expect(second.responseText).toContain("ORDER-55555");
+    expect(second.session.conversationStatus).toBe("active");
+    expect(second.session.missingEntityIds).toEqual([]);
+    expect(second.session.collectedEntities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          entityId: "orderId",
+          value: "ORDER-55555",
+        }),
+      ])
+    );
+    expect(
+      second.session.collectedEntities.find((item) => item.entityId === "productName")
+    ).toBeUndefined();
+  });
 });
