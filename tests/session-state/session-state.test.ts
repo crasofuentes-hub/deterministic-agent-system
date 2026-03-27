@@ -122,10 +122,16 @@ describe("session-state", () => {
       createInitialSessionState({
         sessionId: "S-001",
         businessContextId: "customer-service-core-v2",
-      })
+      }),
+      {
+        reasonCode: "explicit-human-request",
+        queue: "general",
+      }
     );
 
     expect(state.handoffRequested).toBe(true);
+    expect(state.handoffReasonCode).toBe("explicit-human-request");
+    expect(state.handoffQueue).toBe("general");
     expect(state.conversationStatus).toBe("handoff-requested");
   });
 

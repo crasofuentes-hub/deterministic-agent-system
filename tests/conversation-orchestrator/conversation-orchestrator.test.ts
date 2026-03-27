@@ -100,6 +100,8 @@ describe("conversation-orchestrator", () => {
       "Your conversation will be transferred to a human agent."
     );
     expect(result.session.handoffRequested).toBe(true);
+    expect(result.session.handoffReasonCode).toBe("explicit-human-request");
+    expect(result.session.handoffQueue).toBe("general");
     expect(result.session.conversationStatus).toBe("handoff-requested");
   });
 

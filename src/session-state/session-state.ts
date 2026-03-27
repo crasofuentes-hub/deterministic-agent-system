@@ -27,6 +27,8 @@ export interface SessionState {
   collectedEntities: ConversationEntityValue[];
   missingEntityIds: string[];
   handoffRequested: boolean;
+  handoffReasonCode?: string;
+  handoffQueue?: string;
   lastUserMessageHash?: string;
   lastCanonicalResponseId?: string;
   turns: ConversationTurnRecord[];
@@ -109,14 +111,30 @@ export function setSessionIntent(
     missingEntityIds: params.missingEntityIds.map((item) => normalizeText(item)),
     conversationStatus:
       params.missingEntityIds.length > 0 ? "waiting-user" : "active",
+    handoffReasonCode: undefined,
+    handoffQueue: undefined,
   };
 }
 
-export function requestHumanHandoff(state: SessionState): SessionState {
+export function requestHumanHandoff(
+  state: SessionState,
+  params?: {
+    reasonCode?: string;
+    queue?: string;
+  }
+): SessionState {
   return {
     ...state,
     handoffRequested: true,
     conversationStatus: "handoff-requested",
+    handoffReasonCode:
+      typeof params?.reasonCode === "string" && params.reasonCode.trim().length > 0
+        ? normalizeText(params.reasonCode)
+        : undefined,
+    handoffQueue:
+      typeof params?.queue === "string" && params.queue.trim().length > 0
+        ? normalizeText(params.queue)
+        : undefined,
   };
 }
 

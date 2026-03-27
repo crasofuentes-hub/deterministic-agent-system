@@ -104,6 +104,9 @@ describe("customer-service-api session behavior", () => {
 
     expect(second.resolvedIntentId).toBe("request-human-handoff");
     expect(second.status).toBe("handoff");
+    expect(second.session.handoffRequested).toBe(true);
+    expect(second.session.handoffReasonCode).toBe("explicit-human-request");
+    expect(second.session.handoffQueue).toBe("general");
     expect(second.session.conversationStatus).toBe("handoff-requested");
   });
 

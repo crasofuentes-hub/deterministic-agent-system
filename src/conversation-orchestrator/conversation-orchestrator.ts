@@ -1,4 +1,4 @@
-import type { BusinessContextPack } from "../business-context/context-pack";
+import type { BusinessContextPack, BusinessHandoffRule } from "../business-context/context-pack";
 import { renderCanonicalResponseText } from "../canonical-response/canonical-response-engine";
 import { evaluateEntityCollection } from "../entity-rules/entity-collection-rules";
 import { requireBusinessIntentById } from "../intent-catalog/intent-catalog";
@@ -95,6 +95,24 @@ function resolveResolvedResponseId(intentId: string): string {
   return "resolved";
 }
 
+function resolveHandoffRule(
+  pack: BusinessContextPack,
+  params: {
+    intentId: string;
+    status: string;
+  }
+): BusinessHandoffRule | undefined {
+  return pack.handoffRules.find((rule) => {
+    const intentMatches =
+      !rule.whenIntentIds || rule.whenIntentIds.includes(params.intentId);
+
+    const statusMatches =
+      !rule.whenStatuses || rule.whenStatuses.includes(params.status);
+
+    return intentMatches && statusMatches && rule.requiresHuman;
+  });
+}
+
 export function orchestrateConversationTurn(params: {
   pack: BusinessContextPack;
   session: SessionState;
@@ -104,13 +122,22 @@ export function orchestrateConversationTurn(params: {
   const intent = requireBusinessIntentById(pack, intentId);
 
   if (intent.intentId === "request-human-handoff") {
+    const handoffRule = resolveHandoffRule(pack, {
+      intentId: intent.intentId,
+      status: "handoff",
+    });
+
     const nextSession = requestHumanHandoff(
       setSessionIntent(session, {
         intentId: intent.intentId,
         workflowId: intent.workflowId,
         stage: "handoff-requested",
         missingEntityIds: [],
-      })
+      }),
+      {
+        reasonCode: handoffRule?.ruleId,
+        queue: handoffRule?.queue,
+      }
     );
 
     return {
