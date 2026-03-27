@@ -41,7 +41,34 @@ function normalizeLooseEntityText(value: string): string {
 }
 
 function sanitizeProductNameCandidate(value: string): string | undefined {
-  const cleaned = normalizeLooseEntityText(value);
+  let cleaned = normalizeLooseEntityText(value);
+
+  cleaned = cleaned
+    .replace(/^what is the price of\s+/i, "")
+    .replace(/^what's the price of\s+/i, "")
+    .replace(/^i want to know the price of\s+/i, "")
+    .replace(/^price of\s+/i, "")
+    .replace(/^pricing for\s+/i, "")
+    .replace(/^how much does\s+/i, "")
+    .replace(/\s+costs?$/i, "")
+    .replace(/^availability of\s+/i, "")
+    .replace(/^is\s+/i, "")
+    .replace(/\s+available$/i, "")
+    .replace(/\s+in stock$/i, "")
+    .replace(/^do you have\s+/i, "")
+    .replace(/^do you carry\s+/i, "")
+    .replace(/^product information about\s+/i, "")
+    .replace(/^information about\s+/i, "")
+    .replace(/^details about\s+/i, "")
+    .replace(/^details for\s+/i, "")
+    .replace(/^i need product information about\s+/i, "")
+    .replace(/^i need information about\s+/i, "")
+    .replace(/^i want information about\s+/i, "")
+    .replace(/^can you tell me about\s+/i, "")
+    .replace(/^what can you tell me about\s+/i, "")
+    .replace(/\s+pricing$/i, "")
+    .trim();
+
   if (cleaned.length === 0) {
     return undefined;
   }
@@ -52,8 +79,17 @@ function sanitizeProductNameCandidate(value: string): string | undefined {
     "a product",
     "an item",
     "item",
+    "it",
+    "it cost",
+    "it costs",
+    "this",
+    "that",
+    "this product",
+    "that product",
     "information about a product",
     "i want information about a product",
+    "i need product information",
+    "i need information about a product",
     "info about a product",
     "details about a product",
     "about a product",
@@ -66,29 +102,19 @@ function sanitizeProductNameCandidate(value: string): string | undefined {
     return undefined;
   }
 
-  if (/(order status|tracking|shipment|shipping|\border\b)/.test(lowered)) {
-    return undefined;
-  }
-
-  if (
-    /(information|info|details)/.test(lowered) &&
-    /(product|item)/.test(lowered) &&
-    !/[a-z0-9]+(?:\s+[a-z0-9]+){1,}/i.test(
-      cleaned
-        .replace(/\b(product|item|information|info|details|about|a|an|the|want|i)\b/gi, "")
-        .trim()
-    )
-  ) {
-    return undefined;
-  }
-
   return cleaned;
 }
 
 function sanitizeOrderIdCandidate(value: string): string | undefined {
   const cleaned = normalizeLooseEntityText(value).toUpperCase();
+
   if (cleaned.length === 0) {
     return undefined;
+  }
+
+  const explicitOrderId = cleaned.match(/\b(ORDER-[A-Z0-9-]+)\b/i);
+  if (explicitOrderId?.[1]) {
+    return explicitOrderId[1].toUpperCase();
   }
 
   const blocked = new Set(["ORDER", "PURCHASE", "STATUS", "TRACKING", "UPDATE"]);
@@ -141,23 +167,23 @@ function hasExplicitIntentSignal(userMessageText: string, intentId: string): boo
   }
 
   if (intentId === "close-conversation") {
-    return /close|end conversation|finish conversation/.test(text);
+    return /close|end conversation|finish conversation|goodbye|bye|exit/.test(text);
   }
 
   if (intentId === "consult-order-status") {
-    return /order|status|tracking|shipment|shipping/.test(text);
+    return /order|status|tracking|shipment|shipping|purchase/.test(text);
   }
 
   if (intentId === "consult-price") {
-    return /price|cost|how much/.test(text);
+    return /price|cost|how much|pricing|quote/.test(text);
   }
 
   if (intentId === "consult-availability") {
-    return /in stock|available|availability|stock/.test(text);
+    return /in stock|available|availability|stock|inventory|do you have|do you carry/.test(text);
   }
 
   if (intentId === "consult-product") {
-    return /product|details|information|info|item/.test(text);
+    return /product|details|information|info|tell me about|what can you tell me about/.test(text);
   }
 
   return false;
@@ -285,9 +311,20 @@ export function runCustomerServiceAgent(params: {
   userMessageText: string;
 }): CustomerServiceAgentResult {
   const pack = loadCustomerServicePack();
+  const previousIntentId =
+    typeof params.session.currentIntentId === "string" ? params.session.currentIntentId : undefined;
   const effectiveIntentId = resolveEffectiveIntentId(params.session, params.userMessageText);
 
   let nextSession = params.session;
+
+  if (
+    params.session.conversationStatus === "waiting-user" &&
+    previousIntentId &&
+    previousIntentId !== effectiveIntentId
+  ) {
+    nextSession = retainEntitiesCompatibleWithIntent(nextSession, effectiveIntentId);
+  }
+
   const extractedEntities = extractEntitiesFromText(params.userMessageText);
 
   for (const entity of extractedEntities) {
