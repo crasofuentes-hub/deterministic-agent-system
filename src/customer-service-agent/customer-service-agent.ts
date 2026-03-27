@@ -132,17 +132,16 @@ function sanitizeOrderIdCandidate(value: string): string | undefined {
 }
 
 function hasMalformedOrderIdSignal(userMessageText: string): boolean {
-  const cleaned = normalizeLooseEntityText(userMessageText).toUpperCase();
+  const raw = String(userMessageText).normalize("NFC").trim().toUpperCase();
 
-  if (!/\bORDER\b/.test(cleaned)) {
+  if (sanitizeOrderIdCandidate(raw)) {
     return false;
   }
 
-  if (sanitizeOrderIdCandidate(cleaned)) {
-    return false;
-  }
-
-  return /[A-Z0-9]/.test(cleaned);
+  return (
+    /\bORDER\s*[-:#]\s*[A-Z0-9?]+/.test(raw) ||
+    /\bORDER\s+ID\s*[-:#]?\s*[A-Z0-9?]+/.test(raw)
+  );
 }
 
 function getAllowedEntityIdsForIntent(intentId: string): string[] {
