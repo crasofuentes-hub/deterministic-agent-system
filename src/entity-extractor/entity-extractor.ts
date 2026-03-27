@@ -16,13 +16,11 @@ function cleanCapturedValue(value: string): string {
 }
 
 function containsOrderOnlyLanguage(text: string): boolean {
-  return /\b(order|purchase|status|tracking|shipment|shipping|orden|pedido|compra|estado|seguimiento|rastreo|envio|envío)\b/i.test(
-    text
-  );
+  return /\b(order|purchase|status|tracking|shipment|shipping)\b/i.test(text);
 }
 
 function containsProductLanguage(text: string): boolean {
-  return /\b(price|cost|pricing|available|availability|stock|details|information|info|product|precio|cuanto|cuánto|disponible|disponibilidad|detalles|informacion|información|producto)\b/i.test(
+  return /\b(price|cost|pricing|available|availability|stock|details|information|info|product)\b/i.test(
     text
   );
 }
@@ -37,9 +35,7 @@ function extractOrderId(messageText: string): string | undefined {
 
   const patterns = [
     /\b(?:order|purchase)\s*(?:id)?\s*[:#-]?\s*([A-Z0-9-]{4,})\b/i,
-    /\b(?:orden|pedido|compra)\s*(?:id)?\s*[:#-]?\s*([A-Z0-9-]{4,})\b/i,
     /\bstatus\s+of\s+(?:my\s+)?order\s+([A-Z0-9-]{4,})\b/i,
-    /\bestado\s+de\s+(?:mi\s+)?(?:orden|pedido)\s+([A-Z0-9-]{4,})\b/i,
   ];
 
   for (const pattern of patterns) {
@@ -51,6 +47,20 @@ function extractOrderId(messageText: string): string | undefined {
   }
 
   return undefined;
+}
+
+function isGenericProductReference(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+
+  return (
+    normalized === "it" ||
+    normalized === "it cost" ||
+    normalized === "it costs" ||
+    normalized === "this" ||
+    normalized === "that" ||
+    normalized === "this product" ||
+    normalized === "that product"
+  );
 }
 
 function extractProductName(messageText: string): string | undefined {
@@ -67,24 +77,18 @@ function extractProductName(messageText: string): string | undefined {
     /how\s+much\s+(?:is|does)\s+(.+)$/i,
     /availability\s+of\s+(.+)$/i,
     /is\s+(.+?)\s+available$/i,
-    /do\s+you\s+have\s+(.+?)\s+in\s+stock$/i,
+    /is\s+(.+?)\s+in\s+stock$/i,
+    /do\s+you\s+have\s+(.+?)(?:\s+in\s+stock)?$/i,
+    /do\s+you\s+carry\s+(.+)$/i,
     /details\s+about\s+(.+)$/i,
     /information\s+about\s+(.+)$/i,
     /info\s+about\s+(.+)$/i,
     /details\s+for\s+(.+)$/i,
     /looking\s+for\s+(.+)$/i,
-    /precio\s+de\s+(.+)$/i,
-    /cu[aá]nto\s+cuesta\s+(.+)$/i,
-    /cu[aá]nto\s+vale\s+(.+)$/i,
-    /disponibilidad\s+de\s+(.+)$/i,
-    /tienen\s+disponible\s+(.+)$/i,
-    /informaci[oó]n\s+del\s+producto\s+(.+)$/i,
-    /informaci[oó]n\s+de\s+(.+)$/i,
-    /detalles\s+de\s+(.+)$/i,
-    /necesito\s+informaci[oó]n\s+del\s+producto\s+(.+)$/i,
-    /quiero\s+informaci[oó]n\s+de\s+(.+)$/i,
-    /quiero\s+saber\s+el\s+precio\s+de\s+(.+)$/i,
-    /busco\s+(.+)$/i,
+    /what\s+can\s+you\s+tell\s+me\s+about\s+(.+?)\s+pricing$/i,
+    /what\s+can\s+you\s+tell\s+me\s+about\s+(.+)$/i,
+    /can\s+you\s+tell\s+me\s+about\s+(.+)$/i,
+    /product\s+information\s+about\s+(.+)$/i,
   ];
 
   for (const pattern of patterns) {
@@ -92,7 +96,7 @@ function extractProductName(messageText: string): string | undefined {
     const captured = match?.[1];
     if (typeof captured === "string") {
       const cleaned = cleanCapturedValue(captured);
-      if (cleaned.length > 0) {
+      if (cleaned.length > 0 && !isGenericProductReference(cleaned)) {
         return cleaned;
       }
     }

@@ -10,14 +10,6 @@ describe("entity-extractor", () => {
     });
   });
 
-  it("extracts orderId from Spanish order-status message", () => {
-    expect(extractEntitiesFromText("Cuál es el estado de mi orden ORDER-55555")).toContainEqual({
-      entityId: "orderId",
-      value: "ORDER-55555",
-      confidence: "derived",
-    });
-  });
-
   it("extracts productName from English price message", () => {
     expect(extractEntitiesFromText("I want to know the price of Laptop X Pro")).toContainEqual({
       entityId: "productName",
@@ -34,26 +26,18 @@ describe("entity-extractor", () => {
     });
   });
 
-  it("extracts productName from Spanish price message", () => {
-    expect(extractEntitiesFromText("Quiero saber el precio de Laptop X Pro")).toContainEqual({
-      entityId: "productName",
-      value: "Laptop X Pro",
-      confidence: "derived",
-    });
+  it("extracts productName from English product-information message", () => {
+    expect(extractEntitiesFromText("I need product information about Laptop X Pro")).toContainEqual(
+      {
+        entityId: "productName",
+        value: "Laptop X Pro",
+        confidence: "derived",
+      }
+    );
   });
 
-  it("extracts productName from Spanish availability message", () => {
-    expect(extractEntitiesFromText("Tienen disponible Laptop X Pro")).toContainEqual({
-      entityId: "productName",
-      value: "Laptop X Pro",
-      confidence: "derived",
-    });
-  });
-
-  it("extracts productName from Spanish product-information message", () => {
-    expect(
-      extractEntitiesFromText("Necesito información del producto Laptop X Pro")
-    ).toContainEqual({
+  it("extracts productName from natural product-information phrasing", () => {
+    expect(extractEntitiesFromText("Can you tell me about Laptop X Pro")).toContainEqual({
       entityId: "productName",
       value: "Laptop X Pro",
       confidence: "derived",
