@@ -291,7 +291,7 @@ function buildResolvedResponse(
 
     const order = findOrderById(orderId);
     if (!order) {
-      return "The order was not found.";
+      return "I could not find an order with the provided order ID. Please verify the order ID and try again.";
     }
 
     return (

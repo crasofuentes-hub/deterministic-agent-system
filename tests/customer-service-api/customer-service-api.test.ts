@@ -37,4 +37,22 @@ describe("customer-service-api", () => {
       status: "resolved",
     });
   });
+
+  it("returns canonical order-not-found response for order-status consultation", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "S-003",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "What is the status of order ORDER-00000?",
+    });
+
+    expect(result).toEqual({
+      sessionId: "S-003",
+      businessContextId: "customer-service-core-v2",
+      resolvedIntentId: "consult-order-status",
+      responseId: "consult-order-status-resolved",
+      responseText: "I could not find an order with the provided order ID. Please verify the order ID and try again.",
+      stage: "resolve-order-status",
+      status: "resolved",
+    });
+  });
 });

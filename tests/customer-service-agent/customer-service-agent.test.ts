@@ -75,4 +75,21 @@ describe("customer-service-agent", () => {
       "Order ORDER-12345 is currently processing. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time."
     );
   });
+
+  it("returns canonical order-not-found response", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-005",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "What is the status of order ORDER-00000?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-order-status");
+    expect(result.responseId).toBe("consult-order-status-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "I could not find an order with the provided order ID. Please verify the order ID and try again."
+    );
+  });
 });
