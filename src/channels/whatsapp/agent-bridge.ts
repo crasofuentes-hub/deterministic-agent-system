@@ -16,6 +16,9 @@ export interface WhatsAppAgentBridgeResult {
     resolvedIntentId: string;
     stage: string;
     status: string;
+    humanInterventionRequired: boolean;
+    handoffReasonCode?: string;
+    handoffQueue?: string;
   };
   agent: CustomerServiceAgentResult;
 }
@@ -40,6 +43,9 @@ export function runWhatsAppCustomerServiceBridge(params: {
       resolvedIntentId: agent.resolvedIntentId,
       stage: agent.stage,
       status: agent.status,
+      humanInterventionRequired: agent.session.handoffRequested,
+      handoffReasonCode: agent.session.handoffReasonCode,
+      handoffQueue: agent.session.handoffQueue,
     },
     agent,
   };

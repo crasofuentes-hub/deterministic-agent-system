@@ -19,6 +19,9 @@ describe("customer-service-agent e2e", () => {
       responseText: "Product: Laptop X Pro | Price: 1499.99 USD",
       stage: "resolve-price",
       status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
   });
 
@@ -39,6 +42,9 @@ describe("customer-service-agent e2e", () => {
       responseText: "Order ORDER-12345 is currently processing. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time.",
       stage: "resolve-order-status",
       status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
   });
 
@@ -59,6 +65,9 @@ describe("customer-service-agent e2e", () => {
       responseText: "Please provide the product name so I can help you.",
       stage: "collect-product-name",
       status: "missing-entity",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
 
     const second = runCustomerServiceApi({
@@ -77,6 +86,9 @@ describe("customer-service-agent e2e", () => {
       responseText: "Product: Laptop X Pro | SKU: LAP-X-PRO | Price: 1499.99 USD | Availability: in-stock | Summary: Laptop X Pro is a high-performance laptop for productivity and advanced workloads.",
       stage: "resolve-product",
       status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
   });
 
@@ -97,6 +109,9 @@ describe("customer-service-agent e2e", () => {
       responseText: "I could not find an order with the provided order ID. Please verify the order ID and try again.",
       stage: "resolve-order-status",
       status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
   });
 
@@ -111,6 +126,9 @@ describe("customer-service-agent e2e", () => {
 
     expect(result.resolvedIntentId).toBe("consult-order-status");
     expect(result.status).toBe("missing-entity");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
       "The provided order ID format is invalid. Please provide a valid order ID and try again."
     );

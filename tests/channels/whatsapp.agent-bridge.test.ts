@@ -42,6 +42,9 @@ describe("whatsapp agent bridge", () => {
       resolvedIntentId: "consult-price",
       stage: "resolve-price",
       status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
 
     expect(result.session.conversationStatus).toBe("active");
@@ -71,6 +74,9 @@ describe("whatsapp agent bridge", () => {
       resolvedIntentId: "consult-order-status",
       stage: "collect-order-id",
       status: "missing-entity",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
 
     expect(result.session.conversationStatus).toBe("waiting-user");
@@ -110,9 +116,46 @@ describe("whatsapp agent bridge", () => {
       resolvedIntentId: "consult-product",
       stage: "resolve-product",
       status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
     });
 
     expect(second.session.conversationStatus).toBe("active");
     expect(second.session.missingEntityIds).toEqual([]);
+  });
+
+  it("returns structured handoff metadata in whatsapp output", () => {
+    const session = createInitialSessionState({
+      sessionId: "WA-SESSION-004",
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const result = runWhatsAppCustomerServiceBridge({
+      session,
+      message: createMessage({
+        channelMessageId: "wamid.test.005",
+        text: "I need a human agent",
+      }),
+    });
+
+    expect(result.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.test.005",
+      outboundText: "Your conversation will be transferred to a human agent.",
+      responseId: "handoff-requested",
+      resolvedIntentId: "request-human-handoff",
+      stage: "handoff-requested",
+      status: "handoff",
+      humanInterventionRequired: true,
+      handoffReasonCode: "explicit-human-request",
+      handoffQueue: "general",
+    });
+
+    expect(result.session.handoffRequested).toBe(true);
+    expect(result.session.handoffReasonCode).toBe("explicit-human-request");
+    expect(result.session.handoffQueue).toBe("general");
+    expect(result.session.conversationStatus).toBe("handoff-requested");
   });
 });

@@ -24,6 +24,9 @@ export interface CustomerServiceApiOutput {
   responseText: string;
   stage: string;
   status: string;
+  humanInterventionRequired: boolean;
+  handoffReasonCode?: string;
+  handoffQueue?: string;
 }
 
 export function runCustomerServiceApi(
@@ -58,5 +61,8 @@ export function runCustomerServiceApi(
     responseText: result.responseText,
     stage: result.stage,
     status: result.status,
+    humanInterventionRequired: result.session.handoffRequested,
+    handoffReasonCode: result.session.handoffReasonCode,
+    handoffQueue: result.session.handoffQueue,
   };
 }
