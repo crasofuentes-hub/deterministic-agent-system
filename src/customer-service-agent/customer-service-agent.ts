@@ -98,6 +98,10 @@ function sanitizeProductNameCandidate(value: string): string | undefined {
     "product information",
     "information about product",
     "details about product",
+    "what is the price",
+    "what's the price",
+    "the price",
+    "price",
   ]);
 
   if (blocked.has(lowered)) {
@@ -242,7 +246,13 @@ function hasExplicitIntentSignal(userMessageText: string, intentId: string): boo
   }
 
   if (intentId === "consult-product") {
-    return /product|details|information|info|tell me about|what can you tell me about/.test(text);
+    if (/product|details|information|info|tell me about|what can you tell me about/.test(text)) {
+      return true;
+    }
+
+    return extractEntitiesFromText(userMessageText).some(
+      (entity) => entity.entityId === "productName"
+    );
   }
 
   return false;
