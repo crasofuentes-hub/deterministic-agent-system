@@ -135,11 +135,19 @@ function sanitizeOrderIdCandidate(value: string): string | undefined {
 function sanitizePolicyTopicCandidate(value: string): string | undefined {
   const cleaned = normalizeLooseEntityText(value).toLowerCase();
 
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
   if (
     cleaned === "return-policy" ||
     cleaned === "refund-policy" ||
     cleaned === "cancellation-policy"
   ) {
+    return cleaned;
+  }
+
+  if (/^[a-z][a-z0-9-]{2,}$/i.test(cleaned)) {
     return cleaned;
   }
 
@@ -276,7 +284,7 @@ function buildResolvedResponse(
 
     const product = findProductByName(productName);
     if (!product) {
-      return "The product was not found.";
+      return "I could not find a product with the provided product name. Please verify the product name and try again.";
     }
 
     return (
@@ -292,7 +300,7 @@ function buildResolvedResponse(
 
     const product = findProductByName(productName);
     if (!product) {
-      return "The product was not found.";
+      return "I could not find a product with the provided product name. Please verify the product name and try again.";
     }
 
     return (
@@ -313,7 +321,7 @@ function buildResolvedResponse(
 
     const product = findProductByName(productName);
     if (!product) {
-      return "The product was not found.";
+      return "I could not find a product with the provided product name. Please verify the product name and try again.";
     }
 
     const knowledge = findKnowledgeByProductName(productName);
@@ -363,7 +371,7 @@ function buildResolvedResponse(
 
     const policy = findPolicyByTopic(policyTopic);
     if (!policy) {
-      return "The policy information was not found.";
+      return "I could not find policy information for the provided policy topic. Please verify the policy topic and try again.";
     }
 
     const policyAspect = sanitizePolicyAspectCandidate(

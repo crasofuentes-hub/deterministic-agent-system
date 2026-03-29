@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runCustomerServiceApi } from "../../src/customer-service-api/customer-service-api";
 import { runWhatsAppCustomerServiceBridge } from "../../src/channels/whatsapp/agent-bridge";
+import { runCustomerServiceAgent } from "../../src/customer-service-agent/customer-service-agent";
 import { createInitialSessionState } from "../../src/session-state/session-state";
 import type { CustomerMessage } from "../../src/customer-messages/types";
 
@@ -162,6 +163,90 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
       "Policy: Cancellation Policy | Cancellation Eligibility: Orders may be cancelled before shipment only. Orders that have already shipped cannot be cancelled and must follow the return policy."
+    );
+  });
+
+  it("keeps consult-product not-found canonical without changing intent family", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "INV-008",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I need information about Laptop Z Ultra",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-product");
+    expect(result.responseId).toBe("consult-product-resolved");
+    expect(result.stage).toBe("resolve-product");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "I could not find a product with the provided product name. Please verify the product name and try again."
+    );
+  });
+
+  it("keeps consult-price not-found canonical without changing intent family", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "INV-009",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "What is the price of Laptop Z Ultra?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-price");
+    expect(result.responseId).toBe("consult-price-resolved");
+    expect(result.stage).toBe("resolve-price");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.responseText).toBe(
+      "I could not find a product with the provided product name. Please verify the product name and try again."
+    );
+  });
+
+  it("keeps consult-availability not-found canonical without changing intent family", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "INV-010",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "Is Laptop Z Ultra in stock?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-availability");
+    expect(result.responseId).toBe("consult-availability-resolved");
+    expect(result.stage).toBe("resolve-availability");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.responseText).toBe(
+      "I could not find a product with the provided product name. Please verify the product name and try again."
+    );
+  });
+
+  it("keeps consult-policy not-found canonical in resolved family when session carries an unknown policy topic", () => {
+    let session = createInitialSessionState({
+      sessionId: "INV-011",
+      businessContextId: "customer-service-core-v2",
+    });
+
+    session = {
+      ...session,
+      collectedEntities: [
+        {
+          entityId: "policyTopic",
+          value: "cancellation-policy-legacy",
+          confidence: "confirmed",
+        },
+      ],
+    };
+
+    const result = runCustomerServiceAgent({
+      session,
+      userMessageText: "policy",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy");
+    expect(result.responseId).toBe("consult-policy-resolved");
+    expect(result.stage).toBe("resolve-policy");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "I could not find policy information for the provided policy topic. Please verify the policy topic and try again."
     );
   });
 });
