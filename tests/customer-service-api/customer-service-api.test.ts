@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { runCustomerServiceApi } from "../../src/customer-service-api/customer-service-api";
 
 describe("customer-service-api", () => {
-  it("returns missing-entity response for incomplete product consultation", () => {
+  it("returns missing-entity response for incomplete coverage consultation", () => {
     const result = runCustomerServiceApi({
       sessionId: "S-001",
       businessContextId: "customer-service-core-v2",
@@ -14,7 +14,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-product",
       responseId: "consult-product-missing-product-name",
-      responseText: "Please provide the product name so I can help you.",
+      responseText: "Please provide the coverage option name so I can help you.",
       stage: "collect-product-name",
       status: "missing-entity",
       humanInterventionRequired: false,
@@ -23,7 +23,7 @@ describe("customer-service-api", () => {
     });
   });
 
-  it("returns resolved response for order-status consultation", () => {
+  it("returns resolved response for request-status consultation", () => {
     const result = runCustomerServiceApi({
       sessionId: "S-002",
       businessContextId: "customer-service-core-v2",
@@ -35,7 +35,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-order-status",
       responseId: "consult-order-status-resolved",
-      responseText: "Order ORDER-12345 is currently processing. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time.",
+      responseText: "Order ORDER-12345 is currently under-review. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time.",
       stage: "resolve-order-status",
       status: "resolved",
       humanInterventionRequired: false,
@@ -44,7 +44,7 @@ describe("customer-service-api", () => {
     });
   });
 
-  it("returns canonical order-not-found response for order-status consultation", () => {
+  it("returns canonical request-not-found response for request-status consultation", () => {
     const result = runCustomerServiceApi({
       sessionId: "S-003",
       businessContextId: "customer-service-core-v2",
@@ -65,7 +65,7 @@ describe("customer-service-api", () => {
     });
   });
 
-  it("returns canonical invalid-order-id response for order-status consultation", () => {
+  it("returns canonical invalid-request-id response for request-status consultation", () => {
     const result = runCustomerServiceApi({
       sessionId: "S-004",
       businessContextId: "customer-service-core-v2",
@@ -82,7 +82,7 @@ describe("customer-service-api", () => {
     );
   });
 
-  it("returns structured handoff metadata for human handoff requests", () => {
+  it("returns structured handoff metadata for broker specialist handoff requests", () => {
     const result = runCustomerServiceApi({
       sessionId: "S-005",
       businessContextId: "customer-service-core-v2",
@@ -94,12 +94,12 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "request-human-handoff",
       responseId: "handoff-requested",
-      responseText: "Your conversation will be transferred to a human agent.",
+      responseText: "Your conversation will be transferred to a licensed broker specialist.",
       stage: "handoff-requested",
       status: "handoff",
       humanInterventionRequired: true,
       handoffReasonCode: "explicit-human-request",
-      handoffQueue: "general",
+      handoffQueue: "licensed-broker",
     });
   });
 });

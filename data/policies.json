@@ -1,42 +1,42 @@
 [
   {
-    "policyTopic": "return-policy",
-    "title": "Return Policy",
-    "summary": "Returns are accepted within 30 calendar days of delivery for unused products in original condition.",
-    "returnWindowDays": 30,
+    "policyTopic": "cancellation-policy",
+    "title": "Cancellation Policy",
+    "summary": "Cancellation requests may be submitted before binding or renewal processing is completed. Requests submitted after binding may require broker review and carrier approval.",
+    "cancellationBeforeShipmentOnly": true,
     "allowedActions": [
-      "return-item",
-      "request-refund"
+      "request-cancellation-before-binding",
+      "request-cancellation-review"
     ],
     "disallowedActions": [
-      "return-after-30-days",
-      "return-used-item"
+      "guaranteed-immediate-cancellation-after-binding"
     ]
   },
   {
     "policyTopic": "refund-policy",
-    "title": "Refund Policy",
-    "summary": "Approved refunds are issued to the original payment method within 5 to 10 business days after the return is processed.",
+    "title": "Premium Adjustment Policy",
+    "summary": "Approved premium adjustments or refunds are generally processed within 5 to 10 business days after the servicing request is completed.",
     "refundProcessingBusinessDaysMin": 5,
     "refundProcessingBusinessDaysMax": 10,
     "allowedActions": [
-      "request-refund",
-      "check-refund-status"
+      "request-premium-adjustment",
+      "check-adjustment-status"
     ],
     "disallowedActions": [
       "instant-cash-refund"
     ]
   },
   {
-    "policyTopic": "cancellation-policy",
-    "title": "Cancellation Policy",
-    "summary": "Orders may be cancelled before shipment. Orders that have already shipped cannot be cancelled and must follow the return policy.",
-    "cancellationBeforeShipmentOnly": true,
+    "policyTopic": "return-policy",
+    "title": "Policy Document Delivery Policy",
+    "summary": "Policy documents are generally issued within 30 calendar days of binding, subject to underwriting completion and document review.",
+    "returnWindowDays": 30,
     "allowedActions": [
-      "cancel-before-shipment"
+      "request-policy-documents",
+      "check-document-delivery-status"
     ],
     "disallowedActions": [
-      "cancel-after-shipment"
+      "guaranteed-same-day-document-issuance"
     ]
   }
 ]

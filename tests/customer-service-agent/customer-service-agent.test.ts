@@ -3,7 +3,7 @@ import { runCustomerServiceAgent } from "../../src/customer-service-agent/custom
 import { createInitialSessionState } from "../../src/session-state/session-state";
 
 describe("customer-service-agent", () => {
-  it("asks for product name when missing", () => {
+  it("asks for coverage option name when missing", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-001",
@@ -15,37 +15,39 @@ describe("customer-service-agent", () => {
     expect(result.resolvedIntentId).toBe("consult-product");
     expect(result.responseId).toBe("consult-product-missing-product-name");
     expect(result.status).toBe("missing-entity");
-    expect(result.responseText).toBe("Please provide the product name so I can help you.");
+    expect(result.responseText).toBe(
+      "Please provide the coverage option name so I can help you."
+    );
   });
 
-  it("returns real knowledge and product data", () => {
+  it("returns real coverage option knowledge and product data", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-001",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "I need Laptop X Pro",
+      userMessageText: "I need Personal Auto Standard",
     });
 
     expect(result.resolvedIntentId).toBe("consult-product");
     expect(result.responseId).toBe("consult-product-resolved");
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
-      "Product: Laptop X Pro | SKU: LAP-X-PRO | Price: 1499.99 USD | Availability: in-stock | Summary: Laptop X Pro is a high-performance laptop for productivity and advanced workloads."
+      "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: available | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection."
     );
   });
 
-  it("returns real price data when product name is present", () => {
+  it("returns real estimated premium data when coverage option name is present", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-002",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "What is the price of Laptop X Pro?",
+      userMessageText: "What is the price of Personal Auto Standard?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-price");
-    expect(result.responseText).toBe("Product: Laptop X Pro | Price: 1499.99 USD");
+    expect(result.responseText).toBe("Product: Personal Auto Standard | Price: 128.50 USD");
   });
 
   it("returns real availability data", () => {
@@ -54,14 +56,16 @@ describe("customer-service-agent", () => {
         sessionId: "S-003",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Is Laptop X Pro in stock?",
+      userMessageText: "Is General Liability Core available?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-availability");
-    expect(result.responseText).toBe("Product: Laptop X Pro | Availability: in-stock | Stock: 12");
+    expect(result.responseText).toBe(
+      "Product: General Liability Core | Availability: broker-review | Stock: 999"
+    );
   });
 
-  it("returns real order status data", () => {
+  it("returns real request status data", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-004",
@@ -72,11 +76,11 @@ describe("customer-service-agent", () => {
 
     expect(result.resolvedIntentId).toBe("consult-order-status");
     expect(result.responseText).toBe(
-      "Order ORDER-12345 is currently processing. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time."
+      "Order ORDER-12345 is currently under-review. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time."
     );
   });
 
-  it("returns canonical order-not-found response", () => {
+  it("returns canonical request-not-found response", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-005",
@@ -93,7 +97,7 @@ describe("customer-service-agent", () => {
     );
   });
 
-  it("returns canonical invalid-order-id response", () => {
+  it("returns canonical invalid-request-id response", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-006",

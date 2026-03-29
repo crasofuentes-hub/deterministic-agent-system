@@ -36,8 +36,10 @@ describe("customer-service semantic invariants", () => {
     expect(result.status).toBe("handoff");
     expect(result.humanInterventionRequired).toBe(true);
     expect(result.handoffReasonCode).toBe("explicit-human-request");
-    expect(result.handoffQueue).toBe("general");
-    expect(result.responseText).toBe("Your conversation will be transferred to a human agent.");
+    expect(result.handoffQueue).toBe("licensed-broker");
+    expect(result.responseText).toBe(
+      "Your conversation will be transferred to a licensed broker specialist."
+    );
   });
 
   it("keeps human handoff output canonical in WhatsApp bridge", () => {
@@ -55,10 +57,10 @@ describe("customer-service semantic invariants", () => {
     expect(result.output.status).toBe("handoff");
     expect(result.output.humanInterventionRequired).toBe(true);
     expect(result.output.handoffReasonCode).toBe("explicit-human-request");
-    expect(result.output.handoffQueue).toBe("general");
+    expect(result.output.handoffQueue).toBe("licensed-broker");
   });
 
-  it("keeps missing-order-id output canonical", () => {
+  it("keeps missing-request-id output canonical", () => {
     const result = runCustomerServiceApi({
       sessionId: "INV-002",
       businessContextId: "customer-service-core-v2",
@@ -73,11 +75,11 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Please provide your order ID so I can review the order status."
+      "Please provide your request ID so I can review the status."
     );
   });
 
-  it("keeps invalid-order-id output canonical without changing status family", () => {
+  it("keeps invalid-request-id output canonical without changing status family", () => {
     const result = runCustomerServiceApi({
       sessionId: "INV-003",
       businessContextId: "customer-service-core-v2",
@@ -94,7 +96,7 @@ describe("customer-service semantic invariants", () => {
     );
   });
 
-  it("keeps order-not-found output canonical in resolved family", () => {
+  it("keeps request-not-found output canonical in resolved family", () => {
     const result = runCustomerServiceApi({
       sessionId: "INV-004",
       businessContextId: "customer-service-core-v2",
@@ -126,7 +128,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Policy: Return Policy | Summary: Returns are accepted within 30 calendar days of delivery for unused products in original condition."
+      "Policy: Policy Document Delivery Policy | Summary: Policy documents are generally issued within 30 calendar days of binding, subject to underwriting completion and document review."
     );
   });
 
@@ -143,7 +145,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.status).toBe("resolved");
     expect(result.humanInterventionRequired).toBe(false);
     expect(result.responseText).toBe(
-      "Policy: Refund Policy | Refund Timing: 5 to 10 business days after the return is processed."
+      "Policy: Premium Adjustment Policy | Refund Timing: 5 to 10 business days after the return is processed."
     );
   });
 
@@ -170,7 +172,7 @@ describe("customer-service semantic invariants", () => {
     const result = runCustomerServiceApi({
       sessionId: "INV-008",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "I need information about Laptop Z Ultra",
+      userMessageText: "I need information about Excess Umbrella Select",
     });
 
     expect(result.resolvedIntentId).toBe("consult-product");
@@ -189,7 +191,7 @@ describe("customer-service semantic invariants", () => {
     const result = runCustomerServiceApi({
       sessionId: "INV-009",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "What is the price of Laptop Z Ultra?",
+      userMessageText: "What is the price of Excess Umbrella Select?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-price");
@@ -206,7 +208,7 @@ describe("customer-service semantic invariants", () => {
     const result = runCustomerServiceApi({
       sessionId: "INV-010",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "Is Laptop Z Ultra in stock?",
+      userMessageText: "Is Excess Umbrella Select available?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-availability");

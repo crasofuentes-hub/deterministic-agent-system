@@ -1,17 +1,17 @@
 [
   {
-    "topicId": "product-laptop-x-pro",
-    "productName": "Laptop X Pro",
-    "summary": "Laptop X Pro is a high-performance laptop for productivity and advanced workloads."
+    "topicId": "coverage-personal-auto-standard",
+    "productName": "Personal Auto Standard",
+    "summary": "Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection."
   },
   {
-    "topicId": "product-wireless-mouse-m1",
-    "productName": "Wireless Mouse M1",
-    "summary": "Wireless Mouse M1 is a compact wireless mouse for daily office use."
+    "topicId": "coverage-commercial-property-plus",
+    "productName": "Commercial Property Plus",
+    "summary": "Commercial Property Plus is a commercial property coverage option designed for buildings, contents, and related business property exposures."
   },
   {
-    "topicId": "product-keyboard-k100",
-    "productName": "Keyboard K100",
-    "summary": "Keyboard K100 is a mechanical keyboard designed for durability and comfort."
+    "topicId": "coverage-general-liability-core",
+    "productName": "General Liability Core",
+    "summary": "General Liability Core is a liability coverage option designed for businesses seeking protection against common third-party bodily injury and property damage claims."
   }
 ]

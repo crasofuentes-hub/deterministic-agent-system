@@ -1,46 +1,46 @@
 {
   "contextId": "customer-service-core-v2",
-  "domain": "customer-service",
-  "businessName": "Generic Customer Service",
+  "domain": "insurance-brokerage",
+  "businessName": "Northwind Insurance Brokers",
   "supportedIntents": [
     {
       "intentId": "consult-product",
-      "description": "Consult information about a product.",
+      "description": "Consult information about an insurance coverage option.",
       "requiredEntities": ["productName"],
       "optionalEntities": ["sku"],
       "workflowId": "product-consultation-flow"
     },
     {
       "intentId": "consult-price",
-      "description": "Consult the price of a product.",
+      "description": "Consult the estimated premium for an insurance coverage option.",
       "requiredEntities": ["productName"],
       "optionalEntities": ["sku"],
       "workflowId": "price-consultation-flow"
     },
     {
       "intentId": "consult-availability",
-      "description": "Consult the availability of a product.",
+      "description": "Consult the current availability or eligibility status of an insurance coverage option.",
       "requiredEntities": ["productName"],
       "optionalEntities": ["sku"],
       "workflowId": "availability-flow"
     },
     {
       "intentId": "consult-order-status",
-      "description": "Consult the status of an order.",
+      "description": "Consult the status of an insurance application or servicing request.",
       "requiredEntities": ["orderId"],
       "optionalEntities": [],
       "workflowId": "order-status-flow"
     },
     {
       "intentId": "consult-policy",
-      "description": "Consult a business policy topic.",
+      "description": "Consult a policy servicing topic.",
       "requiredEntities": ["policyTopic"],
       "optionalEntities": [],
       "workflowId": "policy-consultation-flow"
     },
     {
       "intentId": "request-human-handoff",
-      "description": "Request transfer to a human agent.",
+      "description": "Request transfer to a licensed broker specialist.",
       "requiredEntities": [],
       "optionalEntities": [],
       "workflowId": "handoff-flow"
@@ -125,56 +125,56 @@
       "intentId": "consult-product",
       "stage": "collect-product-name",
       "status": "missing-entity",
-      "messageTemplate": "Please provide the product name so I can help you."
+      "messageTemplate": "Please provide the coverage option name so I can help you."
     },
     {
       "responseId": "consult-product-resolved",
       "intentId": "consult-product",
       "stage": "resolve-product",
       "status": "resolved",
-      "messageTemplate": "The product information has been retrieved."
+      "messageTemplate": "The coverage option information has been retrieved."
     },
     {
       "responseId": "consult-price-missing-product-name",
       "intentId": "consult-price",
       "stage": "collect-product-name",
       "status": "missing-entity",
-      "messageTemplate": "Please provide the product name so I can check the price."
+      "messageTemplate": "Please provide the coverage option name so I can check the estimated premium."
     },
     {
       "responseId": "consult-price-resolved",
       "intentId": "consult-price",
       "stage": "resolve-price",
       "status": "resolved",
-      "messageTemplate": "The product price has been retrieved."
+      "messageTemplate": "The estimated premium information has been retrieved."
     },
     {
       "responseId": "consult-availability-missing-product-name",
       "intentId": "consult-availability",
       "stage": "collect-product-name",
       "status": "missing-entity",
-      "messageTemplate": "Please provide the product name so I can check availability."
+      "messageTemplate": "Please provide the coverage option name so I can check availability."
     },
     {
       "responseId": "consult-availability-resolved",
       "intentId": "consult-availability",
       "stage": "resolve-availability",
       "status": "resolved",
-      "messageTemplate": "The product availability has been retrieved."
+      "messageTemplate": "The coverage option availability information has been retrieved."
     },
     {
       "responseId": "consult-order-status-missing-order-id",
       "intentId": "consult-order-status",
       "stage": "collect-order-id",
       "status": "missing-entity",
-      "messageTemplate": "Please provide your order ID so I can review the order status."
+      "messageTemplate": "Please provide your request ID so I can review the status."
     },
     {
       "responseId": "consult-order-status-resolved",
       "intentId": "consult-order-status",
       "stage": "resolve-order-status",
       "status": "resolved",
-      "messageTemplate": "Your order status has been retrieved."
+      "messageTemplate": "Your request status has been retrieved."
     },
     {
       "responseId": "consult-policy-missing-policy-topic",
@@ -188,14 +188,14 @@
       "intentId": "consult-policy",
       "stage": "resolve-policy",
       "status": "resolved",
-      "messageTemplate": "The policy information has been retrieved."
+      "messageTemplate": "The policy servicing information has been retrieved."
     },
     {
       "responseId": "handoff-requested",
       "intentId": "request-human-handoff",
       "stage": "handoff-requested",
       "status": "handoff",
-      "messageTemplate": "Your conversation will be transferred to a human agent."
+      "messageTemplate": "Your conversation will be transferred to a licensed broker specialist."
     },
     {
       "responseId": "conversation-closed",
@@ -210,7 +210,7 @@
       "ruleId": "explicit-human-request",
       "whenIntentIds": ["request-human-handoff"],
       "requiresHuman": true,
-      "queue": "general"
+      "queue": "licensed-broker"
     }
   ],
   "tonePolicy": {

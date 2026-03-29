@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { runCustomerServiceApi } from "../../src/customer-service-api/customer-service-api";
 
 describe("customer-service-agent e2e", () => {
-  it("returns real price data end-to-end", () => {
+  it("returns real estimated premium data end-to-end", () => {
     const result = runCustomerServiceApi({
       sessionId: "E2E-001",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "What is the price of Laptop X Pro?",
+      userMessageText: "What is the price of Personal Auto Standard?",
       userTurnId: "u1",
       userCreatedAtIso: "2026-03-10T10:00:00Z",
     });
@@ -16,7 +16,7 @@ describe("customer-service-agent e2e", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-price",
       responseId: "consult-price-resolved",
-      responseText: "Product: Laptop X Pro | Price: 1499.99 USD",
+      responseText: "Product: Personal Auto Standard | Price: 128.50 USD",
       stage: "resolve-price",
       status: "resolved",
       humanInterventionRequired: false,
@@ -25,7 +25,7 @@ describe("customer-service-agent e2e", () => {
     });
   });
 
-  it("returns real order status end-to-end", () => {
+  it("returns real request status end-to-end", () => {
     const result = runCustomerServiceApi({
       sessionId: "E2E-002",
       businessContextId: "customer-service-core-v2",
@@ -39,7 +39,7 @@ describe("customer-service-agent e2e", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-order-status",
       responseId: "consult-order-status-resolved",
-      responseText: "Order ORDER-12345 is currently processing. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time.",
+      responseText: "Order ORDER-12345 is currently under-review. Last update: 2026-03-10T10:00:00Z. No additional action is required at this time.",
       stage: "resolve-order-status",
       status: "resolved",
       humanInterventionRequired: false,
@@ -48,7 +48,7 @@ describe("customer-service-agent e2e", () => {
     });
   });
 
-  it("persists session across turns and returns real product knowledge", () => {
+  it("persists session across turns and returns real coverage option knowledge", () => {
     const first = runCustomerServiceApi({
       sessionId: "E2E-003",
       businessContextId: "customer-service-core-v2",
@@ -62,7 +62,7 @@ describe("customer-service-agent e2e", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-product",
       responseId: "consult-product-missing-product-name",
-      responseText: "Please provide the product name so I can help you.",
+      responseText: "Please provide the coverage option name so I can help you.",
       stage: "collect-product-name",
       status: "missing-entity",
       humanInterventionRequired: false,
@@ -73,7 +73,7 @@ describe("customer-service-agent e2e", () => {
     const second = runCustomerServiceApi({
       sessionId: "E2E-003",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "Laptop X Pro",
+      userMessageText: "Personal Auto Standard",
       userTurnId: "u2",
       userCreatedAtIso: "2026-03-10T10:11:00Z",
     });
@@ -83,7 +83,7 @@ describe("customer-service-agent e2e", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-product",
       responseId: "consult-product-resolved",
-      responseText: "Product: Laptop X Pro | SKU: LAP-X-PRO | Price: 1499.99 USD | Availability: in-stock | Summary: Laptop X Pro is a high-performance laptop for productivity and advanced workloads.",
+      responseText: "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: available | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection.",
       stage: "resolve-product",
       status: "resolved",
       humanInterventionRequired: false,
@@ -92,7 +92,7 @@ describe("customer-service-agent e2e", () => {
     });
   });
 
-  it("returns canonical order-not-found response end-to-end", () => {
+  it("returns canonical request-not-found response end-to-end", () => {
     const result = runCustomerServiceApi({
       sessionId: "E2E-004",
       businessContextId: "customer-service-core-v2",
@@ -115,7 +115,7 @@ describe("customer-service-agent e2e", () => {
     });
   });
 
-  it("returns canonical invalid-order-id response end-to-end", () => {
+  it("returns canonical invalid-request-id response end-to-end", () => {
     const result = runCustomerServiceApi({
       sessionId: "E2E-005",
       businessContextId: "customer-service-core-v2",

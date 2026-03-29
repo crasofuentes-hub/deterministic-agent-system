@@ -32,7 +32,7 @@ describe("intent-catalog", () => {
   it("gets consult-price by id deterministically", () => {
     expect(getBusinessIntentById(loadPack(), "consult-price")).toEqual({
       intentId: "consult-price",
-      description: "Consult the price of a product.",
+      description: "Consult the estimated premium for an insurance coverage option.",
       requiredEntities: ["productName"],
       optionalEntities: ["sku"],
       workflowId: "price-consultation-flow",
@@ -42,7 +42,7 @@ describe("intent-catalog", () => {
   it("gets consult-policy by id deterministically", () => {
     expect(getBusinessIntentById(loadPack(), "consult-policy")).toEqual({
       intentId: "consult-policy",
-      description: "Consult a business policy topic.",
+      description: "Consult a policy servicing topic.",
       requiredEntities: ["policyTopic"],
       optionalEntities: [],
       workflowId: "policy-consultation-flow",

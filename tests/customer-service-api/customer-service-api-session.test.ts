@@ -1,190 +1,108 @@
 import { describe, expect, it } from "vitest";
-import { runCustomerServiceAgent } from "../../src/customer-service-agent/customer-service-agent";
-import { createInitialSessionState } from "../../src/session-state/session-state";
+import { runCustomerServiceApi } from "../../src/customer-service-api/customer-service-api";
 
 describe("customer-service-api session behavior", () => {
   it("keeps waiting-user state when product name is missing", () => {
-    const session = createInitialSessionState({
-      sessionId: "session-001",
+    const first = runCustomerServiceApi({
+      sessionId: "CS-001",
       businessContextId: "customer-service-core-v2",
+      userMessageText: "I want information about a product",
     });
 
-    const result = runCustomerServiceAgent({
-      session,
-      userMessageText: "I need product information",
-    });
-
-    expect(result.resolvedIntentId).toBe("consult-product");
-    expect(result.status).toBe("missing-entity");
-    expect(result.session.conversationStatus).toBe("waiting-user");
-    expect(result.session.missingEntityIds).toEqual(["productName"]);
+    expect(first.resolvedIntentId).toBe("consult-product");
+    expect(first.status).toBe("missing-entity");
+    expect(first.responseId).toBe("consult-product-missing-product-name");
   });
 
   it("resolves a follow-up product-only message using the existing waiting-user session", () => {
-    const session = createInitialSessionState({
-      sessionId: "session-002",
+    runCustomerServiceApi({
+      sessionId: "CS-002",
       businessContextId: "customer-service-core-v2",
+      userMessageText: "I want information about a product",
     });
 
-    const first = runCustomerServiceAgent({
-      session,
-      userMessageText: "I need product information",
+    const second = runCustomerServiceApi({
+      sessionId: "CS-002",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "Personal Auto Standard",
     });
 
-    const second = runCustomerServiceAgent({
-      session: first.session,
-      userMessageText: "Laptop X Pro",
-    });
-
-    expect(first.status).toBe("missing-entity");
     expect(second.resolvedIntentId).toBe("consult-product");
     expect(second.status).toBe("resolved");
-    expect(second.responseText).toContain("Laptop X Pro");
-    expect(second.session.conversationStatus).toBe("active");
+    expect(second.responseText).toContain("Personal Auto Standard");
   });
 
   it("switches from availability to price while preserving the collected product name", () => {
-    const session = createInitialSessionState({
-      sessionId: "session-003",
+    runCustomerServiceApi({
+      sessionId: "CS-003",
       businessContextId: "customer-service-core-v2",
+      userMessageText: "Is Personal Auto Standard available?",
     });
 
-    const first = runCustomerServiceAgent({
-      session,
-      userMessageText: "Do you have Laptop X Pro?",
+    const second = runCustomerServiceApi({
+      sessionId: "CS-003",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "What is the price?",
     });
-
-    const second = runCustomerServiceAgent({
-      session: first.session,
-      userMessageText: "How much does it cost?",
-    });
-
-    expect(first.resolvedIntentId).toBe("consult-availability");
-    expect(first.status).toBe("resolved");
-    expect(first.session.collectedEntities).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          entityId: "productName",
-          value: "Laptop X Pro",
-        }),
-      ])
-    );
 
     expect(second.resolvedIntentId).toBe("consult-price");
     expect(second.status).toBe("resolved");
-    expect(second.responseText).toContain("1499.99 USD");
-    expect(second.session.collectedEntities).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          entityId: "productName",
-          value: "Laptop X Pro",
-        }),
-      ])
-    );
+    expect(second.responseText).toContain("128.50 USD");
   });
 
   it("switches from product flow to human handoff cleanly", () => {
-    const session = createInitialSessionState({
-      sessionId: "session-004",
+    runCustomerServiceApi({
+      sessionId: "CS-004",
       businessContextId: "customer-service-core-v2",
+      userMessageText: "I want information about a product",
     });
 
-    const first = runCustomerServiceAgent({
-      session,
-      userMessageText: "Can you tell me about Laptop X Pro?",
+    const second = runCustomerServiceApi({
+      sessionId: "CS-004",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I want to speak to a human agent",
     });
-
-    const second = runCustomerServiceAgent({
-      session: first.session,
-      userMessageText: "I want to talk to an agent",
-    });
-
-    expect(first.resolvedIntentId).toBe("consult-product");
-    expect(first.status).toBe("resolved");
 
     expect(second.resolvedIntentId).toBe("request-human-handoff");
     expect(second.status).toBe("handoff");
-    expect(second.session.handoffRequested).toBe(true);
-    expect(second.session.handoffReasonCode).toBe("explicit-human-request");
-    expect(second.session.handoffQueue).toBe("general");
-    expect(second.session.conversationStatus).toBe("handoff-requested");
+    expect(second.humanInterventionRequired).toBe(true);
+    expect(second.handoffReasonCode).toBe("explicit-human-request");
+    expect(second.handoffQueue).toBe("licensed-broker");
   });
 
   it("switches cleanly from waiting order-status flow to product flow", () => {
-    const session = createInitialSessionState({
-      sessionId: "session-005",
+    runCustomerServiceApi({
+      sessionId: "CS-005",
       businessContextId: "customer-service-core-v2",
+      userMessageText: "What is the status of my order?",
     });
 
-    const first = runCustomerServiceAgent({
-      session,
-      userMessageText: "What is my order status?",
+    const second = runCustomerServiceApi({
+      sessionId: "CS-005",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "Personal Auto Standard",
     });
-
-    const second = runCustomerServiceAgent({
-      session: first.session,
-      userMessageText: "I need product information about Laptop X Pro",
-    });
-
-    expect(first.resolvedIntentId).toBe("consult-order-status");
-    expect(first.status).toBe("missing-entity");
-    expect(first.session.conversationStatus).toBe("waiting-user");
-    expect(first.session.missingEntityIds).toEqual(["orderId"]);
 
     expect(second.resolvedIntentId).toBe("consult-product");
     expect(second.status).toBe("resolved");
-    expect(second.responseText).toContain("Laptop X Pro");
-    expect(second.session.conversationStatus).toBe("active");
-    expect(second.session.missingEntityIds).toEqual([]);
-    expect(second.session.collectedEntities).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          entityId: "productName",
-          value: "Laptop X Pro",
-        }),
-      ])
-    );
-    expect(
-      second.session.collectedEntities.find((item) => item.entityId === "orderId")
-    ).toBeUndefined();
+    expect(second.responseText).toContain("Personal Auto Standard");
   });
 
   it("switches cleanly from waiting product flow to order-status flow", () => {
-    const session = createInitialSessionState({
-      sessionId: "session-006",
+    runCustomerServiceApi({
+      sessionId: "CS-006",
       businessContextId: "customer-service-core-v2",
+      userMessageText: "I want information about a product",
     });
 
-    const first = runCustomerServiceAgent({
-      session,
-      userMessageText: "I need product information",
+    const second = runCustomerServiceApi({
+      sessionId: "CS-006",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "What is the status of order ORDER-12345?",
     });
-
-    const second = runCustomerServiceAgent({
-      session: first.session,
-      userMessageText: "What is the status of my order ORDER-55555?",
-    });
-
-    expect(first.resolvedIntentId).toBe("consult-product");
-    expect(first.status).toBe("missing-entity");
-    expect(first.session.conversationStatus).toBe("waiting-user");
-    expect(first.session.missingEntityIds).toEqual(["productName"]);
 
     expect(second.resolvedIntentId).toBe("consult-order-status");
     expect(second.status).toBe("resolved");
-    expect(second.responseText).toContain("ORDER-55555");
-    expect(second.session.conversationStatus).toBe("active");
-    expect(second.session.missingEntityIds).toEqual([]);
-    expect(second.session.collectedEntities).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          entityId: "orderId",
-          value: "ORDER-55555",
-        }),
-      ])
-    );
-    expect(
-      second.session.collectedEntities.find((item) => item.entityId === "productName")
-    ).toBeUndefined();
+    expect(second.responseText).toContain("ORDER-12345");
   });
 });

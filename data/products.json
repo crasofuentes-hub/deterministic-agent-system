@@ -1,29 +1,29 @@
 [
   {
-    "productId": "prod-laptop-x-pro",
-    "sku": "LAP-X-PRO",
-    "name": "Laptop X Pro",
-    "price": 1499.99,
+    "productId": "prod-personal-auto-standard",
+    "sku": "AUTO-PERS-STD",
+    "name": "Personal Auto Standard",
+    "price": 128.50,
     "currency": "USD",
-    "availability": "in-stock",
-    "stockQuantity": 12
+    "availability": "available",
+    "stockQuantity": 999
   },
   {
-    "productId": "prod-mouse-wireless-m1",
-    "sku": "MOU-W-M1",
-    "name": "Wireless Mouse M1",
-    "price": 39.99,
+    "productId": "prod-commercial-property-plus",
+    "sku": "PROP-COM-PLUS",
+    "name": "Commercial Property Plus",
+    "price": 412.75,
     "currency": "USD",
-    "availability": "low-stock",
-    "stockQuantity": 3
+    "availability": "available",
+    "stockQuantity": 999
   },
   {
-    "productId": "prod-keyboard-k100",
-    "sku": "KEY-K100",
-    "name": "Keyboard K100",
-    "price": 89.5,
+    "productId": "prod-general-liability-core",
+    "sku": "LIAB-GL-CORE",
+    "name": "General Liability Core",
+    "price": 265.00,
     "currency": "USD",
-    "availability": "out-of-stock",
-    "stockQuantity": 0
+    "availability": "broker-review",
+    "stockQuantity": 999
   }
 ]
