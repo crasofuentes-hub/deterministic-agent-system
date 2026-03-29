@@ -30,6 +30,13 @@ describe("intent-resolver", () => {
     });
   });
 
+  it("prioritizes policy intent over order-status wording for cancellation questions", () => {
+    expect(resolveIntentFromText("Can I cancel an order after shipment?")).toEqual({
+      intentId: "consult-policy",
+      confidence: "rule",
+    });
+  });
+
   it("resolves availability from natural inventory phrasing", () => {
     expect(resolveIntentFromText("Do you have Laptop X Pro?")).toEqual({
       intentId: "consult-availability",

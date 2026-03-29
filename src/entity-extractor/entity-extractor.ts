@@ -60,7 +60,15 @@ function extractPolicyTopic(messageText: string): string | undefined {
     return "refund-policy";
   }
 
-  if (/\bcancellation policy\b|\bcancel policy\b|\bcancellation\b|\bcancel order\b/.test(normalized)) {
+  if (
+    /\bcancellation policy\b/.test(normalized) ||
+    /\bcancel policy\b/.test(normalized) ||
+    /\bcancellation\b/.test(normalized) ||
+    /\bcancel order\b/.test(normalized) ||
+    /\bcancel an order\b/.test(normalized) ||
+    /\bcancel my order\b/.test(normalized) ||
+    /\bcancel.*shipment\b/.test(normalized)
+  ) {
     return "cancellation-policy";
   }
 

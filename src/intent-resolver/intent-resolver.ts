@@ -52,6 +52,7 @@ function isPolicyIntent(text: string): boolean {
     "refund",
     "return window",
     "cancellation",
+    "cancel",
   ]);
 }
 

@@ -84,6 +84,14 @@ describe("entity-extractor", () => {
     });
   });
 
+  it("extracts cancellation policy topic from shipment cancellation phrasing", () => {
+    expect(extractEntitiesFromText("Can I cancel an order after shipment?")).toContainEqual({
+      entityId: "policyTopic",
+      value: "cancellation-policy",
+      confidence: "derived",
+    });
+  });
+
   it("does not falsely extract productName from order-only message", () => {
     const entities = extractEntitiesFromText("I want to know my order status");
     expect(entities.find((item) => item.entityId === "productName")).toBeUndefined();
