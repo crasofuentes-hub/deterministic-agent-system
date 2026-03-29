@@ -146,6 +146,20 @@ function sanitizePolicyTopicCandidate(value: string): string | undefined {
   return undefined;
 }
 
+function sanitizePolicyAspectCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toLowerCase();
+
+  if (
+    cleaned === "return-window" ||
+    cleaned === "refund-timing" ||
+    cleaned === "cancellation-eligibility"
+  ) {
+    return cleaned;
+  }
+
+  return undefined;
+}
+
 function hasMalformedOrderIdSignal(userMessageText: string): boolean {
   const raw = String(userMessageText).normalize("NFC").trim().toUpperCase();
 
@@ -177,7 +191,7 @@ function getAllowedEntityIdsForIntent(intentId: string): string[] {
   }
 
   if (intentId === "consult-policy") {
-    return ["policyTopic"];
+    return ["policyTopic", "policyAspect"];
   }
 
   return [];
@@ -204,7 +218,7 @@ function hasExplicitIntentSignal(userMessageText: string, intentId: string): boo
   }
 
   if (intentId === "consult-policy") {
-    return /policy|refund|return|cancellation/.test(text);
+    return /policy|refund|return|cancellation|cancel/.test(text);
   }
 
   if (intentId === "consult-order-status") {
@@ -352,6 +366,47 @@ function buildResolvedResponse(
       return "The policy information was not found.";
     }
 
+    const policyAspect = sanitizePolicyAspectCandidate(
+      findEntityValue(session, "policyAspect") ?? "summary"
+    );
+
+    if (policyAspect === "return-window" && typeof policy.returnWindowDays === "number") {
+      return (
+        "Policy: " +
+        policy.title +
+        " | Return Window: " +
+        String(policy.returnWindowDays) +
+        " calendar days from delivery."
+      );
+    }
+
+    if (
+      policyAspect === "refund-timing" &&
+      typeof policy.refundProcessingBusinessDaysMin === "number" &&
+      typeof policy.refundProcessingBusinessDaysMax === "number"
+    ) {
+      return (
+        "Policy: " +
+        policy.title +
+        " | Refund Timing: " +
+        String(policy.refundProcessingBusinessDaysMin) +
+        " to " +
+        String(policy.refundProcessingBusinessDaysMax) +
+        " business days after the return is processed."
+      );
+    }
+
+    if (
+      policyAspect === "cancellation-eligibility" &&
+      typeof policy.cancellationBeforeShipmentOnly === "boolean"
+    ) {
+      return (
+        "Policy: " +
+        policy.title +
+        " | Cancellation Eligibility: Orders may be cancelled before shipment only. Orders that have already shipped cannot be cancelled and must follow the return policy."
+      );
+    }
+
     return "Policy: " + policy.title + " | Summary: " + policy.summary;
   }
 
@@ -388,6 +443,8 @@ export function runCustomerServiceAgent(params: {
       sanitizedValue = sanitizeOrderIdCandidate(entity.value);
     } else if (entity.entityId === "policyTopic") {
       sanitizedValue = sanitizePolicyTopicCandidate(entity.value);
+    } else if (entity.entityId === "policyAspect") {
+      sanitizedValue = sanitizePolicyAspectCandidate(entity.value);
     } else {
       sanitizedValue = normalizeLooseEntityText(entity.value);
     }

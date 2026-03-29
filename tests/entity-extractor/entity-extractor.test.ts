@@ -52,6 +52,38 @@ describe("entity-extractor", () => {
     });
   });
 
+  it("extracts policyTopic from return policy message", () => {
+    expect(extractEntitiesFromText("What is your return policy?")).toContainEqual({
+      entityId: "policyTopic",
+      value: "return-policy",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts policyAspect for return window questions", () => {
+    expect(extractEntitiesFromText("How many days do I have to return an item?")).toContainEqual({
+      entityId: "policyAspect",
+      value: "return-window",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts policyAspect for refund timing questions", () => {
+    expect(extractEntitiesFromText("How long do refunds take?")).toContainEqual({
+      entityId: "policyAspect",
+      value: "refund-timing",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts policyAspect for cancellation eligibility questions", () => {
+    expect(extractEntitiesFromText("Can I cancel an order after shipment?")).toContainEqual({
+      entityId: "policyAspect",
+      value: "cancellation-eligibility",
+      confidence: "derived",
+    });
+  });
+
   it("does not falsely extract productName from order-only message", () => {
     const entities = extractEntitiesFromText("I want to know my order status");
     expect(entities.find((item) => item.entityId === "productName")).toBeUndefined();

@@ -3,6 +3,7 @@
     "policyTopic": "return-policy",
     "title": "Return Policy",
     "summary": "Returns are accepted within 30 calendar days of delivery for unused products in original condition.",
+    "returnWindowDays": 30,
     "allowedActions": [
       "return-item",
       "request-refund"
@@ -16,6 +17,8 @@
     "policyTopic": "refund-policy",
     "title": "Refund Policy",
     "summary": "Approved refunds are issued to the original payment method within 5 to 10 business days after the return is processed.",
+    "refundProcessingBusinessDaysMin": 5,
+    "refundProcessingBusinessDaysMax": 10,
     "allowedActions": [
       "request-refund",
       "check-refund-status"
@@ -28,6 +31,7 @@
     "policyTopic": "cancellation-policy",
     "title": "Cancellation Policy",
     "summary": "Orders may be cancelled before shipment. Orders that have already shipped cannot be cancelled and must follow the return policy.",
+    "cancellationBeforeShipmentOnly": true,
     "allowedActions": [
       "cancel-before-shipment"
     ],

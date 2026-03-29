@@ -52,16 +52,47 @@ function extractOrderId(messageText: string): string | undefined {
 function extractPolicyTopic(messageText: string): string | undefined {
   const normalized = normalizeText(messageText).toLowerCase();
 
-  if (/\breturn policy\b|\breturns\b|\breturn window\b/.test(normalized)) {
+  if (/\breturn policy\b|\breturns\b|\breturn window\b|\breturn an item\b/.test(normalized)) {
     return "return-policy";
   }
 
-  if (/\brefund policy\b|\brefunds\b|\brefund\b/.test(normalized)) {
+  if (/\brefund policy\b|\brefunds\b|\brefund\b|\brefund take\b|\brefund timing\b/.test(normalized)) {
     return "refund-policy";
   }
 
   if (/\bcancellation policy\b|\bcancel policy\b|\bcancellation\b|\bcancel order\b/.test(normalized)) {
     return "cancellation-policy";
+  }
+
+  return undefined;
+}
+
+function extractPolicyAspect(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText).toLowerCase();
+
+  if (
+    /\bhow many days\b/.test(normalized) ||
+    /\breturn window\b/.test(normalized) ||
+    /\bwithin how many days\b/.test(normalized)
+  ) {
+    return "return-window";
+  }
+
+  if (
+    /\bhow long\b.*\brefund/.test(normalized) ||
+    /\brefund timing\b/.test(normalized) ||
+    /\bwhen.*refund/.test(normalized)
+  ) {
+    return "refund-timing";
+  }
+
+  if (
+    /\bcan i cancel\b/.test(normalized) ||
+    /\bcancel after shipment\b/.test(normalized) ||
+    /\bcancel before shipment\b/.test(normalized) ||
+    /\bcancellation eligibility\b/.test(normalized)
+  ) {
+    return "cancellation-eligibility";
   }
 
   return undefined;
@@ -131,6 +162,7 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
   const out: ExtractedEntity[] = [];
   const orderId = extractOrderId(messageText);
   const policyTopic = extractPolicyTopic(messageText);
+  const policyAspect = extractPolicyAspect(messageText);
   const productName = extractProductName(messageText);
 
   if (orderId) {
@@ -145,6 +177,14 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
     out.push({
       entityId: "policyTopic",
       value: policyTopic,
+      confidence: "derived",
+    });
+  }
+
+  if (policyAspect) {
+    out.push({
+      entityId: "policyAspect",
+      value: policyAspect,
       confidence: "derived",
     });
   }
