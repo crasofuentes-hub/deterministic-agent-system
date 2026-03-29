@@ -40,9 +40,23 @@ function isCloseConversationIntent(text: string): boolean {
   ]);
 }
 
+function isPolicyIntent(text: string): boolean {
+  return includesAny(text, [
+    "policy",
+    "refund policy",
+    "return policy",
+    "cancellation policy",
+    "cancel policy",
+    "refunds",
+    "returns",
+    "refund",
+    "return window",
+    "cancellation",
+  ]);
+}
+
 function isOrderStatusIntent(text: string): boolean {
   const hasOrderWord = includesAny(text, ["order", "purchase"]);
-
   const hasStatusWord = includesAny(text, ["status", "tracking", "update", "shipment", "shipping"]);
 
   return hasOrderWord && hasStatusWord;
@@ -91,6 +105,10 @@ export function resolveIntentFromText(messageText: string): ResolvedIntentResult
 
   if (isCloseConversationIntent(text)) {
     return { intentId: "close-conversation", confidence: "rule" };
+  }
+
+  if (isPolicyIntent(text)) {
+    return { intentId: "consult-policy", confidence: "rule" };
   }
 
   if (isOrderStatusIntent(text)) {

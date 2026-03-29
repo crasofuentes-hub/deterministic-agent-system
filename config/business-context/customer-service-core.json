@@ -32,6 +32,13 @@
       "workflowId": "order-status-flow"
     },
     {
+      "intentId": "consult-policy",
+      "description": "Consult a business policy topic.",
+      "requiredEntities": ["policyTopic"],
+      "optionalEntities": [],
+      "workflowId": "policy-consultation-flow"
+    },
+    {
       "intentId": "request-human-handoff",
       "description": "Request transfer to a human agent.",
       "requiredEntities": [],
@@ -61,6 +68,11 @@
       "entityId": "orderId",
       "entityType": "string",
       "required": false
+    },
+    {
+      "entityId": "policyTopic",
+      "entityType": "string",
+      "required": false
     }
   ],
   "workflowRules": [
@@ -85,6 +97,12 @@
     {
       "workflowId": "order-status-flow",
       "stages": ["start", "collect-order-id", "resolve-order-status", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "policy-consultation-flow",
+      "stages": ["start", "collect-policy-topic", "resolve-policy", "done"],
       "initialStage": "start",
       "terminalStages": ["done"]
     },
@@ -157,6 +175,20 @@
       "stage": "resolve-order-status",
       "status": "resolved",
       "messageTemplate": "Your order status has been retrieved."
+    },
+    {
+      "responseId": "consult-policy-missing-policy-topic",
+      "intentId": "consult-policy",
+      "stage": "collect-policy-topic",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide the policy topic so I can help you."
+    },
+    {
+      "responseId": "consult-policy-resolved",
+      "intentId": "consult-policy",
+      "stage": "resolve-policy",
+      "status": "resolved",
+      "messageTemplate": "The policy information has been retrieved."
     },
     {
       "responseId": "handoff-requested",

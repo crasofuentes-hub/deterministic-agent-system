@@ -49,6 +49,24 @@ function extractOrderId(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractPolicyTopic(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText).toLowerCase();
+
+  if (/\breturn policy\b|\breturns\b|\breturn window\b/.test(normalized)) {
+    return "return-policy";
+  }
+
+  if (/\brefund policy\b|\brefunds\b|\brefund\b/.test(normalized)) {
+    return "refund-policy";
+  }
+
+  if (/\bcancellation policy\b|\bcancel policy\b|\bcancellation\b|\bcancel order\b/.test(normalized)) {
+    return "cancellation-policy";
+  }
+
+  return undefined;
+}
+
 function isGenericProductReference(value: string): boolean {
   const normalized = value.trim().toLowerCase();
 
@@ -112,12 +130,21 @@ function extractProductName(messageText: string): string | undefined {
 export function extractEntitiesFromText(messageText: string): ExtractedEntity[] {
   const out: ExtractedEntity[] = [];
   const orderId = extractOrderId(messageText);
+  const policyTopic = extractPolicyTopic(messageText);
   const productName = extractProductName(messageText);
 
   if (orderId) {
     out.push({
       entityId: "orderId",
       value: orderId,
+      confidence: "derived",
+    });
+  }
+
+  if (policyTopic) {
+    out.push({
+      entityId: "policyTopic",
+      value: policyTopic,
       confidence: "derived",
     });
   }

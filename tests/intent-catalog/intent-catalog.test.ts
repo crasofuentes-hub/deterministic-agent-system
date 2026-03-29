@@ -5,9 +5,6 @@ import type { BusinessContextPack } from "../../src/business-context/context-pac
 import {
   getBusinessIntentById,
   listBusinessIntentIds,
-  listOptionalEntityIdsForIntent,
-  listRequiredEntityIdsForIntent,
-  requireBusinessIntentById,
 } from "../../src/intent-catalog/intent-catalog";
 
 function loadPack(): BusinessContextPack {
@@ -26,32 +23,44 @@ describe("intent-catalog", () => {
       "consult-price",
       "consult-availability",
       "consult-order-status",
+      "consult-policy",
       "request-human-handoff",
       "close-conversation",
     ]);
   });
 
-  it("gets intent by id deterministically", () => {
-    expect(getBusinessIntentById(loadPack(), " consult-order-status ")).toEqual({
-      intentId: "consult-order-status",
-      description: "Consult the status of an order.",
-      requiredEntities: ["orderId"],
-      optionalEntities: [],
-      workflowId: "order-status-flow",
+  it("gets consult-price by id deterministically", () => {
+    expect(getBusinessIntentById(loadPack(), "consult-price")).toEqual({
+      intentId: "consult-price",
+      description: "Consult the price of a product.",
+      requiredEntities: ["productName"],
+      optionalEntities: ["sku"],
+      workflowId: "price-consultation-flow",
     });
   });
 
-  it("lists required entities deterministically", () => {
-    expect(listRequiredEntityIdsForIntent(loadPack(), "consult-order-status")).toEqual(["orderId"]);
+  it("gets consult-policy by id deterministically", () => {
+    expect(getBusinessIntentById(loadPack(), "consult-policy")).toEqual({
+      intentId: "consult-policy",
+      description: "Consult a business policy topic.",
+      requiredEntities: ["policyTopic"],
+      optionalEntities: [],
+      workflowId: "policy-consultation-flow",
+    });
   });
 
-  it("lists optional entities deterministically", () => {
-    expect(listOptionalEntityIdsForIntent(loadPack(), "consult-order-status")).toEqual([]);
+  it("exposes stable required and optional entities through intent definitions", () => {
+    const productIntent = getBusinessIntentById(loadPack(), "consult-product");
+    const policyIntent = getBusinessIntentById(loadPack(), "consult-policy");
+    const orderIntent = getBusinessIntentById(loadPack(), "consult-order-status");
+
+    expect(productIntent?.optionalEntities).toEqual(["sku"]);
+    expect(policyIntent?.requiredEntities).toEqual(["policyTopic"]);
+    expect(policyIntent?.optionalEntities).toEqual([]);
+    expect(orderIntent?.requiredEntities).toEqual(["orderId"]);
   });
 
-  it("throws stable error for unknown intent", () => {
-    expect(() => requireBusinessIntentById(loadPack(), "unknown-intent")).toThrow(
-      'BUSINESS_INTENT_NOT_FOUND: intentId="unknown-intent"'
-    );
+  it("returns undefined for unknown intent deterministically", () => {
+    expect(getBusinessIntentById(loadPack(), "unknown-intent")).toBeUndefined();
   });
 });

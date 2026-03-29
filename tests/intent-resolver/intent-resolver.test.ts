@@ -23,6 +23,13 @@ describe("intent-resolver", () => {
     });
   });
 
+  it("resolves policy deterministically", () => {
+    expect(resolveIntentFromText("What is your return policy?")).toEqual({
+      intentId: "consult-policy",
+      confidence: "rule",
+    });
+  });
+
   it("resolves availability from natural inventory phrasing", () => {
     expect(resolveIntentFromText("Do you have Laptop X Pro?")).toEqual({
       intentId: "consult-availability",

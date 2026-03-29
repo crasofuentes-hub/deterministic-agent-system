@@ -4,6 +4,7 @@ import type { BusinessContextPack } from "../business-context/context-pack";
 import { orchestrateConversationTurn } from "../conversation-orchestrator/conversation-orchestrator";
 import { findKnowledgeByProductName } from "../data-layer/knowledge-base-repository";
 import { findOrderById } from "../data-layer/order-repository";
+import { findPolicyByTopic } from "../data-layer/policy-repository";
 import { findProductByName } from "../data-layer/product-repository";
 import { extractEntitiesFromText } from "../entity-extractor/entity-extractor";
 import { resolveIntentFromText } from "../intent-resolver/intent-resolver";
@@ -131,6 +132,20 @@ function sanitizeOrderIdCandidate(value: string): string | undefined {
   return cleaned;
 }
 
+function sanitizePolicyTopicCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toLowerCase();
+
+  if (
+    cleaned === "return-policy" ||
+    cleaned === "refund-policy" ||
+    cleaned === "cancellation-policy"
+  ) {
+    return cleaned;
+  }
+
+  return undefined;
+}
+
 function hasMalformedOrderIdSignal(userMessageText: string): boolean {
   const raw = String(userMessageText).normalize("NFC").trim().toUpperCase();
 
@@ -161,6 +176,10 @@ function getAllowedEntityIdsForIntent(intentId: string): string[] {
     return ["orderId"];
   }
 
+  if (intentId === "consult-policy") {
+    return ["policyTopic"];
+  }
+
   return [];
 }
 
@@ -182,6 +201,10 @@ function hasExplicitIntentSignal(userMessageText: string, intentId: string): boo
 
   if (intentId === "close-conversation") {
     return /close|end conversation|finish conversation|goodbye|bye|exit/.test(text);
+  }
+
+  if (intentId === "consult-policy") {
+    return /policy|refund|return|cancellation/.test(text);
   }
 
   if (intentId === "consult-order-status") {
@@ -318,6 +341,20 @@ function buildResolvedResponse(
     );
   }
 
+  if (resolvedIntentId === "consult-policy") {
+    const policyTopic = sanitizePolicyTopicCandidate(findEntityValue(session, "policyTopic") ?? "");
+    if (!policyTopic) {
+      return undefined;
+    }
+
+    const policy = findPolicyByTopic(policyTopic);
+    if (!policy) {
+      return "The policy information was not found.";
+    }
+
+    return "Policy: " + policy.title + " | Summary: " + policy.summary;
+  }
+
   return undefined;
 }
 
@@ -349,6 +386,8 @@ export function runCustomerServiceAgent(params: {
       sanitizedValue = sanitizeProductNameCandidate(entity.value);
     } else if (entity.entityId === "orderId") {
       sanitizedValue = sanitizeOrderIdCandidate(entity.value);
+    } else if (entity.entityId === "policyTopic") {
+      sanitizedValue = sanitizePolicyTopicCandidate(entity.value);
     } else {
       sanitizedValue = normalizeLooseEntityText(entity.value);
     }

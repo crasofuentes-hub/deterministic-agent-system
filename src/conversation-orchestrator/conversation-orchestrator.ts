@@ -32,6 +32,10 @@ function resolveMissingStage(intentId: string): string {
     return "collect-order-id";
   }
 
+  if (intentId === "consult-policy") {
+    return "collect-policy-topic";
+  }
+
   return "collect-missing-data";
 }
 
@@ -50,6 +54,10 @@ function resolveResolvedStage(intentId: string): string {
 
   if (intentId === "consult-order-status") {
     return "resolve-order-status";
+  }
+
+  if (intentId === "consult-policy") {
+    return "resolve-policy";
   }
 
   return "done";
@@ -72,6 +80,10 @@ function resolveMissingResponseId(intentId: string): string {
     return "consult-order-status-missing-order-id";
   }
 
+  if (intentId === "consult-policy") {
+    return "consult-policy-missing-policy-topic";
+  }
+
   return "missing-data";
 }
 
@@ -90,6 +102,10 @@ function resolveResolvedResponseId(intentId: string): string {
 
   if (intentId === "consult-order-status") {
     return "consult-order-status-resolved";
+  }
+
+  if (intentId === "consult-policy") {
+    return "consult-policy-resolved";
   }
 
   return "resolved";
