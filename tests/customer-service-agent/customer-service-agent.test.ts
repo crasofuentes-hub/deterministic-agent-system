@@ -33,7 +33,7 @@ describe("customer-service-agent", () => {
     expect(result.responseId).toBe("consult-product-resolved");
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
-      "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: available | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection."
+      "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: eligible | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection."
     );
   });
 
@@ -50,18 +50,21 @@ describe("customer-service-agent", () => {
     expect(result.responseText).toBe("Product: Personal Auto Standard | Price: 128.50 USD");
   });
 
-  it("returns real availability data", () => {
+  it("returns rich broker eligibility data", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-003",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "Is General Liability Core available?",
+      userMessageText: "Is General Liability Core eligible?",
     });
 
     expect(result.resolvedIntentId).toBe("consult-availability");
     expect(result.responseText).toBe(
-      "Product: General Liability Core | Availability: broker-review | Stock: 999"
+      "Product: General Liability Core | Availability: broker-review | Eligibility: broker-review-required | Broker Review Required: True | Underwriting Review Required: False | Additional Documents Required: False | Notes: Broker review is required before this coverage option can be confirmed."
+        .replace("True", "true")
+        .replace("False", "false")
+        .replace("False", "false")
     );
   });
 

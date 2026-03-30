@@ -83,7 +83,7 @@ describe("customer-service-agent e2e", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "consult-product",
       responseId: "consult-product-resolved",
-      responseText: "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: available | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection.",
+      responseText: "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: eligible | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection.",
       stage: "resolve-product",
       status: "resolved",
       humanInterventionRequired: false,
@@ -115,22 +115,26 @@ describe("customer-service-agent e2e", () => {
     });
   });
 
-  it("returns canonical invalid-request-id response end-to-end", () => {
+  it("returns rich broker eligibility end-to-end", () => {
     const result = runCustomerServiceApi({
       sessionId: "E2E-005",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "What is the status of order ORDER-??",
+      userMessageText: "Is General Liability Core eligible?",
       userTurnId: "u1",
       userCreatedAtIso: "2026-03-10T10:13:00Z",
     });
 
-    expect(result.resolvedIntentId).toBe("consult-order-status");
-    expect(result.status).toBe("missing-entity");
-    expect(result.humanInterventionRequired).toBe(false);
-    expect(result.handoffReasonCode).toBeUndefined();
-    expect(result.handoffQueue).toBeUndefined();
-    expect(result.responseText).toBe(
-      "The provided order ID format is invalid. Please provide a valid order ID and try again."
-    );
+    expect(result).toEqual({
+      sessionId: "E2E-005",
+      businessContextId: "customer-service-core-v2",
+      resolvedIntentId: "consult-availability",
+      responseId: "consult-availability-resolved",
+      responseText: "Product: General Liability Core | Availability: broker-review | Eligibility: broker-review-required | Broker Review Required: true | Underwriting Review Required: false | Additional Documents Required: false | Notes: Broker review is required before this coverage option can be confirmed.",
+      stage: "resolve-availability",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
   });
 });

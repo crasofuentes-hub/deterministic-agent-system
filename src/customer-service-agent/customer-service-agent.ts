@@ -318,8 +318,15 @@ function buildResolvedResponse(
       product.name +
       " | Availability: " +
       product.availability +
-      " | Stock: " +
-      String(product.stockQuantity)
+      " | Eligibility: " +
+      String(product.eligibilityStatus ?? product.availability) +
+      " | Broker Review Required: " +
+      String(Boolean(product.brokerReviewRequired)) +
+      " | Underwriting Review Required: " +
+      String(Boolean(product.underwritingReviewRequired)) +
+      " | Additional Documents Required: " +
+      String(Boolean(product.additionalDocumentsRequired)) +
+      (product.availabilityNotes ? " | Notes: " + product.availabilityNotes : "")
     );
   }
 

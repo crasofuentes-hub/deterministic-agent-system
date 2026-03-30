@@ -1,13 +1,16 @@
-export type ProductAvailability = "in-stock" | "low-stock" | "out-of-stock";
-
 export interface ProductRecord {
   productId: string;
   sku: string;
   name: string;
   price: number;
   currency: string;
-  availability: ProductAvailability;
+  availability: string;
   stockQuantity: number;
+  eligibilityStatus?: string;
+  underwritingReviewRequired?: boolean;
+  brokerReviewRequired?: boolean;
+  additionalDocumentsRequired?: boolean;
+  availabilityNotes?: string;
 }
 
 export interface OrderRecord {

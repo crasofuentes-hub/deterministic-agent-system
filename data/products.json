@@ -5,8 +5,13 @@
     "name": "Personal Auto Standard",
     "price": 128.50,
     "currency": "USD",
-    "availability": "available",
-    "stockQuantity": 999
+    "availability": "eligible",
+    "stockQuantity": 999,
+    "eligibilityStatus": "eligible",
+    "underwritingReviewRequired": false,
+    "brokerReviewRequired": false,
+    "additionalDocumentsRequired": false,
+    "availabilityNotes": "This coverage option is currently eligible for standard broker quoting."
   },
   {
     "productId": "prod-commercial-property-plus",
@@ -14,8 +19,13 @@
     "name": "Commercial Property Plus",
     "price": 412.75,
     "currency": "USD",
-    "availability": "available",
-    "stockQuantity": 999
+    "availability": "underwriting-review",
+    "stockQuantity": 999,
+    "eligibilityStatus": "underwriting-review-required",
+    "underwritingReviewRequired": true,
+    "brokerReviewRequired": false,
+    "additionalDocumentsRequired": true,
+    "availabilityNotes": "Underwriting review and supporting property documents are required before the quote can be finalized."
   },
   {
     "productId": "prod-general-liability-core",
@@ -24,6 +34,11 @@
     "price": 265.00,
     "currency": "USD",
     "availability": "broker-review",
-    "stockQuantity": 999
+    "stockQuantity": 999,
+    "eligibilityStatus": "broker-review-required",
+    "underwritingReviewRequired": false,
+    "brokerReviewRequired": true,
+    "additionalDocumentsRequired": false,
+    "availabilityNotes": "Broker review is required before this coverage option can be confirmed."
   }
 ]

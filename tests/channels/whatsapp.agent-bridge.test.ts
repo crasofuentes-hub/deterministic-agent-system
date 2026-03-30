@@ -89,7 +89,7 @@ describe("whatsapp agent bridge", () => {
       customerId: "5215512345678",
       inboundMessageId: "wamid.test.004",
       outboundText:
-        "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: available | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection.",
+        "Product: Personal Auto Standard | SKU: AUTO-PERS-STD | Price: 128.50 USD | Availability: eligible | Summary: Personal Auto Standard is an entry-level personal auto coverage option for everyday drivers seeking basic liability and property damage protection.",
       responseId: "consult-product-resolved",
       resolvedIntentId: "consult-product",
       stage: "resolve-product",
