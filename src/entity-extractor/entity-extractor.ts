@@ -11,16 +11,19 @@ function normalizeText(value: string): string {
 function cleanCapturedValue(value: string): string {
   return normalizeText(value)
     .replace(/^[\s:,-]+/, "")
+    .replace(/^for\s+/i, "")
     .replace(/[\s?!.,;:]+$/g, "")
     .trim();
 }
 
 function containsOrderOnlyLanguage(text: string): boolean {
-  return /\b(order|purchase|status|tracking|shipment|shipping)\b/i.test(text);
+  return /\b(order|purchase|request|application|submission|status|tracking|shipment|shipping)\b/i.test(
+    text
+  );
 }
 
 function containsProductLanguage(text: string): boolean {
-  return /\b(price|cost|pricing|available|availability|stock|details|information|info|product)\b/i.test(
+  return /\b(price|cost|pricing|premium|quote|available|availability|eligibility|details|information|info|product|coverage)\b/i.test(
     text
   );
 }
@@ -34,8 +37,8 @@ function extractOrderId(messageText: string): string | undefined {
   }
 
   const patterns = [
-    /\b(?:order|purchase)\s*(?:id)?\s*[:#-]?\s*([A-Z0-9-]{4,})\b/i,
-    /\bstatus\s+of\s+(?:my\s+)?order\s+([A-Z0-9-]{4,})\b/i,
+    /\b(?:order|purchase|request|application)\s*(?:id)?\s*[:#-]?\s*([A-Z0-9-]{4,})\b/i,
+    /\bstatus\s+of\s+(?:my\s+)?(?:order|request|application)\s+([A-Z0-9-]{4,})\b/i,
   ];
 
   for (const pattern of patterns) {
@@ -52,11 +55,24 @@ function extractOrderId(messageText: string): string | undefined {
 function extractPolicyTopic(messageText: string): string | undefined {
   const normalized = normalizeText(messageText).toLowerCase();
 
-  if (/\breturn policy\b|\breturns\b|\breturn window\b|\breturn an item\b/.test(normalized)) {
+  if (
+    /\breturn policy\b/.test(normalized) ||
+    /\breturns\b/.test(normalized) ||
+    /\breturn window\b/.test(normalized) ||
+    /\bpolicy documents\b/.test(normalized) ||
+    /\bdocument delivery\b/.test(normalized) ||
+    /\bdocuments issued\b/.test(normalized)
+  ) {
     return "return-policy";
   }
 
-  if (/\brefund policy\b|\brefunds\b|\brefund\b|\brefund take\b|\brefund timing\b/.test(normalized)) {
+  if (
+    /\brefund policy\b/.test(normalized) ||
+    /\brefunds\b/.test(normalized) ||
+    /\brefund\b/.test(normalized) ||
+    /\brefund timing\b/.test(normalized) ||
+    /\bpremium adjustment\b/.test(normalized)
+  ) {
     return "refund-policy";
   }
 
@@ -67,7 +83,9 @@ function extractPolicyTopic(messageText: string): string | undefined {
     /\bcancel order\b/.test(normalized) ||
     /\bcancel an order\b/.test(normalized) ||
     /\bcancel my order\b/.test(normalized) ||
-    /\bcancel.*shipment\b/.test(normalized)
+    /\bcancel.*shipment\b/.test(normalized) ||
+    /\bcancel before binding\b/.test(normalized) ||
+    /\bbinding\b/.test(normalized)
   ) {
     return "cancellation-policy";
   }
@@ -81,7 +99,8 @@ function extractPolicyAspect(messageText: string): string | undefined {
   if (
     /\bhow many days\b/.test(normalized) ||
     /\breturn window\b/.test(normalized) ||
-    /\bwithin how many days\b/.test(normalized)
+    /\bwithin how many days\b/.test(normalized) ||
+    /\bwhen will.*documents\b/.test(normalized)
   ) {
     return "return-window";
   }
@@ -89,7 +108,8 @@ function extractPolicyAspect(messageText: string): string | undefined {
   if (
     /\bhow long\b.*\brefund/.test(normalized) ||
     /\brefund timing\b/.test(normalized) ||
-    /\bwhen.*refund/.test(normalized)
+    /\bwhen.*refund/.test(normalized) ||
+    /\bpremium adjustment\b/.test(normalized)
   ) {
     return "refund-timing";
   }
@@ -98,6 +118,7 @@ function extractPolicyAspect(messageText: string): string | undefined {
     /\bcan i cancel\b/.test(normalized) ||
     /\bcancel after shipment\b/.test(normalized) ||
     /\bcancel before shipment\b/.test(normalized) ||
+    /\bcancel before binding\b/.test(normalized) ||
     /\bcancellation eligibility\b/.test(normalized)
   ) {
     return "cancellation-eligibility";
@@ -116,7 +137,9 @@ function isGenericProductReference(value: string): boolean {
     normalized === "this" ||
     normalized === "that" ||
     normalized === "this product" ||
-    normalized === "that product"
+    normalized === "that product" ||
+    normalized === "this coverage" ||
+    normalized === "that coverage"
   );
 }
 
@@ -127,15 +150,31 @@ function extractProductName(messageText: string): string | undefined {
     return undefined;
   }
 
+  const eligibilityMatch = normalized.match(/^is\s+(.+?)\s+(?:available|eligible|broker\s+review)\??$/i);
+  if (eligibilityMatch?.[1]) {
+    const cleaned = cleanCapturedValue(eligibilityMatch[1]);
+    if (cleaned.length > 0 && !isGenericProductReference(cleaned)) {
+      return cleaned;
+    }
+  }
+
   const patterns = [
     /price\s+of\s+(.+)$/i,
     /cost\s+of\s+(.+)$/i,
     /pricing\s+for\s+(.+)$/i,
+    /premium\s+for\s+(.+)$/i,
+    /quote\s+for\s+(.+)$/i,
     /how\s+much\s+(?:is|does)\s+(.+)$/i,
     /availability\s+of\s+(.+)$/i,
+    /eligibility\s+for\s+(.+)$/i,
+    /coverage\s+for\s+(.+)$/i,
+    /coverage\s+options\s+do\s+you\s+offer\s+for\s+(.+)$/i,
     /is\s+(.+?)\s+available$/i,
-    /is\s+(.+?)\s+in\s+stock$/i,
-    /do\s+you\s+have\s+(.+?)(?:\s+in\s+stock)?$/i,
+    /is\s+(.+?)\s+eligible$/i,
+    /is\s+(.+?)\s+broker\s+review$/i,
+    /is\s+(.+?)\s+(?:available|eligible)$/i,
+    /do\s+you\s+have\s+(.+?)$/i,
+    /do\s+you\s+offer\s+(.+?)$/i,
     /do\s+you\s+carry\s+(.+)$/i,
     /details\s+about\s+(.+)$/i,
     /information\s+about\s+(.+)$/i,
@@ -146,6 +185,7 @@ function extractProductName(messageText: string): string | undefined {
     /what\s+can\s+you\s+tell\s+me\s+about\s+(.+)$/i,
     /can\s+you\s+tell\s+me\s+about\s+(.+)$/i,
     /product\s+information\s+about\s+(.+)$/i,
+    /coverage\s+option\s+(.+)$/i,
   ];
 
   for (const pattern of patterns) {

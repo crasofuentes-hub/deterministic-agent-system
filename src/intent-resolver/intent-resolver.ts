@@ -23,6 +23,11 @@ function isHumanHandoffIntent(text: string): boolean {
     "talk to an agent",
     "speak with an agent",
     "human support",
+    "licensed broker",
+    "broker specialist",
+    "speak with a broker",
+    "talk to a broker",
+    "broker advisor",
   ]);
 }
 
@@ -53,12 +58,33 @@ function isPolicyIntent(text: string): boolean {
     "return window",
     "cancellation",
     "cancel",
+    "policy documents",
+    "documents issued",
+    "document delivery",
+    "premium adjustment",
+    "binding",
+    "endorsement",
   ]);
 }
 
 function isOrderStatusIntent(text: string): boolean {
-  const hasOrderWord = includesAny(text, ["order", "purchase"]);
-  const hasStatusWord = includesAny(text, ["status", "tracking", "update", "shipment", "shipping"]);
+  const hasOrderWord = includesAny(text, [
+    "order",
+    "purchase",
+    "request",
+    "application",
+    "submission",
+  ]);
+  const hasStatusWord = includesAny(text, [
+    "status",
+    "tracking",
+    "update",
+    "shipment",
+    "shipping",
+    "under review",
+    "documents pending",
+    "issued",
+  ]);
 
   return hasOrderWord && hasStatusWord;
 }
@@ -75,11 +101,25 @@ function isAvailabilityIntent(text: string): boolean {
     "carry",
     "have this",
     "have it",
+    "eligible",
+    "eligibility",
+    "broker review",
+    "offer",
+    "coverage options",
   ]);
 }
 
 function isPriceIntent(text: string): boolean {
-  return includesAny(text, ["price", "cost", "how much", "pricing", "quote"]);
+  return includesAny(text, [
+    "price",
+    "cost",
+    "how much",
+    "pricing",
+    "quote",
+    "premium",
+    "estimated premium",
+    "monthly premium",
+  ]);
 }
 
 function isProductInfoIntent(text: string): boolean {
@@ -94,6 +134,11 @@ function isProductInfoIntent(text: string): boolean {
     "more about",
     "about this product",
     "about the product",
+    "coverage option",
+    "coverage options",
+    "coverage for",
+    "policy option",
+    "plan details",
   ]);
 }
 

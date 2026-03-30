@@ -2,98 +2,101 @@ import { describe, expect, it } from "vitest";
 import { extractEntitiesFromText } from "../../src/entity-extractor/entity-extractor";
 
 describe("entity-extractor", () => {
-  it("extracts orderId from English order-status message", () => {
-    expect(extractEntitiesFromText("What is the status of my order ORDER-55555?")).toContainEqual({
+  it("extracts orderId from application-status message", () => {
+    expect(extractEntitiesFromText("What is the status of my application ORDER-55555?")).toContainEqual({
       entityId: "orderId",
       value: "ORDER-55555",
       confidence: "derived",
     });
   });
 
-  it("extracts productName from English price message", () => {
-    expect(extractEntitiesFromText("I want to know the price of Laptop X Pro")).toContainEqual({
+  it("extracts productName from premium message", () => {
+    expect(extractEntitiesFromText("What is the estimated premium for Personal Auto Standard"))
+      .toContainEqual({
+        entityId: "productName",
+        value: "Personal Auto Standard",
+        confidence: "derived",
+      });
+  });
+
+  it("extracts productName from eligibility message", () => {
+    expect(extractEntitiesFromText("Is General Liability Core eligible?")).toContainEqual({
       entityId: "productName",
-      value: "Laptop X Pro",
+      value: "General Liability Core",
       confidence: "derived",
     });
   });
 
-  it("extracts productName from English availability message", () => {
-    expect(extractEntitiesFromText("Do you have Laptop X Pro in stock")).toContainEqual({
-      entityId: "productName",
-      value: "Laptop X Pro",
-      confidence: "derived",
-    });
-  });
-
-  it("extracts productName from English product-information message", () => {
-    expect(extractEntitiesFromText("I need product information about Laptop X Pro")).toContainEqual(
+  it("extracts productName from coverage-information message", () => {
+    expect(extractEntitiesFromText("Can you tell me about Commercial Property Plus")).toContainEqual(
       {
         entityId: "productName",
-        value: "Laptop X Pro",
+        value: "Commercial Property Plus",
         confidence: "derived",
       }
     );
   });
 
-  it("extracts productName from natural product-information phrasing", () => {
-    expect(extractEntitiesFromText("Can you tell me about Laptop X Pro")).toContainEqual({
+  it("falls back to raw product name for short coverage-only message", () => {
+    expect(extractEntitiesFromText("Personal Auto Standard")).toContainEqual({
       entityId: "productName",
-      value: "Laptop X Pro",
+      value: "Personal Auto Standard",
       confidence: "derived",
     });
   });
 
-  it("falls back to raw product name for short product-only message", () => {
-    expect(extractEntitiesFromText("Laptop X Pro")).toContainEqual({
-      entityId: "productName",
-      value: "Laptop X Pro",
-      confidence: "derived",
-    });
-  });
-
-  it("extracts policyTopic from return policy message", () => {
-    expect(extractEntitiesFromText("What is your return policy?")).toContainEqual({
+  it("extracts policyTopic from policy documents phrasing", () => {
+    expect(extractEntitiesFromText("When will my policy documents be issued?")).toContainEqual({
       entityId: "policyTopic",
       value: "return-policy",
       confidence: "derived",
     });
   });
 
-  it("extracts policyAspect for return window questions", () => {
-    expect(extractEntitiesFromText("How many days do I have to return an item?")).toContainEqual({
+  it("extracts policyAspect for document delivery timing questions", () => {
+    expect(extractEntitiesFromText("When will my policy documents be issued?")).toContainEqual({
       entityId: "policyAspect",
       value: "return-window",
       confidence: "derived",
     });
   });
 
-  it("extracts policyAspect for refund timing questions", () => {
-    expect(extractEntitiesFromText("How long do refunds take?")).toContainEqual({
+  it("extracts policyAspect for premium adjustment timing questions", () => {
+    expect(extractEntitiesFromText("How long does a premium adjustment take?")).toContainEqual({
       entityId: "policyAspect",
       value: "refund-timing",
       confidence: "derived",
     });
   });
 
-  it("extracts policyAspect for cancellation eligibility questions", () => {
-    expect(extractEntitiesFromText("Can I cancel an order after shipment?")).toContainEqual({
+  it("extracts policyAspect for cancellation-before-binding questions", () => {
+    expect(extractEntitiesFromText("Can I cancel before binding?")).toContainEqual({
       entityId: "policyAspect",
       value: "cancellation-eligibility",
       confidence: "derived",
     });
   });
 
-  it("extracts cancellation policy topic from shipment cancellation phrasing", () => {
-    expect(extractEntitiesFromText("Can I cancel an order after shipment?")).toContainEqual({
+  it("extracts cancellation policy topic from binding phrasing", () => {
+    expect(extractEntitiesFromText("Can I cancel before binding?")).toContainEqual({
       entityId: "policyTopic",
       value: "cancellation-policy",
       confidence: "derived",
     });
   });
 
-  it("does not falsely extract productName from order-only message", () => {
-    const entities = extractEntitiesFromText("I want to know my order status");
+  it("extracts productName from coverage-options phrasing", () => {
+    expect(
+      extractEntitiesFromText("What coverage options do you offer for commercial property?")
+    ).toContainEqual({
+      entityId: "productName",
+      value: "commercial property",
+      confidence: "derived",
+    });
+  });
+
+  it("does not falsely extract productName from application-status-only message", () => {
+    const entities = extractEntitiesFromText("I want to know my application status");
     expect(entities.find((item) => item.entityId === "productName")).toBeUndefined();
   });
 });
