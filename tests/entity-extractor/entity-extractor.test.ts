@@ -53,18 +53,34 @@ describe("entity-extractor", () => {
     });
   });
 
-  it("extracts policyAspect for document delivery timing questions", () => {
+  it("extracts policyAspect for document delivery status questions", () => {
     expect(extractEntitiesFromText("When will my policy documents be issued?")).toContainEqual({
       entityId: "policyAspect",
-      value: "return-window",
+      value: "document-delivery-status",
       confidence: "derived",
     });
   });
 
   it("extracts policyAspect for premium adjustment timing questions", () => {
-    expect(extractEntitiesFromText("How long does a premium adjustment take?")).toContainEqual({
+    expect(extractEntitiesFromText("How long does a refund take?")).toContainEqual({
       entityId: "policyAspect",
       value: "refund-timing",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts policyAspect for premium adjustment guidance questions", () => {
+    expect(extractEntitiesFromText("How do I request a premium adjustment?")).toContainEqual({
+      entityId: "policyAspect",
+      value: "premium-adjustment-guidance",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts policyAspect for endorsement guidance questions", () => {
+    expect(extractEntitiesFromText("How do I request a policy change?")).toContainEqual({
+      entityId: "policyAspect",
+      value: "endorsement-guidance",
       confidence: "derived",
     });
   });

@@ -251,4 +251,54 @@ describe("customer-service semantic invariants", () => {
       "I could not find policy information for the provided policy topic. Please verify the policy topic and try again."
     );
   });
+  it("keeps consult-policy guidance canonical for document delivery status", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "INV-012",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "When will my policy documents be issued?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy");
+    expect(result.responseId).toBe("consult-policy-resolved");
+    expect(result.stage).toBe("resolve-policy");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.responseText).toBe(
+      "Policy: Policy Document Delivery Policy | Document Delivery Status: Document delivery status checks are supported. Document delivery status can be reviewed by a broker specialist when binding has been completed and all required underwriting documents have been received."
+    );
+  });
+
+  it("keeps consult-policy guidance canonical for premium adjustment requests", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "INV-013",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "How do I request a premium adjustment?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy");
+    expect(result.responseId).toBe("consult-policy-resolved");
+    expect(result.stage).toBe("resolve-policy");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.responseText).toBe(
+      "Policy: Premium Adjustment Policy | Premium Adjustment Guidance: Premium adjustment requests are supported. Premium adjustment requests may require broker review, underwriting confirmation, and supporting policy change details before the adjustment is finalized."
+    );
+  });
+
+  it("keeps consult-policy guidance canonical for endorsement requests", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "INV-014",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "How do I request a policy change?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy");
+    expect(result.responseId).toBe("consult-policy-resolved");
+    expect(result.stage).toBe("resolve-policy");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.responseText).toBe(
+      "Policy: Cancellation Policy | Endorsement Guidance: Policy change and endorsement requests are supported. Policy change and endorsement requests may be submitted through a broker specialist and may require carrier approval before the updated documents are issued."
+    );
+  });
 });

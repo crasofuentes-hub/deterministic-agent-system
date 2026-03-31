@@ -163,7 +163,10 @@ function sanitizePolicyAspectCandidate(value: string): string | undefined {
 
   if (
     cleaned === "return-window" ||
+    cleaned === "document-delivery-status" ||
     cleaned === "refund-timing" ||
+    cleaned === "premium-adjustment-guidance" ||
+    cleaned === "endorsement-guidance" ||
     cleaned === "cancellation-eligibility"
   ) {
     return cleaned;
@@ -406,6 +409,21 @@ function buildResolvedResponse(
     }
 
     if (
+      policyAspect === "document-delivery-status" &&
+      typeof policy.documentDeliveryStatusSupported === "boolean"
+    ) {
+      return (
+        "Policy: " +
+        policy.title +
+        " | Document Delivery Status: " +
+        (policy.documentDeliveryStatusSupported
+          ? "Document delivery status checks are supported."
+          : "Document delivery status checks are not supported.") +
+        (policy.documentDeliveryStatusNotes ? " " + policy.documentDeliveryStatusNotes : "")
+      );
+    }
+
+    if (
       policyAspect === "refund-timing" &&
       typeof policy.refundProcessingBusinessDaysMin === "number" &&
       typeof policy.refundProcessingBusinessDaysMax === "number"
@@ -418,6 +436,36 @@ function buildResolvedResponse(
         " to " +
         String(policy.refundProcessingBusinessDaysMax) +
         " business days after the return is processed."
+      );
+    }
+
+    if (
+      policyAspect === "premium-adjustment-guidance" &&
+      typeof policy.premiumAdjustmentRequestSupported === "boolean"
+    ) {
+      return (
+        "Policy: " +
+        policy.title +
+        " | Premium Adjustment Guidance: " +
+        (policy.premiumAdjustmentRequestSupported
+          ? "Premium adjustment requests are supported."
+          : "Premium adjustment requests are not supported.") +
+        (policy.premiumAdjustmentRequestNotes ? " " + policy.premiumAdjustmentRequestNotes : "")
+      );
+    }
+
+    if (
+      policyAspect === "endorsement-guidance" &&
+      typeof policy.endorsementRequestSupported === "boolean"
+    ) {
+      return (
+        "Policy: " +
+        policy.title +
+        " | Endorsement Guidance: " +
+        (policy.endorsementRequestSupported
+          ? "Policy change and endorsement requests are supported."
+          : "Policy change and endorsement requests are not supported.") +
+        (policy.endorsementRequestNotes ? " " + policy.endorsementRequestNotes : "")
       );
     }
 

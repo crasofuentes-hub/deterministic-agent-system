@@ -85,7 +85,12 @@ function extractPolicyTopic(messageText: string): string | undefined {
     /\bcancel my order\b/.test(normalized) ||
     /\bcancel.*shipment\b/.test(normalized) ||
     /\bcancel before binding\b/.test(normalized) ||
-    /\bbinding\b/.test(normalized)
+    /\bbinding\b/.test(normalized) ||
+    /\bpolicy change\b/.test(normalized) ||
+    /\bchange my policy\b/.test(normalized) ||
+    /\brequest a policy change\b/.test(normalized) ||
+    /\bendorsement\b/.test(normalized) ||
+    /\bupdate my policy\b/.test(normalized)
   ) {
     return "cancellation-policy";
   }
@@ -99,19 +104,45 @@ function extractPolicyAspect(messageText: string): string | undefined {
   if (
     /\bhow many days\b/.test(normalized) ||
     /\breturn window\b/.test(normalized) ||
-    /\bwithin how many days\b/.test(normalized) ||
-    /\bwhen will.*documents\b/.test(normalized)
+    /\bwithin how many days\b/.test(normalized)
   ) {
     return "return-window";
   }
 
   if (
+    /\bwhen will.*documents\b/.test(normalized) ||
+    /\bdocument delivery status\b/.test(normalized) ||
+    /\bpolicy document status\b/.test(normalized) ||
+    /\bcheck document delivery\b/.test(normalized)
+  ) {
+    return "document-delivery-status";
+  }
+
+  if (
     /\bhow long\b.*\brefund/.test(normalized) ||
     /\brefund timing\b/.test(normalized) ||
-    /\bwhen.*refund/.test(normalized) ||
-    /\bpremium adjustment\b/.test(normalized)
+    /\bwhen.*refund/.test(normalized)
   ) {
     return "refund-timing";
+  }
+
+  if (
+    /\bpremium adjustment request\b/.test(normalized) ||
+    /\brequest a premium adjustment\b/.test(normalized) ||
+    /\bhow do i request a premium adjustment\b/.test(normalized) ||
+    /\bpremium adjustment\b/.test(normalized)
+  ) {
+    return "premium-adjustment-guidance";
+  }
+
+  if (
+    /\bpolicy change\b/.test(normalized) ||
+    /\bchange my policy\b/.test(normalized) ||
+    /\brequest a policy change\b/.test(normalized) ||
+    /\bendorsement\b/.test(normalized) ||
+    /\bupdate my policy\b/.test(normalized)
+  ) {
+    return "endorsement-guidance";
   }
 
   if (

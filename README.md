@@ -18,6 +18,7 @@ This project is intentionally engineered for environments where correctness, tra
 - System Design Principles
 - Operational Guarantees and Boundaries
 - Current Development Status
+- Stable Insurance Brokerage Slice (v0.4.0)
 - Repository Structure
 - Quickstart (Windows PowerShell + TypeScript)
 - High-Level Architecture
@@ -230,6 +231,28 @@ When boundary violations occur, the correct system behavior is to surface the pr
 ---
 
 ## Current Development Status
+### v0.4.0 stable slice update
+
+The repository now includes a verified stable business slice for **Northwind Insurance Brokers** in addition to the broader deterministic agent platform work.
+
+This stabilized slice currently covers:
+
+- insurance coverage information
+- premium / price lookup
+- broker-style eligibility guidance
+- request / application status
+- policy document delivery guidance
+- premium adjustment guidance
+- policy change / endorsement guidance
+- deterministic human handoff
+- deterministic WhatsApp channel mapping
+
+Current verified stable baseline:
+
+- **20 test files**
+- **130 tests**
+- **0 failures**
+
 
 ### Implemented and verified (current main)
 
@@ -335,6 +358,46 @@ The intent of this path is controlled materialization of plans, not unconstraine
 | Next | Stronger contract assertions | Expand verification beyond minimum shape into more semantic result guarantees |
 | Next | Additional deterministic tools | Increase practical agent value while keeping bounded and verifiable behavior |
 
+## Stable Insurance Brokerage Slice (v0.4.0)
+
+The repository now includes a stabilized domain slice for **Northwind Insurance Brokers**.
+
+This slice demonstrates how the deterministic agent architecture can support a realistic service workflow without abandoning bounded behavior, canonical responses, or verification rigor.
+
+### Current supported broker-style interactions
+
+- coverage information lookup
+- premium / price lookup
+- eligibility / availability guidance
+- broker review and underwriting review guidance
+- request / application status lookup
+- policy document delivery guidance
+- premium adjustment guidance
+- policy change / endorsement guidance
+- deterministic handoff to a licensed broker specialist
+- deterministic WhatsApp channel output mapping
+
+### Representative example questions
+
+- `What is the estimated premium for Personal Auto Standard?`
+- `Is General Liability Core eligible?`
+- `What is the status of my application ORDER-55555?`
+- `When will my policy documents be issued?`
+- `How do I request a premium adjustment?`
+- `How do I request a policy change?`
+- `I want to speak with a broker.`
+
+### Verified stable baseline
+
+- **20 test files**
+- **130 tests**
+- **0 failures**
+
+### Release alignment
+
+- **`v0.4.0 - Insurance brokerage domain specialization and broker eligibility hardening**
+
+---
 ## Repository Structure
 
 The repository is organized to separate implementation, scripts, documentation, and testing concerns.

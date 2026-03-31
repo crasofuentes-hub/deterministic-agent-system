@@ -9,6 +9,12 @@ export interface PolicyRecord {
   refundProcessingBusinessDaysMin?: number;
   refundProcessingBusinessDaysMax?: number;
   cancellationBeforeShipmentOnly?: boolean;
+  endorsementRequestSupported?: boolean;
+  endorsementRequestNotes?: string;
+  documentDeliveryStatusSupported?: boolean;
+  documentDeliveryStatusNotes?: string;
+  premiumAdjustmentRequestSupported?: boolean;
+  premiumAdjustmentRequestNotes?: string;
   allowedActions: string[];
   disallowedActions: string[];
 }
@@ -40,6 +46,30 @@ function loadPolicies(): PolicyRecord[] {
     cancellationBeforeShipmentOnly:
       typeof item.cancellationBeforeShipmentOnly === "boolean"
         ? item.cancellationBeforeShipmentOnly
+        : undefined,
+    endorsementRequestSupported:
+      typeof item.endorsementRequestSupported === "boolean"
+        ? item.endorsementRequestSupported
+        : undefined,
+    endorsementRequestNotes:
+      typeof item.endorsementRequestNotes === "string"
+        ? String(item.endorsementRequestNotes).normalize("NFC").trim()
+        : undefined,
+    documentDeliveryStatusSupported:
+      typeof item.documentDeliveryStatusSupported === "boolean"
+        ? item.documentDeliveryStatusSupported
+        : undefined,
+    documentDeliveryStatusNotes:
+      typeof item.documentDeliveryStatusNotes === "string"
+        ? String(item.documentDeliveryStatusNotes).normalize("NFC").trim()
+        : undefined,
+    premiumAdjustmentRequestSupported:
+      typeof item.premiumAdjustmentRequestSupported === "boolean"
+        ? item.premiumAdjustmentRequestSupported
+        : undefined,
+    premiumAdjustmentRequestNotes:
+      typeof item.premiumAdjustmentRequestNotes === "string"
+        ? String(item.premiumAdjustmentRequestNotes).normalize("NFC").trim()
         : undefined,
     allowedActions: item.allowedActions.map((value) =>
       String(value).normalize("NFC").trim().toLowerCase()

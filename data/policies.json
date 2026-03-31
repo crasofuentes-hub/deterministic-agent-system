@@ -4,9 +4,12 @@
     "title": "Cancellation Policy",
     "summary": "Cancellation requests may be submitted before binding or renewal processing is completed. Requests submitted after binding may require broker review and carrier approval.",
     "cancellationBeforeShipmentOnly": true,
+    "endorsementRequestSupported": true,
+    "endorsementRequestNotes": "Policy change and endorsement requests may be submitted through a broker specialist and may require carrier approval before the updated documents are issued.",
     "allowedActions": [
       "request-cancellation-before-binding",
-      "request-cancellation-review"
+      "request-cancellation-review",
+      "request-policy-change"
     ],
     "disallowedActions": [
       "guaranteed-immediate-cancellation-after-binding"
@@ -18,6 +21,8 @@
     "summary": "Approved premium adjustments or refunds are generally processed within 5 to 10 business days after the servicing request is completed.",
     "refundProcessingBusinessDaysMin": 5,
     "refundProcessingBusinessDaysMax": 10,
+    "premiumAdjustmentRequestSupported": true,
+    "premiumAdjustmentRequestNotes": "Premium adjustment requests may require broker review, underwriting confirmation, and supporting policy change details before the adjustment is finalized.",
     "allowedActions": [
       "request-premium-adjustment",
       "check-adjustment-status"
@@ -31,6 +36,8 @@
     "title": "Policy Document Delivery Policy",
     "summary": "Policy documents are generally issued within 30 calendar days of binding, subject to underwriting completion and document review.",
     "returnWindowDays": 30,
+    "documentDeliveryStatusSupported": true,
+    "documentDeliveryStatusNotes": "Document delivery status can be reviewed by a broker specialist when binding has been completed and all required underwriting documents have been received.",
     "allowedActions": [
       "request-policy-documents",
       "check-document-delivery-status"
