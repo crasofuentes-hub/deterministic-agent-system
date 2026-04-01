@@ -301,4 +301,136 @@ describe("customer-service semantic invariants", () => {
       "Policy: Cancellation Policy | Endorsement Guidance: Policy change and endorsement requests are supported. Policy change and endorsement requests may be submitted through a broker specialist and may require carrier approval before the updated documents are issued."
     );
   });
+
+  it("keeps payment-status output canonical in payment audit API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-001",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "What is the status of payment PMT-1001?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-payment-status");
+    expect(result.responseId).toBe("consult-payment-status-resolved");
+    expect(result.stage).toBe("resolve-payment-status");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Payment PMT-1001 is currently posted. Audit status: reconciled. No discrepancy has been detected at this time."
+    );
+  });
+
+  it("keeps payment-history output canonical in payment audit API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-002",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "Show me the payment history for policy POL-900",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-payment-history");
+    expect(result.responseId).toBe("consult-payment-history-resolved");
+    expect(result.stage).toBe("resolve-payment-history");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Payment history scope: Policy POL-900 | Records: 1 | Latest payment: PMT-1001 | Latest audit status: reconciled."
+    );
+  });
+
+  it("keeps payment-discrepancy output canonical without changing intent family", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-003",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I was charged twice and need a billing discrepancy review",
+    });
+
+    expect(result.resolvedIntentId).toBe("explain-payment-discrepancy");
+    expect(result.responseId).toBe("explain-payment-discrepancy-resolved");
+    expect(result.stage).toBe("resolve-payment-discrepancy");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Payment discrepancy review: unscoped payment | Discrepancy Type: duplicate-charge | Audit Result: manual review recommended."
+    );
+  });
+
+  it("keeps missing-policy-id output canonical in payment audit API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-004",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "Is my policy active?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-status");
+    expect(result.responseId).toBe("consult-policy-status-missing-policy-id");
+    expect(result.stage).toBe("collect-policy-id");
+    expect(result.status).toBe("missing-entity");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Please provide the policy ID so I can review the policy status."
+    );
+  });
+
+  it("keeps policy-servicing output canonical in payment audit API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-005",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need help with document delivery for my policy",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-servicing");
+    expect(result.responseId).toBe("consult-policy-servicing-resolved");
+    expect(result.stage).toBe("resolve-policy-servicing");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Policy servicing topic: document-delivery | Guidance: the servicing request can proceed through the billing review workflow."
+    );
+  });
+
+  it("keeps billing handoff output canonical in payment audit API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-006",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need a billing specialist",
+    });
+
+    expect(result.resolvedIntentId).toBe("request-human-handoff");
+    expect(result.responseId).toBe("handoff-requested");
+    expect(result.stage).toBe("handoff-requested");
+    expect(result.status).toBe("handoff");
+    expect(result.humanInterventionRequired).toBe(true);
+    expect(result.handoffReasonCode).toBe("explicit-human-request");
+    expect(result.handoffQueue).toBe("billing-specialist");
+    expect(result.responseText).toBe(
+      "Your conversation will be transferred to a billing or licensed insurance specialist."
+    );
+  });
+
+  it("keeps billing handoff output canonical in payment audit WhatsApp bridge", () => {
+    const result = runWhatsAppCustomerServiceBridge({
+      session: createInitialSessionState({
+        sessionId: "PA-INV-WA-001",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      message: createWhatsAppMessage("I need a billing specialist", "wamid.pa.inv.001"),
+    });
+
+    expect(result.output.resolvedIntentId).toBe("request-human-handoff");
+    expect(result.output.responseId).toBe("handoff-requested");
+    expect(result.output.stage).toBe("handoff-requested");
+    expect(result.output.status).toBe("handoff");
+    expect(result.output.humanInterventionRequired).toBe(true);
+    expect(result.output.handoffReasonCode).toBe("explicit-human-request");
+    expect(result.output.handoffQueue).toBe("billing-specialist");
+  });
 });

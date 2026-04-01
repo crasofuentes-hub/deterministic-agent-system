@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveIntentFromText } from "../../src/intent-resolver/intent-resolver";
+import {
+  resolveIntentFromText,
+  resolveIntentFromTextForContext,
+} from "../../src/intent-resolver/intent-resolver";
 
 describe("intent-resolver", () => {
   it("resolves broker handoff deterministically", () => {
@@ -68,6 +71,66 @@ describe("intent-resolver", () => {
   it("falls back to consult-product deterministically", () => {
     expect(resolveIntentFromText("Personal Auto Standard")).toEqual({
       intentId: "consult-product",
+      confidence: "rule",
+    });
+  });
+
+  it("resolves payment status for payment audit context", () => {
+    expect(
+      resolveIntentFromTextForContext(
+        "What is the status of payment PMT-1001?",
+        "customer-service-payment-audit-v1"
+      )
+    ).toEqual({
+      intentId: "consult-payment-status",
+      confidence: "rule",
+    });
+  });
+
+  it("resolves payment history for payment audit context", () => {
+    expect(
+      resolveIntentFromTextForContext(
+        "Show me the payment history for policy POL-900",
+        "customer-service-payment-audit-v1"
+      )
+    ).toEqual({
+      intentId: "consult-payment-history",
+      confidence: "rule",
+    });
+  });
+
+  it("resolves payment discrepancy for payment audit context", () => {
+    expect(
+      resolveIntentFromTextForContext(
+        "I was charged twice and need a billing discrepancy review",
+        "customer-service-payment-audit-v1"
+      )
+    ).toEqual({
+      intentId: "explain-payment-discrepancy",
+      confidence: "rule",
+    });
+  });
+
+  it("resolves policy status for payment audit context", () => {
+    expect(
+      resolveIntentFromTextForContext(
+        "Is policy POL-900 active right now?",
+        "customer-service-payment-audit-v1"
+      )
+    ).toEqual({
+      intentId: "consult-policy-status",
+      confidence: "rule",
+    });
+  });
+
+  it("resolves policy servicing for payment audit context", () => {
+    expect(
+      resolveIntentFromTextForContext(
+        "I need help with document delivery for my policy",
+        "customer-service-payment-audit-v1"
+      )
+    ).toEqual({
+      intentId: "consult-policy-servicing",
       confidence: "rule",
     });
   });

@@ -361,6 +361,45 @@ describe("whatsapp webhook handler", () => {
     }
   });
 
+  it("returns payment audit response when explicit businessContextId is provided without loadSession", async () => {
+    const res = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        businessContextId: "customer-service-payment-audit-v1",
+        bodyText: buildInboundBody("wamid.payment.001", "What is the status of payment PMT-1001?"),
+      }
+    );
+
+    const json = JSON.parse(res.getBody());
+
+    expect(res.statusCode).toBe(200);
+    expect(json.ok).toBe(true);
+    expect(json.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "consult-payment-status-resolved",
+        resolvedIntentId: "consult-payment-status",
+        stage: "resolve-payment-status",
+        status: "resolved",
+        outboundText:
+          "Payment PMT-1001 is currently posted. Audit status: reconciled. No discrepancy has been detected at this time.",
+        humanInterventionRequired: false,
+      })
+    );
+    expect(json.results[0].agent.handoffReasonCode).toBeUndefined();
+    expect(json.results[0].agent.handoffQueue).toBeUndefined();
+    expect(json.results[0].session.businessContextId).toBe("customer-service-payment-audit-v1");
+  });
+
   it("rejects invalid JSON POST bodies", async () => {
     const res = createMockResponse();
 

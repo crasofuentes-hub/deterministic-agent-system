@@ -5,7 +5,7 @@ import type { BusinessContextPack } from "../../src/business-context/context-pac
 import { orchestrateConversationTurn } from "../../src/conversation-orchestrator/conversation-orchestrator";
 import { createInitialSessionState } from "../../src/session-state/session-state";
 
-function loadPack(): BusinessContextPack {
+function loadLegacyPack(): BusinessContextPack {
   const filePath = path.resolve(
     process.cwd(),
     "config/business-context/customer-service-core.json"
@@ -14,10 +14,19 @@ function loadPack(): BusinessContextPack {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as BusinessContextPack;
 }
 
+function loadPaymentAuditPack(): BusinessContextPack {
+  const filePath = path.resolve(
+    process.cwd(),
+    "config/business-context/customer-service-payment-audit.json"
+  );
+
+  return JSON.parse(fs.readFileSync(filePath, "utf8")) as BusinessContextPack;
+}
+
 describe("conversation-orchestrator", () => {
   it("asks for missing product name deterministically", () => {
     const result = orchestrateConversationTurn({
-      pack: loadPack(),
+      pack: loadLegacyPack(),
       session: createInitialSessionState({
         sessionId: "CO-001",
         businessContextId: "customer-service-core-v2",
@@ -49,7 +58,7 @@ describe("conversation-orchestrator", () => {
     };
 
     const result = orchestrateConversationTurn({
-      pack: loadPack(),
+      pack: loadLegacyPack(),
       session,
       intentId: "consult-price",
     });
@@ -64,7 +73,7 @@ describe("conversation-orchestrator", () => {
 
   it("asks for missing orderId deterministically", () => {
     const result = orchestrateConversationTurn({
-      pack: loadPack(),
+      pack: loadLegacyPack(),
       session: createInitialSessionState({
         sessionId: "CO-003",
         businessContextId: "customer-service-core-v2",
@@ -82,7 +91,7 @@ describe("conversation-orchestrator", () => {
 
   it("requests human handoff deterministically", () => {
     const result = orchestrateConversationTurn({
-      pack: loadPack(),
+      pack: loadLegacyPack(),
       session: createInitialSessionState({
         sessionId: "CO-004",
         businessContextId: "customer-service-core-v2",
@@ -102,7 +111,7 @@ describe("conversation-orchestrator", () => {
 
   it("closes conversation deterministically", () => {
     const result = orchestrateConversationTurn({
-      pack: loadPack(),
+      pack: loadLegacyPack(),
       session: createInitialSessionState({
         sessionId: "CO-005",
         businessContextId: "customer-service-core-v2",
@@ -114,5 +123,50 @@ describe("conversation-orchestrator", () => {
     expect(result.stage).toBe("done");
     expect(result.status).toBe("closed");
     expect(result.responseText).toBe("Your conversation has been closed.");
+  });
+
+  it("asks for missing payment id deterministically in payment audit context", () => {
+    const result = orchestrateConversationTurn({
+      pack: loadPaymentAuditPack(),
+      session: createInitialSessionState({
+        sessionId: "CO-006",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      intentId: "consult-payment-status",
+    });
+
+    expect(result.responseId).toBe("consult-payment-status-missing-payment-id");
+    expect(result.stage).toBe("collect-payment-id");
+    expect(result.status).toBe("missing-entity");
+    expect(result.responseText).toBe(
+      "Please provide the payment ID so I can review the payment status."
+    );
+  });
+
+  it("resolves policy servicing deterministically in payment audit context", () => {
+    const session = {
+      ...createInitialSessionState({
+        sessionId: "CO-007",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      collectedEntities: [
+        {
+          entityId: "billingTopic",
+          value: "document delivery",
+          confidence: "confirmed",
+        },
+      ],
+    };
+
+    const result = orchestrateConversationTurn({
+      pack: loadPaymentAuditPack(),
+      session,
+      intentId: "consult-policy-servicing",
+    });
+
+    expect(result.responseId).toBe("consult-policy-servicing-resolved");
+    expect(result.stage).toBe("resolve-policy-servicing");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe("The policy servicing information has been retrieved.");
   });
 });

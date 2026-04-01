@@ -115,4 +115,36 @@ describe("entity-extractor", () => {
     const entities = extractEntitiesFromText("I want to know my application status");
     expect(entities.find((item) => item.entityId === "productName")).toBeUndefined();
   });
+
+  it("extracts paymentId from payment status message", () => {
+    expect(extractEntitiesFromText("What is the status of payment PMT-1001?")).toContainEqual({
+      entityId: "paymentId",
+      value: "PMT-1001",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts policyId from payment history message", () => {
+    expect(extractEntitiesFromText("Show me the payment history for policy POL-900")).toContainEqual({
+      entityId: "policyId",
+      value: "POL-900",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts discrepancyType from duplicate charge message", () => {
+    expect(extractEntitiesFromText("I was charged twice and need a billing discrepancy review")).toContainEqual({
+      entityId: "discrepancyType",
+      value: "duplicate-charge",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts billingTopic from document delivery message", () => {
+    expect(extractEntitiesFromText("I need help with document delivery for my policy")).toContainEqual({
+      entityId: "billingTopic",
+      value: "document-delivery",
+      confidence: "derived",
+    });
+  });
 });

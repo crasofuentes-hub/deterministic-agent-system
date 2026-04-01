@@ -123,4 +123,52 @@ describe("whatsapp agent bridge", () => {
       handoffQueue: "licensed-broker",
     });
   });
+
+  it("returns resolved payment status output in payment audit context", () => {
+    const result = runWhatsAppCustomerServiceBridge({
+      session: createInitialSessionState({
+        sessionId: "WA-005",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      message: createMessage("What is the status of payment PMT-1001?", "wamid.test.006"),
+    });
+
+    expect(result.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.test.006",
+      outboundText: "Payment PMT-1001 is currently posted. Audit status: reconciled. No discrepancy has been detected at this time.",
+      responseId: "consult-payment-status-resolved",
+      resolvedIntentId: "consult-payment-status",
+      stage: "resolve-payment-status",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
+
+  it("returns structured billing handoff metadata in payment audit context", () => {
+    const result = runWhatsAppCustomerServiceBridge({
+      session: createInitialSessionState({
+        sessionId: "WA-006",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      message: createMessage("I need a billing specialist", "wamid.test.007"),
+    });
+
+    expect(result.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.test.007",
+      outboundText: "Your conversation will be transferred to a billing or licensed insurance specialist.",
+      responseId: "handoff-requested",
+      resolvedIntentId: "request-human-handoff",
+      stage: "handoff-requested",
+      status: "handoff",
+      humanInterventionRequired: true,
+      handoffReasonCode: "explicit-human-request",
+      handoffQueue: "billing-specialist",
+    });
+  });
 });

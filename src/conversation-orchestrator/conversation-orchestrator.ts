@@ -1,5 +1,5 @@
 import type { BusinessContextPack, BusinessHandoffRule } from "../business-context/context-pack";
-import { renderCanonicalResponseText } from "../canonical-response/canonical-response-engine";
+import { findCanonicalResponse, renderCanonicalResponseText } from "../canonical-response/canonical-response-engine";
 import { evaluateEntityCollection } from "../entity-rules/entity-collection-rules";
 import { requireBusinessIntentById } from "../intent-catalog/intent-catalog";
 import type { SessionState } from "../session-state/session-state";
@@ -19,96 +19,77 @@ export interface ConversationOrchestratorResult {
   status: string;
 }
 
-function resolveMissingStage(intentId: string): string {
-  if (
-    intentId === "consult-product" ||
-    intentId === "consult-price" ||
-    intentId === "consult-availability"
-  ) {
-    return "collect-product-name";
+function getWorkflowStages(
+  pack: BusinessContextPack,
+  workflowId: string
+): {
+  initialStage: string;
+  terminalStages: string[];
+  middleStages: string[];
+} {
+  const workflow = pack.workflowRules.find((item) => item.workflowId === workflowId);
+
+  if (!workflow) {
+    throw new Error('WORKFLOW_NOT_FOUND: workflowId="' + workflowId + '"');
   }
 
-  if (intentId === "consult-order-status") {
-    return "collect-order-id";
-  }
+  const terminal = new Set(workflow.terminalStages);
+  const middleStages = workflow.stages.filter(
+    (stage) => stage !== workflow.initialStage && !terminal.has(stage)
+  );
 
-  if (intentId === "consult-policy") {
-    return "collect-policy-topic";
-  }
-
-  return "collect-missing-data";
+  return {
+    initialStage: workflow.initialStage,
+    terminalStages: workflow.terminalStages,
+    middleStages,
+  };
 }
 
-function resolveResolvedStage(intentId: string): string {
-  if (intentId === "consult-product") {
-    return "resolve-product";
-  }
-
-  if (intentId === "consult-price") {
-    return "resolve-price";
-  }
-
-  if (intentId === "consult-availability") {
-    return "resolve-availability";
-  }
-
-  if (intentId === "consult-order-status") {
-    return "resolve-order-status";
-  }
-
-  if (intentId === "consult-policy") {
-    return "resolve-policy";
-  }
-
-  return "done";
+function resolveMissingStage(pack: BusinessContextPack, workflowId: string): string {
+  const workflowStages = getWorkflowStages(pack, workflowId);
+  return workflowStages.middleStages[0] ?? "collect-missing-data";
 }
 
-function resolveMissingResponseId(intentId: string): string {
-  if (intentId === "consult-product") {
-    return "consult-product-missing-product-name";
+function resolveResolvedStage(pack: BusinessContextPack, workflowId: string): string {
+  const workflowStages = getWorkflowStages(pack, workflowId);
+
+  if (workflowStages.middleStages.length === 0) {
+    return workflowStages.terminalStages[0] ?? "done";
   }
 
-  if (intentId === "consult-price") {
-    return "consult-price-missing-product-name";
+  const lastIndex = workflowStages.middleStages.length - 1;
+  const resolvedStage = workflowStages.middleStages[lastIndex];
+
+  if (typeof resolvedStage !== "string" || resolvedStage.length === 0) {
+    return workflowStages.terminalStages[0] ?? "done";
   }
 
-  if (intentId === "consult-availability") {
-    return "consult-availability-missing-product-name";
-  }
-
-  if (intentId === "consult-order-status") {
-    return "consult-order-status-missing-order-id";
-  }
-
-  if (intentId === "consult-policy") {
-    return "consult-policy-missing-policy-topic";
-  }
-
-  return "missing-data";
+  return resolvedStage;
 }
 
-function resolveResolvedResponseId(intentId: string): string {
-  if (intentId === "consult-product") {
-    return "consult-product-resolved";
+function resolveResponseId(
+  pack: BusinessContextPack,
+  params: {
+    intentId: string;
+    stage: string;
+    status: string;
+  }
+): string {
+  const response = findCanonicalResponse(pack, params);
+
+  if (!response) {
+    throw new Error(
+      'RESPONSE_ID_NOT_FOUND: intentId="' +
+        params.intentId +
+        '" stage="' +
+        params.stage +
+        '" status="' +
+        params.status +
+        '"'
+    );
   }
 
-  if (intentId === "consult-price") {
-    return "consult-price-resolved";
-  }
-
-  if (intentId === "consult-availability") {
-    return "consult-availability-resolved";
-  }
-
-  if (intentId === "consult-order-status") {
-    return "consult-order-status-resolved";
-  }
-
-  if (intentId === "consult-policy") {
-    return "consult-policy-resolved";
-  }
-
-  return "resolved";
+  return response.responseId;
 }
 
 function resolveHandoffRule(
@@ -163,7 +144,11 @@ export function orchestrateConversationTurn(params: {
         stage: "handoff-requested",
         status: "handoff",
       }),
-      responseId: "handoff-requested",
+      responseId: resolveResponseId(pack, {
+        intentId: intent.intentId,
+        stage: "handoff-requested",
+        status: "handoff",
+      }),
       intentId: intent.intentId,
       workflowId: intent.workflowId,
       stage: "handoff-requested",
@@ -188,7 +173,11 @@ export function orchestrateConversationTurn(params: {
         stage: "done",
         status: "closed",
       }),
-      responseId: "conversation-closed",
+      responseId: resolveResponseId(pack, {
+        intentId: intent.intentId,
+        stage: "done",
+        status: "closed",
+      }),
       intentId: intent.intentId,
       workflowId: intent.workflowId,
       stage: "done",
@@ -199,7 +188,7 @@ export function orchestrateConversationTurn(params: {
   const entityEvaluation = evaluateEntityCollection(pack, session, intent.intentId);
 
   if (!entityEvaluation.isComplete) {
-    const stage = resolveMissingStage(intent.intentId);
+    const stage = resolveMissingStage(pack, intent.workflowId);
     const nextSession = setSessionIntent(session, {
       intentId: intent.intentId,
       workflowId: intent.workflowId,
@@ -214,7 +203,11 @@ export function orchestrateConversationTurn(params: {
         stage,
         status: "missing-entity",
       }),
-      responseId: resolveMissingResponseId(intent.intentId),
+      responseId: resolveResponseId(pack, {
+        intentId: intent.intentId,
+        stage,
+        status: "missing-entity",
+      }),
       intentId: intent.intentId,
       workflowId: intent.workflowId,
       stage,
@@ -222,7 +215,7 @@ export function orchestrateConversationTurn(params: {
     };
   }
 
-  const stage = resolveResolvedStage(intent.intentId);
+  const stage = resolveResolvedStage(pack, intent.workflowId);
   const nextSession = setSessionIntent(session, {
     intentId: intent.intentId,
     workflowId: intent.workflowId,
@@ -237,7 +230,11 @@ export function orchestrateConversationTurn(params: {
       stage,
       status: "resolved",
     }),
-    responseId: resolveResolvedResponseId(intent.intentId),
+    responseId: resolveResponseId(pack, {
+      intentId: intent.intentId,
+      stage,
+      status: "resolved",
+    }),
     intentId: intent.intentId,
     workflowId: intent.workflowId,
     stage,

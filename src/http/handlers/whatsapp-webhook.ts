@@ -53,6 +53,7 @@ export interface HandleWhatsAppWebhookOptions {
   deliveryMode?: "skipped" | "mock" | "http";
   sender?: WhatsAppSender;
   store?: WhatsAppStore;
+  businessContextId?: string;
 }
 
 export async function handleWhatsAppWebhook(
@@ -148,6 +149,8 @@ export async function handleWhatsAppWebhook(
     });
   }
 
+  const businessContextId = options.businessContextId ?? "customer-service-core-v2";
+
   const results = await Promise.all(
     normalized.value.map(async (message) => {
       if (options.store?.hasProcessedMessage(message.channelMessageId)) {
@@ -183,7 +186,7 @@ export async function handleWhatsAppWebhook(
         : (options.loadSession?.(message.customerId) ??
           createInitialSessionState({
             sessionId: "whatsapp-session:" + message.customerId,
-            businessContextId: "customer-service-core-v2",
+            businessContextId,
           }));
 
       const bridge = runWhatsAppCustomerServiceBridge({

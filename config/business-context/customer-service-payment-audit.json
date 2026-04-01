@@ -1,0 +1,217 @@
+{
+  "contextId": "customer-service-payment-audit-v1",
+  "domain": "insurance-payment-audit",
+  "businessName": "Freeway Franchise Insurance Operations",
+  "supportedIntents": [
+    {
+      "intentId": "consult-payment-status",
+      "description": "Consult the current status of an insurance payment.",
+      "requiredEntities": ["paymentId"],
+      "optionalEntities": ["policyId", "customerId"],
+      "workflowId": "payment-status-flow"
+    },
+    {
+      "intentId": "consult-payment-history",
+      "description": "Consult recent insurance payment history for a customer or policy.",
+      "requiredEntities": [],
+      "optionalEntities": ["customerId", "policyId"],
+      "workflowId": "payment-history-flow"
+    },
+    {
+      "intentId": "explain-payment-discrepancy",
+      "description": "Explain a discrepancy involving an insurance payment, balance, or billing state.",
+      "requiredEntities": [],
+      "optionalEntities": ["paymentId", "policyId", "customerId", "discrepancyType"],
+      "workflowId": "payment-discrepancy-flow"
+    },
+    {
+      "intentId": "consult-policy-status",
+      "description": "Consult the current status of an insurance policy.",
+      "requiredEntities": ["policyId"],
+      "optionalEntities": ["customerId"],
+      "workflowId": "policy-status-flow"
+    },
+    {
+      "intentId": "consult-policy-servicing",
+      "description": "Consult a policy servicing or billing topic.",
+      "requiredEntities": ["billingTopic"],
+      "optionalEntities": ["policyId", "customerId"],
+      "workflowId": "policy-servicing-flow"
+    },
+    {
+      "intentId": "request-human-handoff",
+      "description": "Request transfer to a billing or licensed insurance specialist.",
+      "requiredEntities": [],
+      "optionalEntities": [],
+      "workflowId": "handoff-flow"
+    },
+    {
+      "intentId": "close-conversation",
+      "description": "Close the current conversation.",
+      "requiredEntities": [],
+      "optionalEntities": [],
+      "workflowId": "closure-flow"
+    }
+  ],
+  "entitySchema": [
+    {
+      "entityId": "paymentId",
+      "entityType": "string",
+      "required": false
+    },
+    {
+      "entityId": "policyId",
+      "entityType": "string",
+      "required": false
+    },
+    {
+      "entityId": "customerId",
+      "entityType": "string",
+      "required": false
+    },
+    {
+      "entityId": "billingTopic",
+      "entityType": "string",
+      "required": false
+    },
+    {
+      "entityId": "discrepancyType",
+      "entityType": "string",
+      "required": false
+    }
+  ],
+  "workflowRules": [
+    {
+      "workflowId": "payment-status-flow",
+      "stages": ["start", "collect-payment-id", "resolve-payment-status", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "payment-history-flow",
+      "stages": ["start", "collect-history-scope", "resolve-payment-history", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "payment-discrepancy-flow",
+      "stages": ["start", "collect-discrepancy-context", "resolve-payment-discrepancy", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "policy-status-flow",
+      "stages": ["start", "collect-policy-id", "resolve-policy-status", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "policy-servicing-flow",
+      "stages": ["start", "collect-billing-topic", "resolve-policy-servicing", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "handoff-flow",
+      "stages": ["start", "handoff-requested", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "closure-flow",
+      "stages": ["start", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    }
+  ],
+  "canonicalResponses": [
+    {
+      "responseId": "consult-payment-status-missing-payment-id",
+      "intentId": "consult-payment-status",
+      "stage": "collect-payment-id",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide the payment ID so I can review the payment status."
+    },
+    {
+      "responseId": "consult-payment-status-resolved",
+      "intentId": "consult-payment-status",
+      "stage": "resolve-payment-status",
+      "status": "resolved",
+      "messageTemplate": "The payment status information has been retrieved."
+    },
+    {
+      "responseId": "consult-payment-history-resolved",
+      "intentId": "consult-payment-history",
+      "stage": "resolve-payment-history",
+      "status": "resolved",
+      "messageTemplate": "The payment history information has been retrieved."
+    },
+    {
+      "responseId": "explain-payment-discrepancy-resolved",
+      "intentId": "explain-payment-discrepancy",
+      "stage": "resolve-payment-discrepancy",
+      "status": "resolved",
+      "messageTemplate": "The payment discrepancy explanation has been retrieved."
+    },
+    {
+      "responseId": "consult-policy-status-missing-policy-id",
+      "intentId": "consult-policy-status",
+      "stage": "collect-policy-id",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide the policy ID so I can review the policy status."
+    },
+    {
+      "responseId": "consult-policy-status-resolved",
+      "intentId": "consult-policy-status",
+      "stage": "resolve-policy-status",
+      "status": "resolved",
+      "messageTemplate": "The policy status information has been retrieved."
+    },
+    {
+      "responseId": "consult-policy-servicing-missing-billing-topic",
+      "intentId": "consult-policy-servicing",
+      "stage": "collect-billing-topic",
+      "status": "missing-entity",
+      "messageTemplate": "Please provide the billing or servicing topic so I can help you."
+    },
+    {
+      "responseId": "consult-policy-servicing-resolved",
+      "intentId": "consult-policy-servicing",
+      "stage": "resolve-policy-servicing",
+      "status": "resolved",
+      "messageTemplate": "The policy servicing information has been retrieved."
+    },
+    {
+      "responseId": "handoff-requested",
+      "intentId": "request-human-handoff",
+      "stage": "handoff-requested",
+      "status": "handoff",
+      "messageTemplate": "Your conversation will be transferred to a billing or licensed insurance specialist."
+    },
+    {
+      "responseId": "conversation-closed",
+      "intentId": "close-conversation",
+      "stage": "done",
+      "status": "closed",
+      "messageTemplate": "Your conversation has been closed."
+    }
+  ],
+  "handoffRules": [
+    {
+      "ruleId": "explicit-human-request",
+      "whenIntentIds": ["request-human-handoff"],
+      "requiresHuman": true,
+      "queue": "billing-specialist"
+    }
+  ],
+  "tonePolicy": {
+    "toneId": "default-neutral",
+    "style": "neutral",
+    "brevity": "medium"
+  },
+  "sessionPolicy": {
+    "inactivityTimeoutMinutes": 30,
+    "allowResume": true,
+    "maxTurnsBeforeClosure": 100
+  }
+}

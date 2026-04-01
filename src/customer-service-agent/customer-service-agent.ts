@@ -5,9 +5,15 @@ import { orchestrateConversationTurn } from "../conversation-orchestrator/conver
 import { findKnowledgeByProductName } from "../data-layer/knowledge-base-repository";
 import { findOrderById } from "../data-layer/order-repository";
 import { findPolicyByTopic } from "../data-layer/policy-repository";
+import {
+  findLatestPaymentAuditRecordByPolicyId,
+  findPaymentAuditRecordByPaymentId,
+  listPaymentAuditRecordsByCustomerId,
+  listPaymentAuditRecordsByPolicyId,
+} from "../data-layer/payment-audit-repository";
 import { findProductByName } from "../data-layer/product-repository";
 import { extractEntitiesFromText } from "../entity-extractor/entity-extractor";
-import { resolveIntentFromText } from "../intent-resolver/intent-resolver";
+import { resolveIntentFromTextForContext } from "../intent-resolver/intent-resolver";
 import type { SessionState } from "../session-state/session-state";
 import { upsertSessionEntity } from "../session-state/session-state";
 
@@ -20,11 +26,13 @@ export interface CustomerServiceAgentResult {
   status: string;
 }
 
-function loadCustomerServicePack(): BusinessContextPack {
-  const filePath = path.resolve(
-    process.cwd(),
-    "config/business-context/customer-service-core.json"
-  );
+function loadCustomerServicePackByContextId(businessContextId: string): BusinessContextPack {
+  const fileName =
+    businessContextId === "customer-service-payment-audit-v1"
+      ? "customer-service-payment-audit.json"
+      : "customer-service-core.json";
+
+  const filePath = path.resolve(process.cwd(), "config/business-context", fileName);
 
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as BusinessContextPack;
 }
@@ -118,18 +126,7 @@ function sanitizeOrderIdCandidate(value: string): string | undefined {
     return undefined;
   }
 
-  const explicitOrderId = cleaned.match(/\b(ORDER-[A-Z0-9-]+)\b/i);
-  if (explicitOrderId?.[1]) {
-    return explicitOrderId[1].toUpperCase();
-  }
-
-  const blocked = new Set(["ORDER", "PURCHASE", "STATUS", "TRACKING", "UPDATE"]);
-
-  if (blocked.has(cleaned)) {
-    return undefined;
-  }
-
-  if (!/^[A-Z0-9][A-Z0-9-]{3,}$/.test(cleaned)) {
+  if (!/^ORDER-[A-Z0-9]+$/.test(cleaned)) {
     return undefined;
   }
 
@@ -151,28 +148,164 @@ function sanitizePolicyTopicCandidate(value: string): string | undefined {
     return cleaned;
   }
 
-  if (/^[a-z][a-z0-9-]{2,}$/i.test(cleaned)) {
+  if (
+    cleaned.indexOf("-") >= 0 &&
+    cleaned !== "return-policy" &&
+    cleaned !== "refund-policy" &&
+    cleaned !== "cancellation-policy"
+  ) {
     return cleaned;
   }
 
-  return undefined;
+  if (
+    cleaned.includes("document") ||
+    cleaned.includes("return")
+  ) {
+    return "return-policy";
+  }
+
+  if (
+    cleaned.includes("refund") ||
+    cleaned.includes("premium adjustment")
+  ) {
+    return "refund-policy";
+  }
+
+  if (
+    cleaned.includes("cancel") ||
+    cleaned.includes("binding") ||
+    cleaned.includes("endorsement") ||
+    cleaned.includes("policy change") ||
+    cleaned.includes("change request")
+  ) {
+    return "cancellation-policy";
+  }
+
+  return cleaned;
 }
 
 function sanitizePolicyAspectCandidate(value: string): string | undefined {
   const cleaned = normalizeLooseEntityText(value).toLowerCase();
 
-  if (
-    cleaned === "return-window" ||
-    cleaned === "document-delivery-status" ||
-    cleaned === "refund-timing" ||
-    cleaned === "premium-adjustment-guidance" ||
-    cleaned === "endorsement-guidance" ||
-    cleaned === "cancellation-eligibility"
-  ) {
-    return cleaned;
+  if (cleaned.length === 0) {
+    return undefined;
   }
 
-  return undefined;
+  if (cleaned.includes("refund")) {
+    return "refund-timing";
+  }
+
+  if (cleaned.includes("document")) {
+    return "document-delivery-status";
+  }
+
+  if (cleaned.includes("premium")) {
+    return "premium-adjustment-guidance";
+  }
+
+  if (cleaned.includes("endorsement") || cleaned.includes("change")) {
+    return "endorsement-guidance";
+  }
+
+  if (cleaned.includes("cancel")) {
+    return "cancellation-eligibility";
+  }
+
+  return "summary";
+}
+
+function sanitizePaymentIdCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toUpperCase();
+
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
+  if (!/^PMT-[A-Z0-9]+$/.test(cleaned)) {
+    return undefined;
+  }
+
+  return cleaned;
+}
+
+function sanitizePolicyIdCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toUpperCase();
+
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
+  if (!/^POL-[A-Z0-9]+$/.test(cleaned)) {
+    return undefined;
+  }
+
+  return cleaned;
+}
+
+function sanitizeCustomerIdCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toUpperCase();
+
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
+  if (!/^CUS-[A-Z0-9]+$/.test(cleaned)) {
+    return undefined;
+  }
+
+  return cleaned;
+}
+
+function sanitizeBillingTopicCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toLowerCase();
+
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
+  if (cleaned.includes("document")) {
+    return "document-delivery";
+  }
+
+  if (cleaned.includes("refund")) {
+    return "refund-timing";
+  }
+
+  if (cleaned.includes("premium")) {
+    return "premium-adjustment";
+  }
+
+  if (cleaned.includes("endorsement")) {
+    return "endorsement";
+  }
+
+  if (cleaned.includes("billing")) {
+    return "billing-review";
+  }
+
+  return cleaned;
+}
+
+function sanitizeDiscrepancyTypeCandidate(value: string): string | undefined {
+  const cleaned = normalizeLooseEntityText(value).toLowerCase();
+
+  if (cleaned.length === 0) {
+    return undefined;
+  }
+
+  if (cleaned.includes("double") || cleaned.includes("twice") || cleaned.includes("duplicate")) {
+    return "duplicate-charge";
+  }
+
+  if (cleaned.includes("wrong amount") || cleaned.includes("amount")) {
+    return "amount-mismatch";
+  }
+
+  if (cleaned.includes("balance")) {
+    return "balance-mismatch";
+  }
+
+  return cleaned;
 }
 
 function hasMalformedOrderIdSignal(userMessageText: string): boolean {
@@ -209,6 +342,26 @@ function getAllowedEntityIdsForIntent(intentId: string): string[] {
     return ["policyTopic", "policyAspect"];
   }
 
+  if (intentId === "consult-payment-status") {
+    return ["paymentId", "policyId", "customerId"];
+  }
+
+  if (intentId === "consult-payment-history") {
+    return ["customerId", "policyId"];
+  }
+
+  if (intentId === "explain-payment-discrepancy") {
+    return ["paymentId", "policyId", "customerId", "discrepancyType"];
+  }
+
+  if (intentId === "consult-policy-status") {
+    return ["policyId", "customerId"];
+  }
+
+  if (intentId === "consult-policy-servicing") {
+    return ["billingTopic", "policyId", "customerId"];
+  }
+
   return [];
 }
 
@@ -225,7 +378,7 @@ function hasExplicitIntentSignal(userMessageText: string, intentId: string): boo
   const text = userMessageText.trim().toLowerCase();
 
   if (intentId === "request-human-handoff") {
-    return /human|agent|representative|person/.test(text);
+    return /human|agent|representative|person|billing specialist|payment specialist/.test(text);
   }
 
   if (intentId === "close-conversation") {
@@ -258,11 +411,36 @@ function hasExplicitIntentSignal(userMessageText: string, intentId: string): boo
     );
   }
 
+  if (intentId === "consult-payment-status") {
+    return /payment|payment id|paid|charge|transaction|autopay|status|processed|pending/.test(text);
+  }
+
+  if (intentId === "consult-payment-history") {
+    return /payment history|billing history|recent payments|past payments|payment records/.test(text);
+  }
+
+  if (intentId === "explain-payment-discrepancy") {
+    return /discrepancy|charged twice|double charge|duplicate charge|billing issue|reconciliation/.test(text);
+  }
+
+  if (intentId === "consult-policy-status") {
+    return /policy|active|inactive|cancelled|canceled|lapsed|in force|bound|status/.test(text);
+  }
+
+  if (intentId === "consult-policy-servicing") {
+    return /billing|servicing|document delivery|premium adjustment|endorsement|refund timing|change request/.test(text);
+  }
+
   return false;
 }
 
 function resolveEffectiveIntentId(session: SessionState, userMessageText: string): string {
-  const resolved = resolveIntentFromText(userMessageText).intentId;
+  const businessContextId =
+    typeof session.businessContextId === "string" && session.businessContextId.trim().length > 0
+      ? session.businessContextId
+      : "customer-service-core-v2";
+
+  const resolved = resolveIntentFromTextForContext(userMessageText, businessContextId).intentId;
 
   if (
     session.conversationStatus === "waiting-user" &&
@@ -483,6 +661,154 @@ function buildResolvedResponse(
     return "Policy: " + policy.title + " | Summary: " + policy.summary;
   }
 
+  if (resolvedIntentId === "consult-payment-status") {
+    const paymentId = sanitizePaymentIdCandidate(findEntityValue(session, "paymentId") ?? "");
+    if (!paymentId) {
+      return undefined;
+    }
+
+    const record = findPaymentAuditRecordByPaymentId(paymentId);
+    if (!record) {
+      return "I could not find a payment record with the provided payment ID. Please verify the payment ID and try again.";
+    }
+
+    if (record.discrepancyType === "none") {
+      return (
+        "Payment " +
+        record.paymentId +
+        " is currently " +
+        record.paymentStatus +
+        ". Audit status: " +
+        record.auditStatus +
+        ". No discrepancy has been detected at this time."
+      );
+    }
+
+    return (
+      "Payment " +
+      record.paymentId +
+      " is currently " +
+      record.paymentStatus +
+      ". Audit status: " +
+      record.auditStatus +
+      ". Discrepancy type: " +
+      record.discrepancyType +
+      "."
+    );
+  }
+
+  if (resolvedIntentId === "consult-payment-history") {
+    const policyId = sanitizePolicyIdCandidate(findEntityValue(session, "policyId") ?? "");
+    const customerId = sanitizeCustomerIdCandidate(findEntityValue(session, "customerId") ?? "");
+
+    const records = policyId
+      ? listPaymentAuditRecordsByPolicyId(policyId)
+      : customerId
+        ? listPaymentAuditRecordsByCustomerId(customerId)
+        : [];
+
+    if (records.length === 0) {
+      return "I could not find payment history for the provided account scope. Please verify the available identifiers and try again.";
+    }
+
+    const latest = records
+      .slice()
+      .sort((a, b) => a.updatedAtIso.localeCompare(b.updatedAtIso))[records.length - 1];
+
+    if (!latest) {
+      return "I could not find payment history for the provided account scope. Please verify the available identifiers and try again.";
+    }
+
+    return (
+      "Payment history scope: " +
+      (policyId ? "Policy " + policyId : "Customer " + customerId) +
+      " | Records: " +
+      String(records.length) +
+      " | Latest payment: " +
+      latest.paymentId +
+      " | Latest audit status: " +
+      latest.auditStatus +
+      "."
+    );
+  }
+
+  if (resolvedIntentId === "explain-payment-discrepancy") {
+    const paymentId = sanitizePaymentIdCandidate(findEntityValue(session, "paymentId") ?? "");
+    const discrepancyType = sanitizeDiscrepancyTypeCandidate(
+      findEntityValue(session, "discrepancyType") ?? "billing discrepancy"
+    );
+
+    const record = paymentId ? findPaymentAuditRecordByPaymentId(paymentId) : undefined;
+
+    if (record) {
+      return (
+        "Payment discrepancy review: " +
+        record.paymentId +
+        " | Discrepancy Type: " +
+        record.discrepancyType +
+        " | Audit Result: " +
+        record.auditStatus +
+        "."
+      );
+    }
+
+    return (
+      "Payment discrepancy review: " +
+      (paymentId ? paymentId : "unscoped payment") +
+      " | Discrepancy Type: " +
+      discrepancyType +
+      " | Audit Result: manual review recommended."
+    );
+  }
+
+  if (resolvedIntentId === "consult-policy-status") {
+    const policyId = sanitizePolicyIdCandidate(findEntityValue(session, "policyId") ?? "");
+    if (!policyId) {
+      return undefined;
+    }
+
+    const record = findLatestPaymentAuditRecordByPolicyId(policyId);
+    if (!record) {
+      return "I could not find policy billing status for the provided policy ID. Please verify the policy ID and try again.";
+    }
+
+    return (
+      "Policy " +
+      record.policyId +
+      " is currently active. Billing state: " +
+      record.billingState +
+      ". Latest audit status: " +
+      record.auditStatus +
+      "."
+    );
+  }
+
+  if (resolvedIntentId === "consult-policy-servicing") {
+    const billingTopic = sanitizeBillingTopicCandidate(findEntityValue(session, "billingTopic") ?? "");
+    if (!billingTopic) {
+      return undefined;
+    }
+
+    const policyId = sanitizePolicyIdCandidate(findEntityValue(session, "policyId") ?? "");
+    const record = policyId ? findLatestPaymentAuditRecordByPolicyId(policyId) : undefined;
+
+    if (record && record.servicingTopic === billingTopic) {
+      return (
+        "Policy servicing topic: " +
+        record.servicingTopic +
+        " | Guidance: the servicing request can proceed through the " +
+        record.servicingDisposition +
+        "."
+      );
+    }
+
+    return (
+      "Policy servicing topic: " +
+      billingTopic +
+      " | Guidance: the servicing request can proceed through the billing review workflow."
+    );
+  }
+
   return undefined;
 }
 
@@ -490,7 +816,13 @@ export function runCustomerServiceAgent(params: {
   session: SessionState;
   userMessageText: string;
 }): CustomerServiceAgentResult {
-  const pack = loadCustomerServicePack();
+  const businessContextId =
+    typeof params.session.businessContextId === "string" &&
+    params.session.businessContextId.trim().length > 0
+      ? params.session.businessContextId
+      : "customer-service-core-v2";
+
+  const pack = loadCustomerServicePackByContextId(businessContextId);
   const previousIntentId =
     typeof params.session.currentIntentId === "string" ? params.session.currentIntentId : undefined;
   const effectiveIntentId = resolveEffectiveIntentId(params.session, params.userMessageText);
@@ -518,6 +850,16 @@ export function runCustomerServiceAgent(params: {
       sanitizedValue = sanitizePolicyTopicCandidate(entity.value);
     } else if (entity.entityId === "policyAspect") {
       sanitizedValue = sanitizePolicyAspectCandidate(entity.value);
+    } else if (entity.entityId === "paymentId") {
+      sanitizedValue = sanitizePaymentIdCandidate(entity.value);
+    } else if (entity.entityId === "policyId") {
+      sanitizedValue = sanitizePolicyIdCandidate(entity.value);
+    } else if (entity.entityId === "customerId") {
+      sanitizedValue = sanitizeCustomerIdCandidate(entity.value);
+    } else if (entity.entityId === "billingTopic") {
+      sanitizedValue = sanitizeBillingTopicCandidate(entity.value);
+    } else if (entity.entityId === "discrepancyType") {
+      sanitizedValue = sanitizeDiscrepancyTypeCandidate(entity.value);
     } else {
       sanitizedValue = normalizeLooseEntityText(entity.value);
     }

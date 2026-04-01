@@ -28,6 +28,8 @@ function isHumanHandoffIntent(text: string): boolean {
     "speak with a broker",
     "talk to a broker",
     "broker advisor",
+    "billing specialist",
+    "payment specialist",
   ]);
 }
 
@@ -142,9 +144,100 @@ function isProductInfoIntent(text: string): boolean {
   ]);
 }
 
-export function resolveIntentFromText(messageText: string): ResolvedIntentResult {
-  const text = normalizeText(messageText);
+function isPaymentStatusIntent(text: string): boolean {
+  const hasPaymentWord = includesAny(text, [
+    "payment",
+    "payment id",
+    "premium payment",
+    "billing payment",
+    "paid",
+    "charge",
+    "transaction",
+    "autopay",
+  ]);
 
+  const hasStatusWord = includesAny(text, [
+    "status",
+    "posted",
+    "received",
+    "processed",
+    "pending",
+    "failed",
+    "declined",
+    "settled",
+  ]);
+
+  return hasPaymentWord && hasStatusWord;
+}
+
+function isPaymentHistoryIntent(text: string): boolean {
+  return includesAny(text, [
+    "payment history",
+    "billing history",
+    "recent payments",
+    "past payments",
+    "payment records",
+    "payment activity",
+    "billing activity",
+  ]);
+}
+
+function isPaymentDiscrepancyIntent(text: string): boolean {
+  return includesAny(text, [
+    "payment discrepancy",
+    "billing discrepancy",
+    "double charge",
+    "duplicate charge",
+    "charged twice",
+    "payment issue",
+    "billing issue",
+    "balance mismatch",
+    "wrong amount",
+    "unexpected charge",
+    "reconcile payment",
+    "reconciliation",
+  ]);
+}
+
+function isPolicyStatusIntent(text: string): boolean {
+  const hasPolicyWord = includesAny(text, [
+    "policy",
+    "policy id",
+    "coverage",
+    "my policy",
+  ]);
+
+  const hasStatusWord = includesAny(text, [
+    "status",
+    "active",
+    "inactive",
+    "cancelled",
+    "canceled",
+    "lapsed",
+    "in force",
+    "bound",
+  ]);
+
+  return hasPolicyWord && hasStatusWord;
+}
+
+function isPolicyServicingIntent(text: string): boolean {
+  return includesAny(text, [
+    "billing topic",
+    "billing help",
+    "billing question",
+    "servicing",
+    "policy servicing",
+    "document delivery",
+    "premium adjustment",
+    "endorsement",
+    "refund timing",
+    "refund status",
+    "change request",
+  ]);
+}
+
+function resolveLegacyIntent(text: string): ResolvedIntentResult {
   if (isHumanHandoffIntent(text)) {
     return { intentId: "request-human-handoff", confidence: "rule" };
   }
@@ -174,4 +267,53 @@ export function resolveIntentFromText(messageText: string): ResolvedIntentResult
   }
 
   return { intentId: "consult-product", confidence: "rule" };
+}
+
+function resolvePaymentAuditIntent(text: string): ResolvedIntentResult {
+  if (isHumanHandoffIntent(text)) {
+    return { intentId: "request-human-handoff", confidence: "rule" };
+  }
+
+  if (isCloseConversationIntent(text)) {
+    return { intentId: "close-conversation", confidence: "rule" };
+  }
+
+  if (isPaymentDiscrepancyIntent(text)) {
+    return { intentId: "explain-payment-discrepancy", confidence: "rule" };
+  }
+
+  if (isPaymentHistoryIntent(text)) {
+    return { intentId: "consult-payment-history", confidence: "rule" };
+  }
+
+  if (isPaymentStatusIntent(text)) {
+    return { intentId: "consult-payment-status", confidence: "rule" };
+  }
+
+  if (isPolicyStatusIntent(text)) {
+    return { intentId: "consult-policy-status", confidence: "rule" };
+  }
+
+  if (isPolicyServicingIntent(text)) {
+    return { intentId: "consult-policy-servicing", confidence: "rule" };
+  }
+
+  return { intentId: "consult-policy-servicing", confidence: "rule" };
+}
+
+export function resolveIntentFromTextForContext(
+  messageText: string,
+  businessContextId: string
+): ResolvedIntentResult {
+  const text = normalizeText(messageText);
+
+  if (businessContextId === "customer-service-payment-audit-v1") {
+    return resolvePaymentAuditIntent(text);
+  }
+
+  return resolveLegacyIntent(text);
+}
+
+export function resolveIntentFromText(messageText: string): ResolvedIntentResult {
+  return resolveIntentFromTextForContext(messageText, "customer-service-core-v2");
 }

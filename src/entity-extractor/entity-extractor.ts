@@ -52,6 +52,54 @@ function extractOrderId(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractPaymentId(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  const explicitPaymentId = normalized.match(/\b(PMT-[A-Z0-9-]+)\b/i);
+  if (explicitPaymentId?.[1]) {
+    return explicitPaymentId[1].toUpperCase();
+  }
+
+  const patterns = [
+    /\b(?:payment|transaction)\s*(?:id)?\s*[:#-]?\s*(PMT-[A-Z0-9-]+)\b/i,
+    /\bstatus\s+of\s+(?:my\s+)?payment\s+(PMT-[A-Z0-9-]+)\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    const captured = match?.[1];
+    if (typeof captured === "string" && captured.trim().length > 0) {
+      return normalizeText(captured).toUpperCase();
+    }
+  }
+
+  return undefined;
+}
+
+function extractPolicyId(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  const explicitPolicyId = normalized.match(/\b(POL-[A-Z0-9-]+)\b/i);
+  if (explicitPolicyId?.[1]) {
+    return explicitPolicyId[1].toUpperCase();
+  }
+
+  const patterns = [
+    /\bpolicy\s*(?:id)?\s*[:#-]?\s*(POL-[A-Z0-9-]+)\b/i,
+    /\bfor\s+policy\s+(POL-[A-Z0-9-]+)\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    const captured = match?.[1];
+    if (typeof captured === "string" && captured.trim().length > 0) {
+      return normalizeText(captured).toUpperCase();
+    }
+  }
+
+  return undefined;
+}
+
 function extractPolicyTopic(messageText: string): string | undefined {
   const normalized = normalizeText(messageText).toLowerCase();
 
@@ -158,6 +206,54 @@ function extractPolicyAspect(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractBillingTopic(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText).toLowerCase();
+
+  if (/\bdocument delivery\b/.test(normalized) || /\bpolicy documents\b/.test(normalized)) {
+    return "document-delivery";
+  }
+
+  if (/\brefund timing\b/.test(normalized) || /\brefund status\b/.test(normalized) || /\brefund\b/.test(normalized)) {
+    return "refund-timing";
+  }
+
+  if (/\bpremium adjustment\b/.test(normalized)) {
+    return "premium-adjustment";
+  }
+
+  if (/\bendorsement\b/.test(normalized) || /\bpolicy change\b/.test(normalized) || /\bchange request\b/.test(normalized)) {
+    return "endorsement";
+  }
+
+  if (/\bbilling\b/.test(normalized) || /\bservicing\b/.test(normalized)) {
+    return "billing-review";
+  }
+
+  return undefined;
+}
+
+function extractDiscrepancyType(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText).toLowerCase();
+
+  if (/\bcharged twice\b/.test(normalized) || /\bdouble charge\b/.test(normalized) || /\bduplicate charge\b/.test(normalized)) {
+    return "duplicate-charge";
+  }
+
+  if (/\bwrong amount\b/.test(normalized) || /\bamount mismatch\b/.test(normalized)) {
+    return "amount-mismatch";
+  }
+
+  if (/\bbalance mismatch\b/.test(normalized)) {
+    return "balance-mismatch";
+  }
+
+  if (/\bdiscrepancy\b/.test(normalized) || /\breconciliation\b/.test(normalized) || /\bbilling issue\b/.test(normalized)) {
+    return "billing discrepancy";
+  }
+
+  return undefined;
+}
+
 function isGenericProductReference(value: string): boolean {
   const normalized = value.trim().toLowerCase();
 
@@ -240,14 +336,34 @@ function extractProductName(messageText: string): string | undefined {
 export function extractEntitiesFromText(messageText: string): ExtractedEntity[] {
   const out: ExtractedEntity[] = [];
   const orderId = extractOrderId(messageText);
+  const paymentId = extractPaymentId(messageText);
+  const policyId = extractPolicyId(messageText);
   const policyTopic = extractPolicyTopic(messageText);
   const policyAspect = extractPolicyAspect(messageText);
+  const billingTopic = extractBillingTopic(messageText);
+  const discrepancyType = extractDiscrepancyType(messageText);
   const productName = extractProductName(messageText);
 
   if (orderId) {
     out.push({
       entityId: "orderId",
       value: orderId,
+      confidence: "derived",
+    });
+  }
+
+  if (paymentId) {
+    out.push({
+      entityId: "paymentId",
+      value: paymentId,
+      confidence: "derived",
+    });
+  }
+
+  if (policyId) {
+    out.push({
+      entityId: "policyId",
+      value: policyId,
       confidence: "derived",
     });
   }
@@ -264,6 +380,22 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
     out.push({
       entityId: "policyAspect",
       value: policyAspect,
+      confidence: "derived",
+    });
+  }
+
+  if (billingTopic) {
+    out.push({
+      entityId: "billingTopic",
+      value: billingTopic,
+      confidence: "derived",
+    });
+  }
+
+  if (discrepancyType) {
+    out.push({
+      entityId: "discrepancyType",
+      value: discrepancyType,
       confidence: "derived",
     });
   }

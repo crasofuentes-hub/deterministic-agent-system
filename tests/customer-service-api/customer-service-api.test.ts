@@ -102,4 +102,67 @@ describe("customer-service-api", () => {
       handoffQueue: "licensed-broker",
     });
   });
+
+  it("returns resolved payment status output for payment audit context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-001",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "What is the status of payment PMT-1001?",
+    });
+
+    expect(result).toEqual({
+      sessionId: "PA-001",
+      businessContextId: "customer-service-payment-audit-v1",
+      resolvedIntentId: "consult-payment-status",
+      responseId: "consult-payment-status-resolved",
+      responseText: "Payment PMT-1001 is currently posted. Audit status: reconciled. No discrepancy has been detected at this time.",
+      stage: "resolve-payment-status",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
+
+  it("returns resolved payment history output for payment audit context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-002",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "Show me the payment history for policy POL-900",
+    });
+
+    expect(result).toEqual({
+      sessionId: "PA-002",
+      businessContextId: "customer-service-payment-audit-v1",
+      resolvedIntentId: "consult-payment-history",
+      responseId: "consult-payment-history-resolved",
+      responseText: "Payment history scope: Policy POL-900 | Records: 1 | Latest payment: PMT-1001 | Latest audit status: reconciled.",
+      stage: "resolve-payment-history",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
+
+  it("returns structured handoff metadata for billing specialist handoff in payment audit context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-003",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need a billing specialist",
+    });
+
+    expect(result).toEqual({
+      sessionId: "PA-003",
+      businessContextId: "customer-service-payment-audit-v1",
+      resolvedIntentId: "request-human-handoff",
+      responseId: "handoff-requested",
+      responseText: "Your conversation will be transferred to a billing or licensed insurance specialist.",
+      stage: "handoff-requested",
+      status: "handoff",
+      humanInterventionRequired: true,
+      handoffReasonCode: "explicit-human-request",
+      handoffQueue: "billing-specialist",
+    });
+  });
 });

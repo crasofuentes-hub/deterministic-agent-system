@@ -61,10 +61,7 @@ describe("customer-service-agent", () => {
 
     expect(result.resolvedIntentId).toBe("consult-availability");
     expect(result.responseText).toBe(
-      "Product: General Liability Core | Availability: broker-review | Eligibility: broker-review-required | Broker Review Required: True | Underwriting Review Required: False | Additional Documents Required: False | Notes: Broker review is required before this coverage option can be confirmed."
-        .replace("True", "true")
-        .replace("False", "false")
-        .replace("False", "false")
+      "Product: General Liability Core | Availability: broker-review | Eligibility: broker-review-required | Broker Review Required: true | Underwriting Review Required: false | Additional Documents Required: false | Notes: Broker review is required before this coverage option can be confirmed."
     );
   });
 
@@ -113,6 +110,91 @@ describe("customer-service-agent", () => {
     expect(result.status).toBe("missing-entity");
     expect(result.responseText).toBe(
       "The provided order ID format is invalid. Please provide a valid order ID and try again."
+    );
+  });
+
+  it("resolves payment status in payment audit context", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-007",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "What is the status of payment PMT-1001?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-payment-status");
+    expect(result.responseId).toBe("consult-payment-status-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Payment PMT-1001 is currently posted. Audit status: reconciled. No discrepancy has been detected at this time."
+    );
+  });
+
+  it("resolves payment history in payment audit context", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-008",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "Show me the payment history for policy POL-900",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-payment-history");
+    expect(result.responseId).toBe("consult-payment-history-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Payment history scope: Policy POL-900 | Records: 1 | Latest payment: PMT-1001 | Latest audit status: reconciled."
+    );
+  });
+
+  it("resolves payment discrepancy in payment audit context", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-009",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "I was charged twice and need a billing discrepancy review",
+    });
+
+    expect(result.resolvedIntentId).toBe("explain-payment-discrepancy");
+    expect(result.responseId).toBe("explain-payment-discrepancy-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Payment discrepancy review: unscoped payment | Discrepancy Type: duplicate-charge | Audit Result: manual review recommended."
+    );
+  });
+
+  it("asks for missing policy id in payment audit context", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-010",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "Is my policy active?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-status");
+    expect(result.responseId).toBe("consult-policy-status-missing-policy-id");
+    expect(result.status).toBe("missing-entity");
+    expect(result.responseText).toBe(
+      "Please provide the policy ID so I can review the policy status."
+    );
+  });
+
+  it("resolves policy servicing in payment audit context", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-011",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "I need help with document delivery for my policy",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-servicing");
+    expect(result.responseId).toBe("consult-policy-servicing-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Policy servicing topic: document-delivery | Guidance: the servicing request can proceed through the billing review workflow."
     );
   });
 });
