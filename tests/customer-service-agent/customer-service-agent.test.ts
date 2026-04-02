@@ -287,4 +287,38 @@ describe("customer-service-agent", () => {
       "Payment history scope: Customer CUS-101 | Records: 3 | Latest payment: PMT-1007 | Latest audit status: exception | Payment statuses: failed:1,pending:1,posted:1."
     );
   });
+
+  it("resolves policy servicing from billing topic and policy id in one message", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-020",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "I need help with refund timing for policy POL-901",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-servicing");
+    expect(result.responseId).toBe("consult-policy-servicing-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Policy servicing topic: refund-timing | Guidance: the servicing request can proceed through the manual-review-recommended."
+    );
+  });
+
+  it("resolves document delivery servicing from billing topic and policy id in one message", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-021",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "I need help with document delivery for policy POL-900",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-servicing");
+    expect(result.responseId).toBe("consult-policy-servicing-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Policy servicing topic: document-delivery | Guidance: the servicing request can proceed through the billing-review-workflow."
+    );
+  });
 });

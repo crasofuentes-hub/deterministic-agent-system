@@ -452,4 +452,23 @@ describe("customer-service semantic invariants", () => {
       "Payment discrepancy review: PMT-1007 | Discrepancy Type: duplicate-charge | Audit Result: exception | Billing state: delinquent."
     );
   });
+
+  it("keeps single-message refund-timing servicing canonical in payment audit API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-011",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need help with refund timing for policy POL-901",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-servicing");
+    expect(result.responseId).toBe("consult-policy-servicing-resolved");
+    expect(result.stage).toBe("resolve-policy-servicing");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Policy servicing topic: refund-timing | Guidance: the servicing request can proceed through the manual-review-recommended."
+    );
+  });
 });

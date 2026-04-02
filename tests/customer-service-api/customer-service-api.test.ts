@@ -207,4 +207,25 @@ describe("customer-service-api", () => {
       handoffQueue: undefined,
     });
   });
+
+  it("returns policy servicing from billing topic and policy id in one message", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-008",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need help with refund timing for policy POL-901",
+    });
+
+    expect(result).toEqual({
+      sessionId: "PA-008",
+      businessContextId: "customer-service-payment-audit-v1",
+      resolvedIntentId: "consult-policy-servicing",
+      responseId: "consult-policy-servicing-resolved",
+      responseText: "Policy servicing topic: refund-timing | Guidance: the servicing request can proceed through the manual-review-recommended.",
+      stage: "resolve-policy-servicing",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
 });
