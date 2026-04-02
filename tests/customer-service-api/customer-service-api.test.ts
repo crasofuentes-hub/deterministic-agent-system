@@ -186,4 +186,25 @@ describe("customer-service-api", () => {
       handoffQueue: undefined,
     });
   });
+
+  it("returns payment history directly from customer id in payment audit context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-007",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "Show me the payment history for customer CUS-101",
+    });
+
+    expect(result).toEqual({
+      sessionId: "PA-007",
+      businessContextId: "customer-service-payment-audit-v1",
+      resolvedIntentId: "consult-payment-history",
+      responseId: "consult-payment-history-resolved",
+      responseText: "Payment history scope: Customer CUS-101 | Records: 3 | Latest payment: PMT-1007 | Latest audit status: exception | Payment statuses: failed:1,pending:1,posted:1.",
+      stage: "resolve-payment-history",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
 });

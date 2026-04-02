@@ -147,4 +147,12 @@ describe("entity-extractor", () => {
       confidence: "derived",
     });
   });
+
+  it("extracts customerId from customer history message", () => {
+    expect(extractEntitiesFromText("Show me the payment history for customer CUS-101")).toContainEqual({
+      entityId: "customerId",
+      value: "CUS-101",
+      confidence: "derived",
+    });
+  });
 });

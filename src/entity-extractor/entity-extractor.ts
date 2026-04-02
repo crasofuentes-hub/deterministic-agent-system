@@ -100,6 +100,31 @@ function extractPolicyId(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractCustomerId(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  const explicitCustomerId = normalized.match(/\b(CUS-[A-Z0-9-]+)\b/i);
+  if (explicitCustomerId?.[1]) {
+    return explicitCustomerId[1].toUpperCase();
+  }
+
+  const patterns = [
+    /\bcustomer\s*(?:id)?\s*[:#-]?\s*(CUS-[A-Z0-9-]+)\b/i,
+    /\bfor\s+customer\s+(CUS-[A-Z0-9-]+)\b/i,
+    /\bhistory\s+for\s+(CUS-[A-Z0-9-]+)\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    const captured = match?.[1];
+    if (typeof captured === "string" && captured.trim().length > 0) {
+      return normalizeText(captured).toUpperCase();
+    }
+  }
+
+  return undefined;
+}
+
 function extractPolicyTopic(messageText: string): string | undefined {
   const normalized = normalizeText(messageText).toLowerCase();
 
@@ -338,6 +363,7 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
   const orderId = extractOrderId(messageText);
   const paymentId = extractPaymentId(messageText);
   const policyId = extractPolicyId(messageText);
+  const customerId = extractCustomerId(messageText);
   const policyTopic = extractPolicyTopic(messageText);
   const policyAspect = extractPolicyAspect(messageText);
   const billingTopic = extractBillingTopic(messageText);
@@ -364,6 +390,14 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
     out.push({
       entityId: "policyId",
       value: policyId,
+      confidence: "derived",
+    });
+  }
+
+  if (customerId) {
+    out.push({
+      entityId: "customerId",
+      value: customerId,
       confidence: "derived",
     });
   }

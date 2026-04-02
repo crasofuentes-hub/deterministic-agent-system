@@ -270,4 +270,21 @@ describe("customer-service-agent", () => {
       "I could not find policy servicing information for the provided policy ID. Please verify the policy ID and try again."
     );
   });
+
+  it("resolves payment history directly from customer id in message", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-019",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "Show me the payment history for customer CUS-101",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-payment-history");
+    expect(result.responseId).toBe("consult-payment-history-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Payment history scope: Customer CUS-101 | Records: 3 | Latest payment: PMT-1007 | Latest audit status: exception | Payment statuses: failed:1,pending:1,posted:1."
+    );
+  });
 });
