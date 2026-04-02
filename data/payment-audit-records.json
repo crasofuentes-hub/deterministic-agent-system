@@ -12,6 +12,18 @@
     "updatedAtIso": "2026-03-24T00:00:00Z"
   },
   {
+    "paymentId": "PMT-1004",
+    "policyId": "POL-900",
+    "customerId": "CUS-100",
+    "paymentStatus": "posted",
+    "auditStatus": "reconciled",
+    "discrepancyType": "none",
+    "billingState": "current",
+    "servicingTopic": "document-delivery",
+    "servicingDisposition": "billing-review-workflow",
+    "updatedAtIso": "2026-03-24T00:20:00Z"
+  },
+  {
     "paymentId": "PMT-1002",
     "policyId": "POL-901",
     "customerId": "CUS-101",
@@ -22,6 +34,18 @@
     "servicingTopic": "refund-timing",
     "servicingDisposition": "manual-review-recommended",
     "updatedAtIso": "2026-03-24T00:05:00Z"
+  },
+  {
+    "paymentId": "PMT-1005",
+    "policyId": "POL-901",
+    "customerId": "CUS-101",
+    "paymentStatus": "posted",
+    "auditStatus": "exception",
+    "discrepancyType": "balance-mismatch",
+    "billingState": "review-required",
+    "servicingTopic": "refund-timing",
+    "servicingDisposition": "manual-review-recommended",
+    "updatedAtIso": "2026-03-24T00:25:00Z"
   },
   {
     "paymentId": "PMT-1003",

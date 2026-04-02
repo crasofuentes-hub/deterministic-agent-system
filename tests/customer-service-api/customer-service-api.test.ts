@@ -136,7 +136,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-payment-audit-v1",
       resolvedIntentId: "consult-payment-history",
       responseId: "consult-payment-history-resolved",
-      responseText: "Payment history scope: Policy POL-900 | Records: 1 | Latest payment: PMT-1001 | Latest audit status: reconciled.",
+      responseText: "Payment history scope: Policy POL-900 | Records: 2 | Latest payment: PMT-1004 | Latest audit status: reconciled | Payment statuses: posted:2.",
       stage: "resolve-payment-history",
       status: "resolved",
       humanInterventionRequired: false,

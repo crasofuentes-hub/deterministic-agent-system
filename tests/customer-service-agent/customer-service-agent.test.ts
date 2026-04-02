@@ -143,7 +143,7 @@ describe("customer-service-agent", () => {
     expect(result.responseId).toBe("consult-payment-history-resolved");
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
-      "Payment history scope: Policy POL-900 | Records: 1 | Latest payment: PMT-1001 | Latest audit status: reconciled."
+      "Payment history scope: Policy POL-900 | Records: 2 | Latest payment: PMT-1004 | Latest audit status: reconciled | Payment statuses: posted:2."
     );
   });
 
@@ -160,7 +160,7 @@ describe("customer-service-agent", () => {
     expect(result.responseId).toBe("explain-payment-discrepancy-resolved");
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
-      "Payment discrepancy review: unscoped payment | Discrepancy Type: duplicate-charge | Audit Result: manual review recommended."
+      "Payment discrepancy review: PMT-1002 | Discrepancy Type: duplicate-charge | Audit Result: under-review | Billing state: review-required."
     );
   });
 

@@ -20,6 +20,10 @@ function normalizeText(value: string): string {
   return String(value).normalize("NFC").trim().toUpperCase();
 }
 
+function normalizeTag(value: string): string {
+  return String(value).normalize("NFC").trim().toLowerCase();
+}
+
 function loadPaymentAuditRecords(): PaymentAuditRecord[] {
   if (cachedRecords) {
     return cachedRecords;
@@ -32,12 +36,12 @@ function loadPaymentAuditRecords(): PaymentAuditRecord[] {
     paymentId: normalizeText(item.paymentId),
     policyId: normalizeText(item.policyId),
     customerId: normalizeText(item.customerId),
-    paymentStatus: String(item.paymentStatus).normalize("NFC").trim().toLowerCase(),
-    auditStatus: String(item.auditStatus).normalize("NFC").trim().toLowerCase(),
-    discrepancyType: String(item.discrepancyType).normalize("NFC").trim().toLowerCase(),
-    billingState: String(item.billingState).normalize("NFC").trim().toLowerCase(),
-    servicingTopic: String(item.servicingTopic).normalize("NFC").trim().toLowerCase(),
-    servicingDisposition: String(item.servicingDisposition).normalize("NFC").trim().toLowerCase(),
+    paymentStatus: normalizeTag(item.paymentStatus),
+    auditStatus: normalizeTag(item.auditStatus),
+    discrepancyType: normalizeTag(item.discrepancyType),
+    billingState: normalizeTag(item.billingState),
+    servicingTopic: normalizeTag(item.servicingTopic),
+    servicingDisposition: normalizeTag(item.servicingDisposition),
     updatedAtIso: String(item.updatedAtIso).normalize("NFC").trim(),
   }));
 
@@ -63,6 +67,13 @@ export function listPaymentAuditRecordsByPolicyId(policyId: string): PaymentAudi
 export function listPaymentAuditRecordsByCustomerId(customerId: string): PaymentAuditRecord[] {
   const normalized = normalizeText(customerId);
   return loadPaymentAuditRecords().filter((item) => item.customerId === normalized);
+}
+
+export function listPaymentAuditRecordsByDiscrepancyType(
+  discrepancyType: string
+): PaymentAuditRecord[] {
+  const normalized = normalizeTag(discrepancyType);
+  return loadPaymentAuditRecords().filter((item) => item.discrepancyType === normalized);
 }
 
 export function findLatestPaymentAuditRecordByPolicyId(

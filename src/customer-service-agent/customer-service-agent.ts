@@ -9,6 +9,7 @@ import {
   findLatestPaymentAuditRecordByPolicyId,
   findPaymentAuditRecordByPaymentId,
   listPaymentAuditRecordsByCustomerId,
+  listPaymentAuditRecordsByDiscrepancyType,
   listPaymentAuditRecordsByPolicyId,
 } from "../data-layer/payment-audit-repository";
 import { findProductByName } from "../data-layer/product-repository";
@@ -711,23 +712,39 @@ function buildResolvedResponse(
       return "I could not find payment history for the provided account scope. Please verify the available identifiers and try again.";
     }
 
-    const latest = records
+    const sorted = records
       .slice()
-      .sort((a, b) => a.updatedAtIso.localeCompare(b.updatedAtIso))[records.length - 1];
+      .sort((a, b) => a.updatedAtIso.localeCompare(b.updatedAtIso));
 
+    const latest = sorted[sorted.length - 1];
     if (!latest) {
       return "I could not find payment history for the provided account scope. Please verify the available identifiers and try again.";
     }
+
+    const paymentStatusCounts = new Map<string, number>();
+    for (const record of sorted) {
+      paymentStatusCounts.set(
+        record.paymentStatus,
+        (paymentStatusCounts.get(record.paymentStatus) ?? 0) + 1
+      );
+    }
+
+    const paymentStatusSummary = Array.from(paymentStatusCounts.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([status, count]) => status + ":" + String(count))
+      .join(",");
 
     return (
       "Payment history scope: " +
       (policyId ? "Policy " + policyId : "Customer " + customerId) +
       " | Records: " +
-      String(records.length) +
+      String(sorted.length) +
       " | Latest payment: " +
       latest.paymentId +
       " | Latest audit status: " +
       latest.auditStatus +
+      " | Payment statuses: " +
+      paymentStatusSummary +
       "."
     );
   }
@@ -738,7 +755,14 @@ function buildResolvedResponse(
       findEntityValue(session, "discrepancyType") ?? "billing discrepancy"
     );
 
-    const record = paymentId ? findPaymentAuditRecordByPaymentId(paymentId) : undefined;
+    let record = paymentId ? findPaymentAuditRecordByPaymentId(paymentId) : undefined;
+
+    if (!record && discrepancyType) {
+      const candidates = listPaymentAuditRecordsByDiscrepancyType(discrepancyType)
+        .slice()
+        .sort((a, b) => a.updatedAtIso.localeCompare(b.updatedAtIso));
+      record = candidates.length > 0 ? candidates[candidates.length - 1] : undefined;
+    }
 
     if (record) {
       return (
@@ -748,6 +772,8 @@ function buildResolvedResponse(
         record.discrepancyType +
         " | Audit Result: " +
         record.auditStatus +
+        " | Billing state: " +
+        record.billingState +
         "."
       );
     }
@@ -790,16 +816,28 @@ function buildResolvedResponse(
     }
 
     const policyId = sanitizePolicyIdCandidate(findEntityValue(session, "policyId") ?? "");
-    const record = policyId ? findLatestPaymentAuditRecordByPolicyId(policyId) : undefined;
 
-    if (record && record.servicingTopic === billingTopic) {
-      return (
-        "Policy servicing topic: " +
-        record.servicingTopic +
-        " | Guidance: the servicing request can proceed through the " +
-        record.servicingDisposition +
-        "."
-      );
+    if (policyId) {
+      const records = listPaymentAuditRecordsByPolicyId(policyId)
+        .slice()
+        .sort((a, b) => a.updatedAtIso.localeCompare(b.updatedAtIso));
+
+      const exact = records.filter((item) => item.servicingTopic === billingTopic);
+      const matched = exact.length > 0 ? exact[exact.length - 1] : undefined;
+
+      if (matched) {
+        return (
+          "Policy servicing topic: " +
+          matched.servicingTopic +
+          " | Guidance: the servicing request can proceed through the " +
+          matched.servicingDisposition +
+          "."
+        );
+      }
+
+      if (records.length === 0) {
+        return "I could not find policy servicing information for the provided policy ID. Please verify the policy ID and try again.";
+      }
     }
 
     return (
