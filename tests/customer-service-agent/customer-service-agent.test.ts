@@ -160,7 +160,7 @@ describe("customer-service-agent", () => {
     expect(result.responseId).toBe("explain-payment-discrepancy-resolved");
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
-      "Payment discrepancy review: PMT-1002 | Discrepancy Type: duplicate-charge | Audit Result: under-review | Billing state: review-required."
+      "Payment discrepancy review: PMT-1007 | Discrepancy Type: duplicate-charge | Audit Result: exception | Billing state: delinquent."
     );
   });
 
@@ -195,6 +195,79 @@ describe("customer-service-agent", () => {
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
       "Policy servicing topic: document-delivery | Guidance: the servicing request can proceed through the billing review workflow."
+    );
+  });
+
+  it("resolves payment history by customer id across multiple policies", () => {
+    const session = {
+      ...createInitialSessionState({
+        sessionId: "S-016",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      collectedEntities: [
+        {
+          entityId: "customerId",
+          value: "CUS-101",
+          confidence: "confirmed",
+        },
+      ],
+    };
+
+    const result = runCustomerServiceAgent({
+      session,
+      userMessageText: "Show me the payment history",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-payment-history");
+    expect(result.responseId).toBe("consult-payment-history-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Payment history scope: Customer CUS-101 | Records: 3 | Latest payment: PMT-1007 | Latest audit status: exception | Payment statuses: failed:1,pending:1,posted:1."
+    );
+  });
+
+  it("selects the latest duplicate-charge discrepancy deterministically", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-017",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      userMessageText: "I need help with a duplicate charge",
+    });
+
+    expect(result.resolvedIntentId).toBe("explain-payment-discrepancy");
+    expect(result.responseId).toBe("explain-payment-discrepancy-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Payment discrepancy review: PMT-1007 | Discrepancy Type: duplicate-charge | Audit Result: exception | Billing state: delinquent."
+    );
+  });
+
+  it("returns policy servicing not-found output when policy id has no records", () => {
+    const session = {
+      ...createInitialSessionState({
+        sessionId: "S-018",
+        businessContextId: "customer-service-payment-audit-v1",
+      }),
+      collectedEntities: [
+        {
+          entityId: "policyId",
+          value: "POL-999",
+          confidence: "confirmed",
+        },
+      ],
+    };
+
+    const result = runCustomerServiceAgent({
+      session,
+      userMessageText: "I need help with refund timing",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-policy-servicing");
+    expect(result.responseId).toBe("consult-policy-servicing-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "I could not find policy servicing information for the provided policy ID. Please verify the policy ID and try again."
     );
   });
 });

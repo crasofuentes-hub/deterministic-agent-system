@@ -165,4 +165,25 @@ describe("customer-service-api", () => {
       handoffQueue: "billing-specialist",
     });
   });
+
+  it("returns latest duplicate-charge discrepancy output for payment audit context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-006",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need help with a duplicate charge",
+    });
+
+    expect(result).toEqual({
+      sessionId: "PA-006",
+      businessContextId: "customer-service-payment-audit-v1",
+      resolvedIntentId: "explain-payment-discrepancy",
+      responseId: "explain-payment-discrepancy-resolved",
+      responseText: "Payment discrepancy review: PMT-1007 | Discrepancy Type: duplicate-charge | Audit Result: exception | Billing state: delinquent.",
+      stage: "resolve-payment-discrepancy",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
 });

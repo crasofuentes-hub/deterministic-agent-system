@@ -355,7 +355,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Payment discrepancy review: PMT-1002 | Discrepancy Type: duplicate-charge | Audit Result: under-review | Billing state: review-required."
+      "Payment discrepancy review: PMT-1007 | Discrepancy Type: duplicate-charge | Audit Result: exception | Billing state: delinquent."
     );
   });
 
@@ -432,5 +432,24 @@ describe("customer-service semantic invariants", () => {
     expect(result.output.humanInterventionRequired).toBe(true);
     expect(result.output.handoffReasonCode).toBe("explicit-human-request");
     expect(result.output.handoffQueue).toBe("billing-specialist");
+  });
+
+  it("keeps latest duplicate-charge discrepancy output canonical in payment audit API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "PA-INV-010",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need help with a duplicate charge",
+    });
+
+    expect(result.resolvedIntentId).toBe("explain-payment-discrepancy");
+    expect(result.responseId).toBe("explain-payment-discrepancy-resolved");
+    expect(result.stage).toBe("resolve-payment-discrepancy");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Payment discrepancy review: PMT-1007 | Discrepancy Type: duplicate-charge | Audit Result: exception | Billing state: delinquent."
+    );
   });
 });

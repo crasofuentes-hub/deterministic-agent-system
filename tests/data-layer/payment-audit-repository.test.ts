@@ -11,7 +11,7 @@ import {
 describe("payment-audit-repository", () => {
   it("lists deterministic payment audit records", () => {
     const records = listPaymentAuditRecords();
-    expect(records.length).toBe(5);
+    expect(records.length).toBe(7);
   });
 
   it("finds payment record by payment id deterministically", () => {
@@ -37,14 +37,18 @@ describe("payment-audit-repository", () => {
 
   it("lists multiple payment records by customer id deterministically", () => {
     const records = listPaymentAuditRecordsByCustomerId("CUS-101");
-    expect(records).toHaveLength(2);
-    expect(records.map((item) => item.paymentId)).toEqual(["PMT-1002", "PMT-1005"]);
+    expect(records).toHaveLength(3);
+    expect(records.map((item) => item.paymentId)).toEqual(["PMT-1002", "PMT-1005", "PMT-1007"]);
   });
 
   it("lists payment records by discrepancy type deterministically", () => {
-    const records = listPaymentAuditRecordsByDiscrepancyType("balance-mismatch");
-    expect(records).toHaveLength(1);
-    expect(records[0]?.paymentId).toBe("PMT-1005");
+    const balanceRecords = listPaymentAuditRecordsByDiscrepancyType("balance-mismatch");
+    expect(balanceRecords).toHaveLength(1);
+    expect(balanceRecords[0]?.paymentId).toBe("PMT-1005");
+
+    const duplicateChargeRecords = listPaymentAuditRecordsByDiscrepancyType("duplicate-charge");
+    expect(duplicateChargeRecords).toHaveLength(3);
+    expect(duplicateChargeRecords.map((item) => item.paymentId)).toEqual(["PMT-1006", "PMT-1002", "PMT-1007"]);
   });
 
   it("finds latest payment record by policy id deterministically", () => {
