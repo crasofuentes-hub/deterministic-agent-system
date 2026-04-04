@@ -1,7 +1,55 @@
 import { describe, expect, it } from "vitest";
-import { runCustomerServiceApi } from "../../src/customer-service-api/customer-service-api";
+import {
+  runCustomerServiceApi,
+  runCustomerServiceApiForCustomer,
+} from "../../src/customer-service-api/customer-service-api";
+import { clearAllStoredSessions } from "../../src/session-store/session-store";
 
 describe("customer-service-api session behavior", () => {
+  it("resolves a follow-up customer conversation through deterministic customer session reuse", () => {
+    clearAllStoredSessions();
+
+    const first = runCustomerServiceApiForCustomer({
+      customerId: "CUS-101",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "Show me the payment history",
+    });
+
+    expect(first.resolvedIntentId).toBe("consult-payment-history");
+    expect(first.status).toBe("resolved");
+    expect(first.responseText).toBe(
+      "Payment history scope: Customer CUS-101 | Records: 3 | Latest payment: PMT-1007 | Latest audit status: exception | Payment statuses: failed:1,pending:1,posted:1."
+    );
+
+    const second = runCustomerServiceApiForCustomer({
+      customerId: "CUS-101",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "I need a billing specialist",
+    });
+
+    expect(second.sessionId).toBe(first.sessionId);
+    expect(second.resolvedIntentId).toBe("request-human-handoff");
+    expect(second.status).toBe("handoff");
+    expect(second.humanInterventionRequired).toBe(true);
+    expect(second.handoffReasonCode).toBe("explicit-human-request");
+    expect(second.handoffQueue).toBe("billing-specialist");
+  });
+
+  it("creates deterministic customer-scoped session ids when no prior session exists", () => {
+    clearAllStoredSessions();
+
+    const result = runCustomerServiceApiForCustomer({
+      customerId: "CUS-100",
+      businessContextId: "customer-service-payment-audit-v1",
+      userMessageText: "What is the status of payment PMT-1001?",
+    });
+
+    expect(result.sessionId).toBe("customer-session:CUS-100");
+    expect(result.resolvedIntentId).toBe("consult-payment-status");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toContain("PMT-1001");
+  });
+
   it("keeps waiting-user state when product name is missing", () => {
     const first = runCustomerServiceApi({
       sessionId: "CS-001",
