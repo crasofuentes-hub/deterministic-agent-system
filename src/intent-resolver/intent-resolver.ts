@@ -117,10 +117,32 @@ function isPriceIntent(text: string): boolean {
     "cost",
     "how much",
     "pricing",
-    "quote",
     "premium",
     "estimated premium",
     "monthly premium",
+  ]);
+}
+
+function isQuoteIntent(text: string): boolean {
+  return includesAny(text, [
+    "quote",
+    "start a quote",
+    "get a quote",
+    "need a quote",
+    "quote request",
+    "quote for",
+    "new quote",
+  ]);
+}
+
+function isRenewalIntent(text: string): boolean {
+  return includesAny(text, [
+    "renewal",
+    "renew my policy",
+    "policy renewal",
+    "renewal status",
+    "renewal update",
+    "renewal notice",
   ]);
 }
 
@@ -250,8 +272,16 @@ function resolveLegacyIntent(text: string): ResolvedIntentResult {
     return { intentId: "consult-policy", confidence: "rule" };
   }
 
+  if (isRenewalIntent(text)) {
+    return { intentId: "consult-renewal-status", confidence: "rule" };
+  }
+
   if (isOrderStatusIntent(text)) {
     return { intentId: "consult-order-status", confidence: "rule" };
+  }
+
+  if (isQuoteIntent(text)) {
+    return { intentId: "request-quote", confidence: "rule" };
   }
 
   if (isPriceIntent(text)) {

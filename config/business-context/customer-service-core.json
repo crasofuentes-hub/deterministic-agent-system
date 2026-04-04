@@ -25,6 +25,20 @@
       "workflowId": "availability-flow"
     },
     {
+      "intentId": "request-quote",
+      "description": "Start an insurance quote intake workflow for a customer.",
+      "requiredEntities": [],
+      "optionalEntities": ["productName"],
+      "workflowId": "quote-intake-flow"
+    },
+    {
+      "intentId": "consult-renewal-status",
+      "description": "Consult the current renewal status for an insurance policy or renewal case.",
+      "requiredEntities": [],
+      "optionalEntities": ["orderId", "productName"],
+      "workflowId": "renewal-status-flow"
+    },
+    {
       "intentId": "consult-order-status",
       "description": "Consult the status of an insurance application or servicing request.",
       "requiredEntities": ["orderId"],
@@ -95,6 +109,18 @@
       "terminalStages": ["done"]
     },
     {
+      "workflowId": "quote-intake-flow",
+      "stages": ["start", "collect-quote-context", "resolve-quote-intake", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
+      "workflowId": "renewal-status-flow",
+      "stages": ["start", "collect-renewal-context", "resolve-renewal-status", "done"],
+      "initialStage": "start",
+      "terminalStages": ["done"]
+    },
+    {
       "workflowId": "order-status-flow",
       "stages": ["start", "collect-order-id", "resolve-order-status", "done"],
       "initialStage": "start",
@@ -161,6 +187,20 @@
       "stage": "resolve-availability",
       "status": "resolved",
       "messageTemplate": "The coverage option availability information has been retrieved."
+    },
+    {
+      "responseId": "request-quote-resolved",
+      "intentId": "request-quote",
+      "stage": "resolve-quote-intake",
+      "status": "resolved",
+      "messageTemplate": "The quote intake workflow has been started."
+    },
+    {
+      "responseId": "consult-renewal-status-resolved",
+      "intentId": "consult-renewal-status",
+      "stage": "resolve-renewal-status",
+      "status": "resolved",
+      "messageTemplate": "The renewal status information has been retrieved."
     },
     {
       "responseId": "consult-order-status-missing-order-id",
