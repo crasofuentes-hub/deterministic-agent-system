@@ -1,0 +1,16 @@
+services:
+  payment-audit-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deterministic-agent-system-payment-audit-demo
+    command: npm run demo:payment-audit
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deterministic-agent-system-api
+    command: npm run start:api
+    ports:
+      - "3000:3000"
