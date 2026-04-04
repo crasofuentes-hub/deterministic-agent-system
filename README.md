@@ -362,6 +362,85 @@ The intent of this path is controlled materialization of plans, not unconstraine
 
 The repository now includes a stabilized domain slice for **Northwind Insurance Brokers**.
 
+### Deterministic payment-audit vertical
+
+The most concrete enterprise-facing vertical currently implemented in this repository is:
+
+- **`customer-service-payment-audit-v1`**
+
+This vertical demonstrates how the deterministic runtime can support a realistic insurance servicing and payment-audit workflow while preserving:
+
+- explicit business context selection
+- deterministic entity extraction
+- canonical response families
+- reproducible multi-turn behavior
+- deterministic dataset-backed answers
+- stable tests for API, session, WhatsApp bridge, and semantic invariants
+
+### What this vertical currently supports
+
+The `payment-audit` slice currently supports deterministic handling for:
+
+- payment status lookup by `paymentId`
+- payment history lookup by `policyId`
+- payment history lookup by `customerId`
+- payment discrepancy review by `paymentId`
+- payment discrepancy review by discrepancy type
+- policy billing status lookup by `policyId`
+- policy servicing guidance by `policyId + billingTopic`
+- deterministic billing-specialist handoff
+
+### Dataset-backed behavior
+
+Unlike placeholder-only demos, this slice is already backed by a deterministic local repository:
+
+- `data/payment-audit-records.json`
+- `src/data-layer/payment-audit-repository.ts`
+
+The current dataset includes:
+
+- multiple payment records per policy
+- multiple payment records per customer
+- multiple discrepancy cases of the same type
+- stable billing states such as `current`, `review-required`, and `delinquent`
+- servicing topics such as `document-delivery`, `refund-timing`, `premium-adjustment`, and `endorsement`
+
+### Reproducible demo
+
+Build the project and run:
+
+    npm run build
+    npm run demo:payment-audit
+
+This demo prints deterministic results for:
+
+- payment status
+- payment history by policy
+- policy servicing
+- payment discrepancy review
+- payment history by customer
+
+Representative example prompts already covered by the demo:
+
+- `What is the status of payment PMT-1001?`
+- `Show me the payment history for policy POL-900`
+- `I need help with refund timing for policy POL-901`
+- `I need help with a duplicate charge`
+- `Show me the payment history for customer CUS-101`
+
+### Target operational value
+
+This vertical is intended as a realistic stepping stone toward insurance-service workflows where reproducibility and auditability matter, including:
+
+- payment servicing review
+- discrepancy escalation support
+- billing-state verification
+- broker / billing specialist handoff
+- deterministic customer-service flows over API and messaging channels
+
+It is not yet presented as a full production insurance platform, but it is already a concrete, reproducible, test-backed vertical rather than a generic agent demo.
+
+
 This slice demonstrates how the deterministic agent architecture can support a realistic service workflow without abandoning bounded behavior, canonical responses, or verification rigor.
 
 ### Current supported broker-style interactions
