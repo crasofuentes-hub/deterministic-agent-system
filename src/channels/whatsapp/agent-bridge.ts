@@ -11,6 +11,9 @@ export interface WhatsAppAgentBridgeResult {
     channel: "whatsapp";
     customerId: string;
     inboundMessageId: string;
+    inboundTraceId?: string;
+    whatsappPhoneNumberId?: string;
+    profileName?: string;
     outboundText: string;
     responseId: string;
     resolvedIntentId: string;
@@ -38,6 +41,15 @@ export function runWhatsAppCustomerServiceBridge(params: {
       channel: "whatsapp",
       customerId: params.message.customerId,
       inboundMessageId: params.message.channelMessageId,
+      inboundTraceId: params.message.traceId,
+      whatsappPhoneNumberId:
+        typeof params.message.metadata?.whatsappPhoneNumberId === "string"
+          ? params.message.metadata.whatsappPhoneNumberId
+          : undefined,
+      profileName:
+        typeof params.message.metadata?.profileName === "string"
+          ? params.message.metadata.profileName
+          : undefined,
       outboundText: agent.responseText,
       responseId: agent.responseId,
       resolvedIntentId: agent.resolvedIntentId,

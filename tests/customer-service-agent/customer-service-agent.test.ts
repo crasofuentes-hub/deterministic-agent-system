@@ -335,7 +335,7 @@ describe("customer-service-agent", () => {
     expect(result.responseId).toBe("request-quote-resolved");
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
-      "Quote intake started for Personal Auto Standard. A broker can now continue with eligibility, underwriting review, and premium estimation."
+      "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review."
     );
   });
 
@@ -421,6 +421,40 @@ describe("customer-service-agent", () => {
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
       "Coverage review started. Please provide the coverage option name so I can explain what is included."
+    );
+  });
+
+  it("requests state when quote product is present but state is missing", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-028",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "I need a quote for Personal Auto Standard",
+    });
+
+    expect(result.resolvedIntentId).toBe("request-quote");
+    expect(result.responseId).toBe("request-quote-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review."
+    );
+  });
+
+  it("resolves structured quote intake when product and state are present", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-029",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "I need a quote for Personal Auto Standard in CA, call me",
+    });
+
+    expect(result.resolvedIntentId).toBe("request-quote");
+    expect(result.responseId).toBe("request-quote-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
     );
   });
 });

@@ -565,16 +565,70 @@ function buildResolvedResponse(
   }
 
   if (resolvedIntentId === "request-quote") {
-    const productName = sanitizeProductNameCandidate(findEntityValue(session, "productName") ?? "");
+    const rawProductName = findEntityValue(session, "productName") ?? "";
+    let productName = sanitizeProductNameCandidate(rawProductName);
+    let stateCode = findEntityValue(session, "stateCode")?.trim().toUpperCase();
+    let contactPreference = findEntityValue(session, "contactPreference")?.trim().toLowerCase();
+
+    const normalizedQuote = String(rawProductName)
+      .normalize("NFC")
+      .trim()
+      .replace(/[?!.]+$/g, "")
+      .trim();
+
+    if (productName) {
+      productName = productName
+        .replace(/\s+\bin\s+(?:CA|TX|AZ|NV|NM|CO|UT|OR|WA|FL)\b.*$/i, "")
+        .replace(/\s+\bin\s+(?:California|Texas|Arizona|Nevada|New Mexico|Colorado|Utah|Oregon|Washington|Florida)\b.*$/i, "")
+        .replace(/,\s*(?:call me|call back|text me|email me|sms)\s*$/i, "")
+        .trim();
+    }
+
+    if (!stateCode) {
+      const directStateMatch = normalizedQuote.match(/\bin\s+(CA|TX|AZ|NV|NM|CO|UT|OR|WA|FL)\b/i);
+      if (directStateMatch?.[1]) {
+        stateCode = directStateMatch[1].toUpperCase();
+      }
+    }
+
+    if (!contactPreference) {
+      if (/\bcall me\b|\bcall back\b|\bphone call\b/i.test(normalizedQuote)) {
+        contactPreference = "call";
+      } else if (/\btext me\b|\bsms\b|\btext message\b/i.test(normalizedQuote)) {
+        contactPreference = "text";
+      } else if (/\bemail me\b|\bemail\b/i.test(normalizedQuote)) {
+        contactPreference = "email";
+      }
+    }
 
     if (!productName) {
       return "Quote intake started. Please provide the coverage option name so a quote can be prepared.";
     }
 
+    if (!stateCode) {
+      return (
+        "Quote intake started for " +
+        productName +
+        ". Please provide the state where coverage is needed so a broker can continue the quote review."
+      );
+    }
+
+    const contactSuffix =
+      contactPreference === "call"
+        ? " Preferred contact: call."
+        : contactPreference === "text"
+          ? " Preferred contact: text."
+          : contactPreference === "email"
+            ? " Preferred contact: email."
+            : "";
+
     return (
       "Quote intake started for " +
       productName +
-      ". A broker can now continue with eligibility, underwriting review, and premium estimation."
+      " in " +
+      stateCode +
+      ". A broker can now continue with eligibility, underwriting review, and premium estimation." +
+      contactSuffix
     );
   }
 

@@ -241,7 +241,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "request-quote",
       responseId: "request-quote-resolved",
-      responseText: "Quote intake started for Personal Auto Standard. A broker can now continue with eligibility, underwriting review, and premium estimation.",
+      responseText: "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review.",
       stage: "resolve-quote-intake",
       status: "resolved",
       humanInterventionRequired: false,
@@ -285,6 +285,27 @@ describe("customer-service-api", () => {
       responseId: "consult-coverage-resolved",
       responseText: "Coverage summary for Personal Auto Standard: standard protections are included, while final covered scenarios remain subject to underwriting and policy terms.",
       stage: "resolve-coverage",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
+
+  it("returns structured quote intake output when product and state are present", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-QUOTE-002",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I need a quote for Personal Auto Standard in CA, call me",
+    });
+
+    expect(result).toEqual({
+      sessionId: "CS-QUOTE-002",
+      businessContextId: "customer-service-core-v2",
+      resolvedIntentId: "request-quote",
+      responseId: "request-quote-resolved",
+      responseText: "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call.",
+      stage: "resolve-quote-intake",
       status: "resolved",
       humanInterventionRequired: false,
       handoffReasonCode: undefined,

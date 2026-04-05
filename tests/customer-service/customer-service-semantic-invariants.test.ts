@@ -487,7 +487,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Quote intake started for Personal Auto Standard. A broker can now continue with eligibility, underwriting review, and premium estimation."
+      "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review."
     );
   });
 
@@ -526,6 +526,25 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
       "Coverage summary for Personal Auto Standard: standard protections are included, while final covered scenarios remain subject to underwriting and policy terms."
+    );
+  });
+
+  it("keeps structured quote intake output canonical in the insurance brokerage API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-INV-QUOTE-002",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I need a quote for Personal Auto Standard in CA, call me",
+    });
+
+    expect(result.resolvedIntentId).toBe("request-quote");
+    expect(result.responseId).toBe("request-quote-resolved");
+    expect(result.stage).toBe("resolve-quote-intake");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
     );
   });
 });

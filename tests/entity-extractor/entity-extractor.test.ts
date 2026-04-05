@@ -154,5 +154,5 @@ describe("entity-extractor", () => {
       value: "CUS-101",
       confidence: "derived",
     });
-  });
+  });
 });
