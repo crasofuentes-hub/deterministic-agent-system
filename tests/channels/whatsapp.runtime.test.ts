@@ -191,4 +191,71 @@ describe("whatsapp runtime", () => {
       })
     ).toThrow("WHATSAPP_PHONE_NUMBER_ID is required for http mode");
   });
+
+  it("requires WHATSAPP_API_VERSION for http delivery mode", () => {
+    expect(() =>
+      resolveWhatsAppRuntime({
+        env: {
+          WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+          WHATSAPP_DELIVERY_MODE: "http",
+          WHATSAPP_PHONE_NUMBER_ID: "1234567890",
+          WHATSAPP_ACCESS_TOKEN: "token-001",
+        },
+      })
+    ).toThrow("WHATSAPP_API_VERSION is required for http mode");
+  });
+
+  it("requires WHATSAPP_PHONE_NUMBER_ID for http delivery mode", () => {
+    expect(() =>
+      resolveWhatsAppRuntime({
+        env: {
+          WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+          WHATSAPP_DELIVERY_MODE: "http",
+          WHATSAPP_API_VERSION: "v23.0",
+          WHATSAPP_ACCESS_TOKEN: "token-001",
+        },
+      })
+    ).toThrow("WHATSAPP_PHONE_NUMBER_ID is required for http mode");
+  });
+
+  it("requires WHATSAPP_ACCESS_TOKEN for http delivery mode", () => {
+    expect(() =>
+      resolveWhatsAppRuntime({
+        env: {
+          WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+          WHATSAPP_DELIVERY_MODE: "http",
+          WHATSAPP_API_VERSION: "v23.0",
+          WHATSAPP_PHONE_NUMBER_ID: "1234567890",
+        },
+      })
+    ).toThrow("WHATSAPP_ACCESS_TOKEN is required for http mode");
+  });
+
+  it("creates runtime successfully for http delivery mode when required vars are present", () => {
+    const runtime = resolveWhatsAppRuntime({
+      env: {
+        WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+        WHATSAPP_DELIVERY_MODE: "http",
+        WHATSAPP_API_VERSION: "v23.0",
+        WHATSAPP_PHONE_NUMBER_ID: "1234567890",
+        WHATSAPP_ACCESS_TOKEN: "token-001",
+      },
+      fetchImpl: async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => ({ messages: [{ id: "wamid.test.001" }] }),
+          text: async () => "",
+        }) as Response,
+    });
+
+    expect(runtime.verifyToken).toBe("verify-token-001");
+    expect(runtime.deliveryMode).toBe("http");
+    expect(runtime.sender).toBeDefined();
+    expect(runtime.store).toBeDefined();
+    expect(typeof runtime.store.loadSession).toBe("function");
+    expect(typeof runtime.store.saveSession).toBe("function");
+    expect(typeof runtime.store.hasProcessedMessage).toBe("function");
+    expect(typeof runtime.store.markMessageProcessed).toBe("function");
+  });
 });
