@@ -355,4 +355,38 @@ describe("customer-service-agent", () => {
       "Quote intake started. Please provide the coverage option name so a quote can be prepared."
     );
   });
+
+  it("resolves renewal status when product name is present", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-024",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "I need a renewal update for Personal Auto Standard",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-renewal-status");
+    expect(result.responseId).toBe("consult-renewal-status-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Renewal status for Personal Auto Standard: the policy is currently in renewal review. Updated premium and eligibility guidance can now be prepared."
+    );
+  });
+
+  it("keeps renewal status canonical when context is missing", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-025",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "What is the renewal status for my policy?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-renewal-status");
+    expect(result.responseId).toBe("consult-renewal-status-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Renewal status check started. Please provide the coverage option name or renewal request ID so I can continue."
+    );
+  });
 });

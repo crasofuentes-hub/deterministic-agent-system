@@ -268,12 +268,12 @@ function resolveLegacyIntent(text: string): ResolvedIntentResult {
     return { intentId: "close-conversation", confidence: "rule" };
   }
 
-  if (isPolicyIntent(text)) {
-    return { intentId: "consult-policy", confidence: "rule" };
-  }
-
   if (isRenewalIntent(text)) {
     return { intentId: "consult-renewal-status", confidence: "rule" };
+  }
+
+  if (isPolicyIntent(text)) {
+    return { intentId: "consult-policy", confidence: "rule" };
   }
 
   if (isOrderStatusIntent(text)) {

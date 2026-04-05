@@ -249,4 +249,25 @@ describe("customer-service-api", () => {
       handoffQueue: undefined,
     });
   });
+
+  it("returns renewal status output for the insurance brokerage context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-RENEW-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I need a renewal update for Personal Auto Standard",
+    });
+
+    expect(result).toEqual({
+      sessionId: "CS-RENEW-001",
+      businessContextId: "customer-service-core-v2",
+      resolvedIntentId: "consult-renewal-status",
+      responseId: "consult-renewal-status-resolved",
+      responseText: "Renewal status for Personal Auto Standard: the policy is currently in renewal review. Updated premium and eligibility guidance can now be prepared.",
+      stage: "resolve-renewal-status",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
 });

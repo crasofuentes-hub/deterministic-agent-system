@@ -490,4 +490,23 @@ describe("customer-service semantic invariants", () => {
       "Quote intake started for Personal Auto Standard. A broker can now continue with eligibility, underwriting review, and premium estimation."
     );
   });
+
+  it("keeps renewal status output canonical in the insurance brokerage API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-INV-RENEW-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I need a renewal update for Personal Auto Standard",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-renewal-status");
+    expect(result.responseId).toBe("consult-renewal-status-resolved");
+    expect(result.stage).toBe("resolve-renewal-status");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Renewal status for Personal Auto Standard: the policy is currently in renewal review. Updated premium and eligibility guidance can now be prepared."
+    );
+  });
 });

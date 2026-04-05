@@ -476,6 +476,55 @@ function buildResolvedResponse(
   resolvedIntentId: string,
   session: SessionState
 ): string | undefined {
+  if (resolvedIntentId === "consult-renewal-status") {
+    const rawProductName = findEntityValue(session, "productName") ?? "";
+    const orderId = sanitizeOrderIdCandidate(findEntityValue(session, "orderId") ?? "");
+
+    let productName = sanitizeProductNameCandidate(rawProductName);
+
+    if (productName) {
+      productName = productName
+        .replace(/^(?:a\s+)?renewal\s+(?:update|status)\s+(?:for|of)\s+/i, "")
+        .trim();
+    }
+
+    if (!productName) {
+      const normalizedRenewal = String(rawProductName)
+        .normalize("NFC")
+        .trim()
+        .replace(/^(?:i need|need|want|looking for)\s+(?:a\s+)?renewal\s+(?:update|status)\s+(?:for|of)\s+/i, "")
+        .replace(/^(?:a\s+)?renewal\s+(?:update|status)\s+(?:for|of)\s+/i, "")
+        .replace(/[?!.]+$/g, "")
+        .trim();
+
+      if (
+        normalizedRenewal.length > 0 &&
+        normalizedRenewal.toLowerCase() !== "my policy" &&
+        normalizedRenewal.toLowerCase() !== "policy"
+      ) {
+        productName = normalizedRenewal;
+      }
+    }
+
+    if (orderId) {
+      return (
+        "Renewal case " +
+        orderId +
+        " is currently under broker review. No additional customer action is required at this time."
+      );
+    }
+
+    if (productName) {
+      return (
+        "Renewal status for " +
+        productName +
+        ": the policy is currently in renewal review. Updated premium and eligibility guidance can now be prepared."
+      );
+    }
+
+    return "Renewal status check started. Please provide the coverage option name or renewal request ID so I can continue.";
+  }
+
   if (resolvedIntentId === "request-quote") {
     const productName = sanitizeProductNameCandidate(findEntityValue(session, "productName") ?? "");
 
