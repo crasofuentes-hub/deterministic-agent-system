@@ -198,4 +198,93 @@ describe("whatsapp client", () => {
       })
     ).toThrow("timeoutMs must be greater than 0");
   });
+
+  it("falls back to deterministic provider message id when HTTP success payload has no message id", async () => {
+    const sender = createHttpWhatsAppSender({
+      apiVersion: "v22.0",
+      phoneNumberId: "1234567890",
+      accessToken: "test-token-001",
+      fetchImpl: async () => {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              messaging_product: "whatsapp",
+              messages: [],
+            };
+          },
+        };
+      },
+    });
+
+    const result = await sender.send(
+      buildWhatsAppTextOutbound({
+        to: "5215512345678",
+        body: "Hola",
+      })
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      mode: "http",
+      providerMessageId: "whatsapp-http-message-unknown",
+      acceptedAtIso: "2026-03-24T00:00:00.000Z",
+    });
+  });
+
+  it("returns deterministic fallback message id when HTTP success body cannot be parsed", async () => {
+    const sender = createHttpWhatsAppSender({
+      apiVersion: "v22.0",
+      phoneNumberId: "1234567890",
+      accessToken: "test-token-001",
+      fetchImpl: async () => {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            throw new Error("invalid json");
+          },
+        };
+      },
+    });
+
+    const result = await sender.send(
+      buildWhatsAppTextOutbound({
+        to: "5215512345678",
+        body: "Hola",
+      })
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      mode: "http",
+      providerMessageId: "whatsapp-http-message-unknown",
+      acceptedAtIso: "2026-03-24T00:00:00.000Z",
+    });
+  });
+
+  it("rejects empty apiVersion and phoneNumberId deterministically", () => {
+    expect(() =>
+      createHttpWhatsAppSender({
+        apiVersion: "   ",
+        phoneNumberId: "1234567890",
+        accessToken: "token",
+        fetchImpl: async () => {
+          throw new Error("should not be called");
+        },
+      })
+    ).toThrow("apiVersion must be a non-empty string");
+
+    expect(() =>
+      createHttpWhatsAppSender({
+        apiVersion: "v22.0",
+        phoneNumberId: "   ",
+        accessToken: "token",
+        fetchImpl: async () => {
+          throw new Error("should not be called");
+        },
+      })
+    ).toThrow("phoneNumberId must be a non-empty string");
+  });
 });

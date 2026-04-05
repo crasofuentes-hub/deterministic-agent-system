@@ -43,6 +43,16 @@ function buildMessagesUrl(apiVersion: string, phoneNumberId: string): string {
   );
 }
 
+async function readJsonSafely(
+  response: WhatsAppHttpFetchResponse
+): Promise<unknown | undefined> {
+  try {
+    return await response.json();
+  } catch {
+    return undefined;
+  }
+}
+
 function extractProviderMessageId(payload: unknown): string | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined;
@@ -90,7 +100,7 @@ export function createHttpWhatsAppSender(options: CreateHttpWhatsAppSenderOption
           signal: controller.signal,
         });
 
-        const body = await response.json();
+        const body = await readJsonSafely(response);
 
         if (!response.ok) {
           return {
