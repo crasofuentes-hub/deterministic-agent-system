@@ -111,6 +111,36 @@ function isAvailabilityIntent(text: string): boolean {
   ]);
 }
 
+function isCoverageIntent(text: string): boolean {
+  if (
+    includesAny(text, [
+      "what does this cover",
+      "what does it cover",
+      "what is covered",
+      "coverage details",
+      "coverages included",
+      "what is included",
+      "what is excluded",
+      "coverage question",
+      "does it cover",
+      "does this cover",
+      "policy cover",
+    ])
+  ) {
+    return true;
+  }
+
+  if (/\bdoes\b.*\bcover\b/i.test(text)) {
+    return true;
+  }
+
+  if (/\bwhat\b.*\bcover(?:ed)?\b/i.test(text)) {
+    return true;
+  }
+
+  return false;
+}
+
 function isPriceIntent(text: string): boolean {
   return includesAny(text, [
     "price",
@@ -282,6 +312,10 @@ function resolveLegacyIntent(text: string): ResolvedIntentResult {
 
   if (isQuoteIntent(text)) {
     return { intentId: "request-quote", confidence: "rule" };
+  }
+
+  if (isCoverageIntent(text)) {
+    return { intentId: "consult-coverage", confidence: "rule" };
   }
 
   if (isPriceIntent(text)) {

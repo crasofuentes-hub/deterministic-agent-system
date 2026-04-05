@@ -25,6 +25,13 @@
       "workflowId": "availability-flow"
     },
     {
+      "intentId": "consult-coverage",
+      "description": "Consult what an insurance coverage option includes or excludes.",
+      "requiredEntities": [],
+      "optionalEntities": ["productName"],
+      "workflowId": "coverage-consultation-flow"
+    },
+    {
       "intentId": "request-quote",
       "description": "Start an insurance quote intake workflow for a customer.",
       "requiredEntities": [],
@@ -187,6 +194,13 @@
       "stage": "resolve-availability",
       "status": "resolved",
       "messageTemplate": "The coverage option availability information has been retrieved."
+    },
+    {
+      "responseId": "consult-coverage-resolved",
+      "intentId": "consult-coverage",
+      "stage": "resolve-coverage",
+      "status": "resolved",
+      "messageTemplate": "The coverage information has been retrieved."
     },
     {
       "responseId": "request-quote-resolved",

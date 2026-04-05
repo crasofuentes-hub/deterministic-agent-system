@@ -134,4 +134,16 @@ describe("intent-resolver", () => {
       confidence: "rule",
     });
   });
+
+  it("resolves coverage questions in the insurance brokerage context", () => {
+    expect(
+      resolveIntentFromTextForContext(
+        "Does Personal Auto Standard cover roadside assistance?",
+        "customer-service-core-v2"
+      )
+    ).toEqual({
+      intentId: "consult-coverage",
+      confidence: "rule",
+    });
+  });
 });

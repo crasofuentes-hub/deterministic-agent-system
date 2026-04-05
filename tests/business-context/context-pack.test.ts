@@ -78,4 +78,22 @@ describe("business context pack", () => {
       workflowId: "order-status-flow"
     });
   });
+
+  it("defines consult-coverage with stable structure", () => {
+    const raw = require("node:fs").readFileSync(
+      require("node:path").resolve("config/business-context/customer-service-core.json"),
+      "utf8"
+    );
+    const pack = JSON.parse(raw);
+
+    const intent = pack.supportedIntents.find((item: any) => item.intentId === "consult-coverage");
+
+    expect(intent).toEqual({
+      intentId: "consult-coverage",
+      description: "Consult what an insurance coverage option includes or excludes.",
+      requiredEntities: [],
+      optionalEntities: ["productName"],
+      workflowId: "coverage-consultation-flow",
+    });
+  });
 });
