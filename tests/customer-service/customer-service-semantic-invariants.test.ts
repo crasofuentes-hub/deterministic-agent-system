@@ -509,4 +509,23 @@ describe("customer-service semantic invariants", () => {
       "Renewal status for Personal Auto Standard: the policy is currently in renewal review. Updated premium and eligibility guidance can now be prepared."
     );
   });
+
+  it("keeps coverage consultation output canonical in the insurance brokerage API", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-INV-COV-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "Does Personal Auto Standard cover roadside assistance?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-coverage");
+    expect(result.responseId).toBe("consult-coverage-resolved");
+    expect(result.stage).toBe("resolve-coverage");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Coverage summary for Personal Auto Standard: standard protections are included, while final covered scenarios remain subject to underwriting and policy terms."
+    );
+  });
 });

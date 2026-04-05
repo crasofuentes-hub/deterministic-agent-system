@@ -1,280 +1,396 @@
 {
-  "contextId": "customer-service-core-v2",
-  "domain": "insurance-brokerage",
-  "businessName": "Northwind Insurance Brokers",
-  "supportedIntents": [
-    {
-      "intentId": "consult-product",
-      "description": "Consult information about an insurance coverage option.",
-      "requiredEntities": ["productName"],
-      "optionalEntities": ["sku"],
-      "workflowId": "product-consultation-flow"
-    },
-    {
-      "intentId": "consult-price",
-      "description": "Consult the estimated premium for an insurance coverage option.",
-      "requiredEntities": ["productName"],
-      "optionalEntities": ["sku"],
-      "workflowId": "price-consultation-flow"
-    },
-    {
-      "intentId": "consult-availability",
-      "description": "Consult the current availability or eligibility status of an insurance coverage option.",
-      "requiredEntities": ["productName"],
-      "optionalEntities": ["sku"],
-      "workflowId": "availability-flow"
-    },
-    {
-      "intentId": "consult-coverage",
-      "description": "Consult what an insurance coverage option includes or excludes.",
-      "requiredEntities": [],
-      "optionalEntities": ["productName"],
-      "workflowId": "coverage-consultation-flow"
-    },
-    {
-      "intentId": "request-quote",
-      "description": "Start an insurance quote intake workflow for a customer.",
-      "requiredEntities": [],
-      "optionalEntities": ["productName"],
-      "workflowId": "quote-intake-flow"
-    },
-    {
-      "intentId": "consult-renewal-status",
-      "description": "Consult the current renewal status for an insurance policy or renewal case.",
-      "requiredEntities": [],
-      "optionalEntities": ["orderId", "productName"],
-      "workflowId": "renewal-status-flow"
-    },
-    {
-      "intentId": "consult-order-status",
-      "description": "Consult the status of an insurance application or servicing request.",
-      "requiredEntities": ["orderId"],
-      "optionalEntities": [],
-      "workflowId": "order-status-flow"
-    },
-    {
-      "intentId": "consult-policy",
-      "description": "Consult a policy servicing topic.",
-      "requiredEntities": ["policyTopic"],
-      "optionalEntities": [],
-      "workflowId": "policy-consultation-flow"
-    },
-    {
-      "intentId": "request-human-handoff",
-      "description": "Request transfer to a licensed broker specialist.",
-      "requiredEntities": [],
-      "optionalEntities": [],
-      "workflowId": "handoff-flow"
-    },
-    {
-      "intentId": "close-conversation",
-      "description": "Close the current conversation.",
-      "requiredEntities": [],
-      "optionalEntities": [],
-      "workflowId": "closure-flow"
-    }
-  ],
-  "entitySchema": [
-    {
-      "entityId": "productName",
-      "entityType": "string",
-      "required": false
-    },
-    {
-      "entityId": "sku",
-      "entityType": "string",
-      "required": false
-    },
-    {
-      "entityId": "orderId",
-      "entityType": "string",
-      "required": false
-    },
-    {
-      "entityId": "policyTopic",
-      "entityType": "string",
-      "required": false
-    }
-  ],
-  "workflowRules": [
-    {
-      "workflowId": "product-consultation-flow",
-      "stages": ["start", "collect-product-name", "resolve-product", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "price-consultation-flow",
-      "stages": ["start", "collect-product-name", "resolve-price", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "availability-flow",
-      "stages": ["start", "collect-product-name", "resolve-availability", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "quote-intake-flow",
-      "stages": ["start", "collect-quote-context", "resolve-quote-intake", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "renewal-status-flow",
-      "stages": ["start", "collect-renewal-context", "resolve-renewal-status", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "order-status-flow",
-      "stages": ["start", "collect-order-id", "resolve-order-status", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "policy-consultation-flow",
-      "stages": ["start", "collect-policy-topic", "resolve-policy", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "handoff-flow",
-      "stages": ["start", "handoff-requested", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    },
-    {
-      "workflowId": "closure-flow",
-      "stages": ["start", "done"],
-      "initialStage": "start",
-      "terminalStages": ["done"]
-    }
-  ],
-  "canonicalResponses": [
-    {
-      "responseId": "consult-product-missing-product-name",
-      "intentId": "consult-product",
-      "stage": "collect-product-name",
-      "status": "missing-entity",
-      "messageTemplate": "Please provide the coverage option name so I can help you."
-    },
-    {
-      "responseId": "consult-product-resolved",
-      "intentId": "consult-product",
-      "stage": "resolve-product",
-      "status": "resolved",
-      "messageTemplate": "The coverage option information has been retrieved."
-    },
-    {
-      "responseId": "consult-price-missing-product-name",
-      "intentId": "consult-price",
-      "stage": "collect-product-name",
-      "status": "missing-entity",
-      "messageTemplate": "Please provide the coverage option name so I can check the estimated premium."
-    },
-    {
-      "responseId": "consult-price-resolved",
-      "intentId": "consult-price",
-      "stage": "resolve-price",
-      "status": "resolved",
-      "messageTemplate": "The estimated premium information has been retrieved."
-    },
-    {
-      "responseId": "consult-availability-missing-product-name",
-      "intentId": "consult-availability",
-      "stage": "collect-product-name",
-      "status": "missing-entity",
-      "messageTemplate": "Please provide the coverage option name so I can check availability."
-    },
-    {
-      "responseId": "consult-availability-resolved",
-      "intentId": "consult-availability",
-      "stage": "resolve-availability",
-      "status": "resolved",
-      "messageTemplate": "The coverage option availability information has been retrieved."
-    },
-    {
-      "responseId": "consult-coverage-resolved",
-      "intentId": "consult-coverage",
-      "stage": "resolve-coverage",
-      "status": "resolved",
-      "messageTemplate": "The coverage information has been retrieved."
-    },
-    {
-      "responseId": "request-quote-resolved",
-      "intentId": "request-quote",
-      "stage": "resolve-quote-intake",
-      "status": "resolved",
-      "messageTemplate": "The quote intake workflow has been started."
-    },
-    {
-      "responseId": "consult-renewal-status-resolved",
-      "intentId": "consult-renewal-status",
-      "stage": "resolve-renewal-status",
-      "status": "resolved",
-      "messageTemplate": "The renewal status information has been retrieved."
-    },
-    {
-      "responseId": "consult-order-status-missing-order-id",
-      "intentId": "consult-order-status",
-      "stage": "collect-order-id",
-      "status": "missing-entity",
-      "messageTemplate": "Please provide your request ID so I can review the status."
-    },
-    {
-      "responseId": "consult-order-status-resolved",
-      "intentId": "consult-order-status",
-      "stage": "resolve-order-status",
-      "status": "resolved",
-      "messageTemplate": "Your request status has been retrieved."
-    },
-    {
-      "responseId": "consult-policy-missing-policy-topic",
-      "intentId": "consult-policy",
-      "stage": "collect-policy-topic",
-      "status": "missing-entity",
-      "messageTemplate": "Please provide the policy topic so I can help you."
-    },
-    {
-      "responseId": "consult-policy-resolved",
-      "intentId": "consult-policy",
-      "stage": "resolve-policy",
-      "status": "resolved",
-      "messageTemplate": "The policy servicing information has been retrieved."
-    },
-    {
-      "responseId": "handoff-requested",
-      "intentId": "request-human-handoff",
-      "stage": "handoff-requested",
-      "status": "handoff",
-      "messageTemplate": "Your conversation will be transferred to a licensed broker specialist."
-    },
-    {
-      "responseId": "conversation-closed",
-      "intentId": "close-conversation",
-      "stage": "done",
-      "status": "closed",
-      "messageTemplate": "Your conversation has been closed."
-    }
-  ],
-  "handoffRules": [
-    {
-      "ruleId": "explicit-human-request",
-      "whenIntentIds": ["request-human-handoff"],
-      "requiresHuman": true,
-      "queue": "licensed-broker"
-    }
-  ],
-  "tonePolicy": {
-    "toneId": "default-neutral",
-    "style": "neutral",
-    "brevity": "medium"
-  },
-  "sessionPolicy": {
-    "inactivityTimeoutMinutes": 30,
-    "allowResume": true,
-    "maxTurnsBeforeClosure": 100
-  }
+    "contextId":  "customer-service-core-v2",
+    "domain":  "insurance-brokerage",
+    "businessName":  "Northwind Insurance Brokers",
+    "supportedIntents":  [
+                             {
+                                 "intentId":  "consult-product",
+                                 "description":  "Consult information about an insurance coverage option.",
+                                 "requiredEntities":  [
+                                                          "productName"
+                                                      ],
+                                 "optionalEntities":  [
+                                                          "sku"
+                                                      ],
+                                 "workflowId":  "product-consultation-flow"
+                             },
+                             {
+                                 "intentId":  "consult-price",
+                                 "description":  "Consult the estimated premium for an insurance coverage option.",
+                                 "requiredEntities":  [
+                                                          "productName"
+                                                      ],
+                                 "optionalEntities":  [
+                                                          "sku"
+                                                      ],
+                                 "workflowId":  "price-consultation-flow"
+                             },
+                             {
+                                 "intentId":  "consult-availability",
+                                 "description":  "Consult the current availability or eligibility status of an insurance coverage option.",
+                                 "requiredEntities":  [
+                                                          "productName"
+                                                      ],
+                                 "optionalEntities":  [
+                                                          "sku"
+                                                      ],
+                                 "workflowId":  "availability-flow"
+                             },
+                             {
+                                 "intentId":  "consult-coverage",
+                                 "description":  "Consult what an insurance coverage option includes or excludes.",
+                                 "requiredEntities":  [
+
+                                                      ],
+                                 "optionalEntities":  [
+                                                          "productName"
+                                                      ],
+                                 "workflowId":  "coverage-consultation-flow"
+                             },
+                             {
+                                 "intentId":  "request-quote",
+                                 "description":  "Start an insurance quote intake workflow for a customer.",
+                                 "requiredEntities":  [
+
+                                                      ],
+                                 "optionalEntities":  [
+                                                          "productName"
+                                                      ],
+                                 "workflowId":  "quote-intake-flow"
+                             },
+                             {
+                                 "intentId":  "consult-renewal-status",
+                                 "description":  "Consult the current renewal status for an insurance policy or renewal case.",
+                                 "requiredEntities":  [
+
+                                                      ],
+                                 "optionalEntities":  [
+                                                          "orderId",
+                                                          "productName"
+                                                      ],
+                                 "workflowId":  "renewal-status-flow"
+                             },
+                             {
+                                 "intentId":  "consult-order-status",
+                                 "description":  "Consult the status of an insurance application or servicing request.",
+                                 "requiredEntities":  [
+                                                          "orderId"
+                                                      ],
+                                 "optionalEntities":  [
+
+                                                      ],
+                                 "workflowId":  "order-status-flow"
+                             },
+                             {
+                                 "intentId":  "consult-policy",
+                                 "description":  "Consult a policy servicing topic.",
+                                 "requiredEntities":  [
+                                                          "policyTopic"
+                                                      ],
+                                 "optionalEntities":  [
+
+                                                      ],
+                                 "workflowId":  "policy-consultation-flow"
+                             },
+                             {
+                                 "intentId":  "request-human-handoff",
+                                 "description":  "Request transfer to a licensed broker specialist.",
+                                 "requiredEntities":  [
+
+                                                      ],
+                                 "optionalEntities":  [
+
+                                                      ],
+                                 "workflowId":  "handoff-flow"
+                             },
+                             {
+                                 "intentId":  "close-conversation",
+                                 "description":  "Close the current conversation.",
+                                 "requiredEntities":  [
+
+                                                      ],
+                                 "optionalEntities":  [
+
+                                                      ],
+                                 "workflowId":  "closure-flow"
+                             }
+                         ],
+    "entitySchema":  [
+                         {
+                             "entityId":  "productName",
+                             "entityType":  "string",
+                             "required":  false
+                         },
+                         {
+                             "entityId":  "sku",
+                             "entityType":  "string",
+                             "required":  false
+                         },
+                         {
+                             "entityId":  "orderId",
+                             "entityType":  "string",
+                             "required":  false
+                         },
+                         {
+                             "entityId":  "policyTopic",
+                             "entityType":  "string",
+                             "required":  false
+                         }
+                     ],
+    "workflowRules":  [
+                          {
+                              "workflowId":  "product-consultation-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-product-name",
+                                             "resolve-product",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "price-consultation-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-product-name",
+                                             "resolve-price",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "availability-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-product-name",
+                                             "resolve-availability",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "quote-intake-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-quote-context",
+                                             "resolve-quote-intake",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "renewal-status-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-renewal-context",
+                                             "resolve-renewal-status",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "order-status-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-order-id",
+                                             "resolve-order-status",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "policy-consultation-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-policy-topic",
+                                             "resolve-policy",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "handoff-flow",
+                              "stages":  [
+                                             "start",
+                                             "handoff-requested",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "closure-flow",
+                              "stages":  [
+                                             "start",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          },
+                          {
+                              "workflowId":  "coverage-consultation-flow",
+                              "stages":  [
+                                             "start",
+                                             "collect-coverage-context",
+                                             "resolve-coverage",
+                                             "done"
+                                         ],
+                              "initialStage":  "start",
+                              "terminalStages":  [
+                                                     "done"
+                                                 ]
+                          }
+                      ],
+    "canonicalResponses":  [
+                               {
+                                   "responseId":  "consult-product-missing-product-name",
+                                   "intentId":  "consult-product",
+                                   "stage":  "collect-product-name",
+                                   "status":  "missing-entity",
+                                   "messageTemplate":  "Please provide the coverage option name so I can help you."
+                               },
+                               {
+                                   "responseId":  "consult-product-resolved",
+                                   "intentId":  "consult-product",
+                                   "stage":  "resolve-product",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "The coverage option information has been retrieved."
+                               },
+                               {
+                                   "responseId":  "consult-price-missing-product-name",
+                                   "intentId":  "consult-price",
+                                   "stage":  "collect-product-name",
+                                   "status":  "missing-entity",
+                                   "messageTemplate":  "Please provide the coverage option name so I can check the estimated premium."
+                               },
+                               {
+                                   "responseId":  "consult-price-resolved",
+                                   "intentId":  "consult-price",
+                                   "stage":  "resolve-price",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "The estimated premium information has been retrieved."
+                               },
+                               {
+                                   "responseId":  "consult-availability-missing-product-name",
+                                   "intentId":  "consult-availability",
+                                   "stage":  "collect-product-name",
+                                   "status":  "missing-entity",
+                                   "messageTemplate":  "Please provide the coverage option name so I can check availability."
+                               },
+                               {
+                                   "responseId":  "consult-availability-resolved",
+                                   "intentId":  "consult-availability",
+                                   "stage":  "resolve-availability",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "The coverage option availability information has been retrieved."
+                               },
+                               {
+                                   "responseId":  "consult-coverage-resolved",
+                                   "intentId":  "consult-coverage",
+                                   "stage":  "resolve-coverage",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "The coverage information has been retrieved."
+                               },
+                               {
+                                   "responseId":  "request-quote-resolved",
+                                   "intentId":  "request-quote",
+                                   "stage":  "resolve-quote-intake",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "The quote intake workflow has been started."
+                               },
+                               {
+                                   "responseId":  "consult-renewal-status-resolved",
+                                   "intentId":  "consult-renewal-status",
+                                   "stage":  "resolve-renewal-status",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "The renewal status information has been retrieved."
+                               },
+                               {
+                                   "responseId":  "consult-order-status-missing-order-id",
+                                   "intentId":  "consult-order-status",
+                                   "stage":  "collect-order-id",
+                                   "status":  "missing-entity",
+                                   "messageTemplate":  "Please provide your request ID so I can review the status."
+                               },
+                               {
+                                   "responseId":  "consult-order-status-resolved",
+                                   "intentId":  "consult-order-status",
+                                   "stage":  "resolve-order-status",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "Your request status has been retrieved."
+                               },
+                               {
+                                   "responseId":  "consult-policy-missing-policy-topic",
+                                   "intentId":  "consult-policy",
+                                   "stage":  "collect-policy-topic",
+                                   "status":  "missing-entity",
+                                   "messageTemplate":  "Please provide the policy topic so I can help you."
+                               },
+                               {
+                                   "responseId":  "consult-policy-resolved",
+                                   "intentId":  "consult-policy",
+                                   "stage":  "resolve-policy",
+                                   "status":  "resolved",
+                                   "messageTemplate":  "The policy servicing information has been retrieved."
+                               },
+                               {
+                                   "responseId":  "handoff-requested",
+                                   "intentId":  "request-human-handoff",
+                                   "stage":  "handoff-requested",
+                                   "status":  "handoff",
+                                   "messageTemplate":  "Your conversation will be transferred to a licensed broker specialist."
+                               },
+                               {
+                                   "responseId":  "conversation-closed",
+                                   "intentId":  "close-conversation",
+                                   "stage":  "done",
+                                   "status":  "closed",
+                                   "messageTemplate":  "Your conversation has been closed."
+                               }
+                           ],
+    "handoffRules":  [
+                         {
+                             "ruleId":  "explicit-human-request",
+                             "whenIntentIds":  [
+                                                   "request-human-handoff"
+                                               ],
+                             "requiresHuman":  true,
+                             "queue":  "licensed-broker"
+                         }
+                     ],
+    "tonePolicy":  {
+                       "toneId":  "default-neutral",
+                       "style":  "neutral",
+                       "brevity":  "medium"
+                   },
+    "sessionPolicy":  {
+                          "inactivityTimeoutMinutes":  30,
+                          "allowResume":  true,
+                          "maxTurnsBeforeClosure":  100
+                      }
 }

@@ -270,4 +270,25 @@ describe("customer-service-api", () => {
       handoffQueue: undefined,
     });
   });
+
+  it("returns coverage consultation output for the insurance brokerage context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-COV-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "Does Personal Auto Standard cover roadside assistance?",
+    });
+
+    expect(result).toEqual({
+      sessionId: "CS-COV-001",
+      businessContextId: "customer-service-core-v2",
+      resolvedIntentId: "consult-coverage",
+      responseId: "consult-coverage-resolved",
+      responseText: "Coverage summary for Personal Auto Standard: standard protections are included, while final covered scenarios remain subject to underwriting and policy terms.",
+      stage: "resolve-coverage",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
 });

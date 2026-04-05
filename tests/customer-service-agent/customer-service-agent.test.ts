@@ -389,4 +389,38 @@ describe("customer-service-agent", () => {
       "Renewal status check started. Please provide the coverage option name or renewal request ID so I can continue."
     );
   });
+
+  it("resolves coverage consultation when product name is present", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-026",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "Does Personal Auto Standard cover roadside assistance?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-coverage");
+    expect(result.responseId).toBe("consult-coverage-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Coverage summary for Personal Auto Standard: standard protections are included, while final covered scenarios remain subject to underwriting and policy terms."
+    );
+  });
+
+  it("keeps coverage consultation canonical when product name is missing", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-027",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "What does this cover?",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-coverage");
+    expect(result.responseId).toBe("consult-coverage-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Coverage review started. Please provide the coverage option name so I can explain what is included."
+    );
+  });
 });

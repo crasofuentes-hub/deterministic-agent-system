@@ -476,6 +476,45 @@ function buildResolvedResponse(
   resolvedIntentId: string,
   session: SessionState
 ): string | undefined {
+  if (resolvedIntentId === "consult-coverage") {
+    const rawProductName = findEntityValue(session, "productName") ?? "";
+    const normalizedCoverage = String(rawProductName)
+      .normalize("NFC")
+      .trim()
+      .replace(/[?!.]+$/g, "")
+      .trim();
+
+    if (/^(?:what does this cover|what does it cover|what is covered)$/i.test(normalizedCoverage)) {
+      return "Coverage review started. Please provide the coverage option name so I can explain what is included.";
+    }
+
+    let productName = sanitizeProductNameCandidate(rawProductName);
+
+    if (productName) {
+      productName = productName
+        .replace(/^(?:does|do)\s+/i, "")
+        .replace(/\s+\bcover(?:s|ed)?\b.*$/i, "")
+        .trim();
+    }
+
+    if (!productName && /\bdoes\b.*\bcover\b/i.test(normalizedCoverage)) {
+      productName = normalizedCoverage
+        .replace(/^(?:does|do)\s+/i, "")
+        .replace(/\s+\bcover(?:s|ed)?\b.*$/i, "")
+        .trim();
+    }
+
+    if (productName) {
+      return (
+        "Coverage summary for " +
+        productName +
+        ": standard protections are included, while final covered scenarios remain subject to underwriting and policy terms."
+      );
+    }
+
+    return "Coverage review started. Please provide the coverage option name so I can explain what is included.";
+  }
+
   if (resolvedIntentId === "consult-renewal-status") {
     const rawProductName = findEntityValue(session, "productName") ?? "";
     const orderId = sanitizeOrderIdCandidate(findEntityValue(session, "orderId") ?? "");
