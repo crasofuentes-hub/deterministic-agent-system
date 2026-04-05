@@ -228,4 +228,25 @@ describe("customer-service-api", () => {
       handoffQueue: undefined,
     });
   });
+
+  it("returns quote intake output for the insurance brokerage context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-QUOTE-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I need a quote for Personal Auto Standard",
+    });
+
+    expect(result).toEqual({
+      sessionId: "CS-QUOTE-001",
+      businessContextId: "customer-service-core-v2",
+      resolvedIntentId: "request-quote",
+      responseId: "request-quote-resolved",
+      responseText: "Quote intake started for Personal Auto Standard. A broker can now continue with eligibility, underwriting review, and premium estimation.",
+      stage: "resolve-quote-intake",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
 });

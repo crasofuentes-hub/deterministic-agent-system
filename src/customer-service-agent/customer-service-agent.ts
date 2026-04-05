@@ -87,6 +87,14 @@ function sanitizeProductNameCandidate(value: string): string | undefined {
   const lowered = cleaned.toLowerCase();
   const blocked = new Set([
     "product",
+    "quote",
+    "a quote",
+    "get a quote",
+    "can i get a quote",
+    "i need a quote",
+    "need a quote",
+    "start a quote",
+    "quote request",
     "a product",
     "an item",
     "item",
@@ -468,6 +476,20 @@ function buildResolvedResponse(
   resolvedIntentId: string,
   session: SessionState
 ): string | undefined {
+  if (resolvedIntentId === "request-quote") {
+    const productName = sanitizeProductNameCandidate(findEntityValue(session, "productName") ?? "");
+
+    if (!productName) {
+      return "Quote intake started. Please provide the coverage option name so a quote can be prepared.";
+    }
+
+    return (
+      "Quote intake started for " +
+      productName +
+      ". A broker can now continue with eligibility, underwriting review, and premium estimation."
+    );
+  }
+
   if (resolvedIntentId === "consult-price") {
     const productName = sanitizeProductNameCandidate(findEntityValue(session, "productName") ?? "");
     if (!productName) {

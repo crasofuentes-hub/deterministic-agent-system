@@ -321,4 +321,38 @@ describe("customer-service-agent", () => {
       "Policy servicing topic: document-delivery | Guidance: the servicing request can proceed through the billing-review-workflow."
     );
   });
+
+  it("resolves quote intake when product name is present", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-022",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "I need a quote for Personal Auto Standard",
+    });
+
+    expect(result.resolvedIntentId).toBe("request-quote");
+    expect(result.responseId).toBe("request-quote-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Quote intake started for Personal Auto Standard. A broker can now continue with eligibility, underwriting review, and premium estimation."
+    );
+  });
+
+  it("keeps quote intake canonical when product name is missing", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-023",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "Can I get a quote?",
+    });
+
+    expect(result.resolvedIntentId).toBe("request-quote");
+    expect(result.responseId).toBe("request-quote-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toBe(
+      "Quote intake started. Please provide the coverage option name so a quote can be prepared."
+    );
+  });
 });
