@@ -592,4 +592,82 @@ describe("whatsapp webhook handler", () => {
       deliveryError: null,
     });
   });
+
+  it("persists conversation evidence after a resolved whatsapp message", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const res = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-evidence-001",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.evidence.001", "What is the price of Personal Auto Standard?"),
+      }
+    );
+
+    expect(store.loadEvidence("5215512345678")).toEqual({
+      customerId: "5215512345678",
+      lastInboundMessageId: "wamid.evidence.001",
+      lastResponseId: "consult-price-resolved",
+      lastResolvedIntentId: "consult-price",
+      lastStage: "resolve-price",
+      lastStatus: "resolved",
+      lastOutboundText: "Product: Personal Auto Standard | Price: 128.50 USD",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+      updatedAtIso: "2026-03-24T00:00:00.000Z",
+    });
+  });
+
+  it("persists handoff evidence after a whatsapp handoff request", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const res = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-evidence-002",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.evidence.002", "I want to speak to a human agent"),
+      }
+    );
+
+    expect(store.loadEvidence("5215512345678")).toEqual({
+      customerId: "5215512345678",
+      lastInboundMessageId: "wamid.evidence.002",
+      lastResponseId: "handoff-requested",
+      lastResolvedIntentId: "request-human-handoff",
+      lastStage: "handoff-requested",
+      lastStatus: "handoff",
+      lastOutboundText: "Your conversation will be transferred to a licensed broker specialist.",
+      humanInterventionRequired: true,
+      handoffReasonCode: "explicit-human-request",
+      handoffQueue: "licensed-broker",
+      updatedAtIso: "2026-03-24T00:00:00.000Z",
+    });
+  });
 });

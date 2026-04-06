@@ -1,10 +1,26 @@
 import { createInitialSessionState, type SessionState } from "../../session-state/session-state";
 
+export interface WhatsAppConversationEvidence {
+  customerId: string;
+  lastInboundMessageId: string;
+  lastResponseId: string;
+  lastResolvedIntentId: string;
+  lastStage: string;
+  lastStatus: string;
+  lastOutboundText: string;
+  humanInterventionRequired: boolean;
+  handoffReasonCode?: string;
+  handoffQueue?: string;
+  updatedAtIso: string;
+}
+
 export interface WhatsAppStore {
   loadSession(customerId: string): SessionState;
   saveSession(customerId: string, session: SessionState): void;
   hasProcessedMessage(channelMessageId: string): boolean;
   markMessageProcessed(channelMessageId: string): void;
+  loadEvidence(customerId: string): WhatsAppConversationEvidence | undefined;
+  saveEvidence(evidence: WhatsAppConversationEvidence): void;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -28,6 +44,7 @@ export function createInMemoryWhatsAppStore(options: InMemoryWhatsAppStoreOption
 
   const sessions = new Map<string, SessionState>();
   const processedMessageIds = new Set<string>();
+  const evidenceByCustomerId = new Map<string, WhatsAppConversationEvidence>();
 
   return {
     loadSession(customerId: string): SessionState {
@@ -69,6 +86,34 @@ export function createInMemoryWhatsAppStore(options: InMemoryWhatsAppStoreOption
       }
 
       processedMessageIds.add(channelMessageId.trim());
+    },
+
+    loadEvidence(customerId: string): WhatsAppConversationEvidence | undefined {
+      if (!isNonEmptyString(customerId)) {
+        throw new Error("customerId must be a non-empty string");
+      }
+
+      return evidenceByCustomerId.get(customerId.trim());
+    },
+
+    saveEvidence(evidence: WhatsAppConversationEvidence): void {
+      if (!isNonEmptyString(evidence.customerId)) {
+        throw new Error("customerId must be a non-empty string");
+      }
+
+      evidenceByCustomerId.set(evidence.customerId.trim(), {
+        ...evidence,
+        customerId: evidence.customerId.trim(),
+        lastInboundMessageId: evidence.lastInboundMessageId.trim(),
+        lastResponseId: evidence.lastResponseId.trim(),
+        lastResolvedIntentId: evidence.lastResolvedIntentId.trim(),
+        lastStage: evidence.lastStage.trim(),
+        lastStatus: evidence.lastStatus.trim(),
+        lastOutboundText: evidence.lastOutboundText.trim(),
+        updatedAtIso: evidence.updatedAtIso.trim(),
+        handoffReasonCode: evidence.handoffReasonCode?.trim() || undefined,
+        handoffQueue: evidence.handoffQueue?.trim() || undefined,
+      });
     },
   };
 }

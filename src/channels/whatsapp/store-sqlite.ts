@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { createInitialSessionState, type SessionState } from "../../session-state/session-state";
-import type { WhatsAppStore } from "./store";
+import type { WhatsAppConversationEvidence, WhatsAppStore } from "./store";
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -49,6 +49,12 @@ export function createSqliteWhatsAppStore(
       channel_message_id TEXT PRIMARY KEY,
       processed_at_iso TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS whatsapp_conversation_evidence (
+      customer_id TEXT PRIMARY KEY,
+      evidence_json TEXT NOT NULL,
+      updated_at_iso TEXT NOT NULL
+    );
   `);
 
   const selectSession = db.prepare(`
@@ -81,6 +87,24 @@ export function createSqliteWhatsAppStore(
       processed_at_iso
     )
     VALUES (?, ?)
+  `);
+
+  const selectEvidence = db.prepare(`
+    SELECT evidence_json
+    FROM whatsapp_conversation_evidence
+    WHERE customer_id = ?
+  `);
+
+  const upsertEvidence = db.prepare(`
+    INSERT INTO whatsapp_conversation_evidence (
+      customer_id,
+      evidence_json,
+      updated_at_iso
+    )
+    VALUES (?, ?, ?)
+    ON CONFLICT(customer_id) DO UPDATE SET
+      evidence_json = excluded.evidence_json,
+      updated_at_iso = excluded.updated_at_iso
   `);
 
   return {
@@ -127,6 +151,46 @@ export function createSqliteWhatsAppStore(
       }
 
       insertProcessedMessage.run(channelMessageId.trim(), "2026-03-24T00:00:00.000Z");
+    },
+
+    loadEvidence(customerId: string): WhatsAppConversationEvidence | undefined {
+      if (!isNonEmptyString(customerId)) {
+        throw new Error("customerId must be a non-empty string");
+      }
+
+      const row = selectEvidence.get(customerId.trim()) as { evidence_json?: string } | undefined;
+
+      if (!row || !isNonEmptyString(row.evidence_json)) {
+        return undefined;
+      }
+
+      return JSON.parse(row.evidence_json) as WhatsAppConversationEvidence;
+    },
+
+    saveEvidence(evidence: WhatsAppConversationEvidence): void {
+      if (!isNonEmptyString(evidence.customerId)) {
+        throw new Error("customerId must be a non-empty string");
+      }
+
+      const normalized: WhatsAppConversationEvidence = {
+        ...evidence,
+        customerId: evidence.customerId.trim(),
+        lastInboundMessageId: evidence.lastInboundMessageId.trim(),
+        lastResponseId: evidence.lastResponseId.trim(),
+        lastResolvedIntentId: evidence.lastResolvedIntentId.trim(),
+        lastStage: evidence.lastStage.trim(),
+        lastStatus: evidence.lastStatus.trim(),
+        lastOutboundText: evidence.lastOutboundText.trim(),
+        updatedAtIso: evidence.updatedAtIso.trim(),
+        handoffReasonCode: evidence.handoffReasonCode?.trim() || undefined,
+        handoffQueue: evidence.handoffQueue?.trim() || undefined,
+      };
+
+      upsertEvidence.run(
+        normalized.customerId,
+        JSON.stringify(normalized),
+        normalized.updatedAtIso
+      );
     },
 
     close(): void {

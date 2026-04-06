@@ -143,4 +143,56 @@ describe("whatsapp sqlite store", () => {
       })
     ).toThrow("businessContextId must be a non-empty string");
   });
+
+  it("persists conversation evidence across store reopen", () => {
+    const dbPath = createTempDbPath("persist-evidence");
+
+    {
+      const store = createSqliteWhatsAppStore({
+        dbPath,
+        businessContextId: "customer-service-core-v2",
+      });
+
+      store.saveEvidence({
+        customerId: "5215512345678",
+        lastInboundMessageId: "wamid.quote.005",
+        lastResponseId: "request-quote-resolved",
+        lastResolvedIntentId: "request-quote",
+        lastStage: "resolve-quote-intake",
+        lastStatus: "resolved",
+        lastOutboundText:
+          "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+        humanInterventionRequired: false,
+        updatedAtIso: "2026-03-24T00:00:00.000Z",
+      });
+
+      store.close();
+    }
+
+    {
+      const reopened = createSqliteWhatsAppStore({
+        dbPath,
+        businessContextId: "customer-service-core-v2",
+      });
+
+      try {
+        expect(reopened.loadEvidence("5215512345678")).toEqual({
+          customerId: "5215512345678",
+          lastInboundMessageId: "wamid.quote.005",
+          lastResponseId: "request-quote-resolved",
+          lastResolvedIntentId: "request-quote",
+          lastStage: "resolve-quote-intake",
+          lastStatus: "resolved",
+          lastOutboundText:
+            "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+          humanInterventionRequired: false,
+          updatedAtIso: "2026-03-24T00:00:00.000Z",
+          handoffReasonCode: undefined,
+          handoffQueue: undefined,
+        });
+      } finally {
+        reopened.close();
+      }
+    }
+  });
 });

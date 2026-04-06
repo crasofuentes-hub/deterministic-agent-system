@@ -240,6 +240,19 @@ export async function handleWhatsAppWebhook(
 
       if (options.store) {
         options.store.saveSession(message.customerId, bridge.session);
+        options.store.saveEvidence({
+          customerId: message.customerId,
+          lastInboundMessageId: message.channelMessageId,
+          lastResponseId: bridge.output.responseId,
+          lastResolvedIntentId: bridge.output.resolvedIntentId,
+          lastStage: bridge.output.stage,
+          lastStatus: bridge.output.status,
+          lastOutboundText: bridge.output.outboundText,
+          humanInterventionRequired: bridge.output.humanInterventionRequired,
+          handoffReasonCode: bridge.output.handoffReasonCode,
+          handoffQueue: bridge.output.handoffQueue,
+          updatedAtIso: message.receivedAtIso,
+        });
         options.store.markMessageProcessed(message.channelMessageId);
       }
 
