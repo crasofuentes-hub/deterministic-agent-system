@@ -247,6 +247,12 @@ describe("customer-service-api session behavior", () => {
       userMessageText: "currently insured",
     });
 
+    const fifth = runCustomerServiceApi({
+      sessionId: "CS-QUOTE-SESSION-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "2 drivers",
+    });
+
     expect(first.resolvedIntentId).toBe("request-quote");
     expect(first.status).toBe("resolved");
     expect(first.responseText).toBe(
@@ -274,7 +280,15 @@ describe("customer-service-api session behavior", () => {
     expect(fourth.stage).toBe("resolve-quote-intake");
     expect(fourth.status).toBe("resolved");
     expect(fourth.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Preferred contact: call."
+      "Quote intake started for Personal Auto Standard in CA. Please provide the number of household drivers as 1, 2, 3, 4, or 5+ so a broker can continue the quote review."
+    );
+
+    expect(fifth.resolvedIntentId).toBe("request-quote");
+    expect(fifth.responseId).toBe("request-quote-resolved");
+    expect(fifth.stage).toBe("resolve-quote-intake");
+    expect(fifth.status).toBe("resolved");
+    expect(fifth.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call."
     );
   });
 });

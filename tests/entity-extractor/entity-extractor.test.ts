@@ -140,6 +140,30 @@ describe("entity-extractor", () => {
     });
   });
 
+  it("extracts driverCount as 1", () => {
+    expect(extractEntitiesFromText("There is 1 driver on the policy")).toContainEqual({
+      entityId: "driverCount",
+      value: "1",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts driverCount as 2", () => {
+    expect(extractEntitiesFromText("We have 2 drivers in the household")).toContainEqual({
+      entityId: "driverCount",
+      value: "2",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts driverCount as 5+", () => {
+    expect(extractEntitiesFromText("There are multiple drivers")).toContainEqual({
+      entityId: "driverCount",
+      value: "5+",
+      confidence: "derived",
+    });
+  });
+
   it("extracts paymentId from payment status message", () => {
     expect(extractEntitiesFromText("What is the status of payment PMT-1001?")).toContainEqual({
       entityId: "paymentId",

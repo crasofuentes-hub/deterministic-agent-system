@@ -533,7 +533,7 @@ describe("customer-service semantic invariants", () => {
     const result = runCustomerServiceApi({
       sessionId: "CS-INV-QUOTE-002",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "I need a quote for Personal Auto Standard in CA for commuting, call me",
+      userMessageText: "I need a quote for Personal Auto Standard in CA for commuting, currently insured, call me",
     });
 
     expect(result.resolvedIntentId).toBe("request-quote");
@@ -544,7 +544,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review."
+      "Quote intake started for Personal Auto Standard in CA. Please provide the number of household drivers as 1, 2, 3, 4, or 5+ so a broker can continue the quote review."
     );
   });
 
@@ -567,10 +567,16 @@ describe("customer-service semantic invariants", () => {
       userMessageText: "commuting",
     });
 
-    const result = runCustomerServiceApi({
+    runCustomerServiceApi({
       sessionId: "CS-INV-QUOTE-SESSION-001",
       businessContextId: "customer-service-core-v2",
       userMessageText: "currently insured",
+    });
+
+    const result = runCustomerServiceApi({
+      sessionId: "CS-INV-QUOTE-SESSION-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "2 drivers",
     });
 
     expect(result.resolvedIntentId).toBe("request-quote");
@@ -581,7 +587,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Preferred contact: call."
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call."
     );
   });
 });

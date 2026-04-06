@@ -292,11 +292,11 @@ describe("customer-service-api", () => {
     });
   });
 
-  it("returns prior-insurance follow-up when product, state, and vehicle use are present", () => {
+  it("returns driver-count follow-up when product, state, vehicle use, and prior insurance status are present", () => {
     const result = runCustomerServiceApi({
       sessionId: "CS-QUOTE-002",
       businessContextId: "customer-service-core-v2",
-      userMessageText: "I need a quote for Personal Auto Standard in CA for commuting, call me",
+      userMessageText: "I need a quote for Personal Auto Standard in CA for commuting, currently insured, call me",
     });
 
     expect(result).toEqual({
@@ -304,7 +304,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "request-quote",
       responseId: "request-quote-resolved",
-      responseText: "Quote intake started for Personal Auto Standard in CA. Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review.",
+      responseText: "Quote intake started for Personal Auto Standard in CA. Please provide the number of household drivers as 1, 2, 3, 4, or 5+ so a broker can continue the quote review.",
       stage: "resolve-quote-intake",
       status: "resolved",
       humanInterventionRequired: false,

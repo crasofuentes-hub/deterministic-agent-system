@@ -367,6 +367,32 @@ function extractPriorInsuranceStatus(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractDriverCount(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  if (/\b(5\+|5|five|multiple)\s+drivers?\b/i.test(normalized)) {
+    return "5+";
+  }
+
+  if (/\b4\s+drivers?\b|\bfour\s+drivers?\b/i.test(normalized)) {
+    return "4";
+  }
+
+  if (/\b3\s+drivers?\b|\bthree\s+drivers?\b/i.test(normalized)) {
+    return "3";
+  }
+
+  if (/\b2\s+drivers?\b|\btwo\s+drivers?\b/i.test(normalized)) {
+    return "2";
+  }
+
+  if (/\b1\s+driver\b|\bone\s+driver\b/i.test(normalized)) {
+    return "1";
+  }
+
+  return undefined;
+}
+
 function sanitizeQuoteProductCandidate(value: string): string {
   return cleanCapturedValue(value)
     .replace(/\s+\bin\s+(?:CA|TX|AZ|NV|NM|CO|UT|OR|WA|FL)\b.*$/i, "")
@@ -451,6 +477,7 @@ function extractProductName(messageText: string): string | undefined {
   const contactPreference = extractContactPreference(normalized);
   const vehicleUse = extractVehicleUse(normalized);
   const priorInsuranceStatus = extractPriorInsuranceStatus(normalized);
+  const driverCount = extractDriverCount(normalized);
 
   if (
     normalized.length > 0 &&
@@ -459,7 +486,8 @@ function extractProductName(messageText: string): string | undefined {
     !stateCode &&
     !contactPreference &&
     !vehicleUse &&
-    !priorInsuranceStatus
+    !priorInsuranceStatus &&
+    !driverCount
   ) {
     return normalized;
   }
@@ -481,6 +509,7 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
   const contactPreference = extractContactPreference(messageText);
   const vehicleUse = extractVehicleUse(messageText);
   const priorInsuranceStatus = extractPriorInsuranceStatus(messageText);
+  const driverCount = extractDriverCount(messageText);
   const productName = extractProductName(messageText);
 
   if (orderId) {
@@ -575,6 +604,14 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
     out.push({
       entityId: "priorInsuranceStatus",
       value: priorInsuranceStatus,
+      confidence: "derived",
+    });
+  }
+
+  if (driverCount) {
+    out.push({
+      entityId: "driverCount",
+      value: driverCount,
       confidence: "derived",
     });
   }

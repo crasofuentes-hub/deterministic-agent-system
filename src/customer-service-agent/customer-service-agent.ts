@@ -372,7 +372,7 @@ function getAllowedEntityIdsForIntent(intentId: string): string[] {
   }
 
   if (intentId === "request-quote") {
-    return ["productName", "stateCode", "vehicleUse", "priorInsuranceStatus", "contactPreference"];
+    return ["productName", "stateCode", "vehicleUse", "priorInsuranceStatus", "driverCount", "contactPreference"];
   }
 
   return [];
@@ -478,6 +478,7 @@ function resolveEffectiveIntentId(session: SessionState, userMessageText: string
     const collectedStateCode = findEntityValue(session, "stateCode");
     const collectedVehicleUse = findEntityValue(session, "vehicleUse");
     const collectedPriorInsuranceStatus = findEntityValue(session, "priorInsuranceStatus");
+    const collectedDriverCount = findEntityValue(session, "driverCount");
     const extracted = extractEntitiesFromText(userMessageText);
 
     const hasQuoteFollowUpSignal = extracted.some(
@@ -485,6 +486,7 @@ function resolveEffectiveIntentId(session: SessionState, userMessageText: string
         entity.entityId === "stateCode" ||
         entity.entityId === "vehicleUse" ||
         entity.entityId === "priorInsuranceStatus" ||
+        entity.entityId === "driverCount" ||
         entity.entityId === "contactPreference"
     );
 
@@ -497,7 +499,9 @@ function resolveEffectiveIntentId(session: SessionState, userMessageText: string
         !collectedVehicleUse ||
         collectedVehicleUse.trim().length === 0 ||
         !collectedPriorInsuranceStatus ||
-        collectedPriorInsuranceStatus.trim().length === 0
+        collectedPriorInsuranceStatus.trim().length === 0 ||
+        !collectedDriverCount ||
+        collectedDriverCount.trim().length === 0
       ) &&
       hasQuoteFollowUpSignal &&
       !hasExplicitIntentSignal(userMessageText, resolved)
@@ -607,6 +611,7 @@ function buildResolvedResponse(
     let stateCode = findEntityValue(session, "stateCode")?.trim().toUpperCase();
     let vehicleUse = findEntityValue(session, "vehicleUse")?.trim().toLowerCase();
     let priorInsuranceStatus = findEntityValue(session, "priorInsuranceStatus")?.trim().toLowerCase();
+    let driverCount = findEntityValue(session, "driverCount")?.trim();
     let contactPreference = findEntityValue(session, "contactPreference")?.trim().toLowerCase();
 
     const normalizedQuote = String(rawProductName)
@@ -662,6 +667,20 @@ function buildResolvedResponse(
       }
     }
 
+    if (!driverCount) {
+      if (/\b(5\+|5|five|multiple)\s+drivers?\b/i.test(normalizedQuote)) {
+        driverCount = "5+";
+      } else if (/\b4\s+drivers?\b|\bfour\s+drivers?\b/i.test(normalizedQuote)) {
+        driverCount = "4";
+      } else if (/\b3\s+drivers?\b|\bthree\s+drivers?\b/i.test(normalizedQuote)) {
+        driverCount = "3";
+      } else if (/\b2\s+drivers?\b|\btwo\s+drivers?\b/i.test(normalizedQuote)) {
+        driverCount = "2";
+      } else if (/\b1\s+driver\b|\bone\s+driver\b/i.test(normalizedQuote)) {
+        driverCount = "1";
+      }
+    }
+
     if (!productName) {
       return "Quote intake started. Please provide the coverage option name so a quote can be prepared.";
     }
@@ -694,6 +713,16 @@ function buildResolvedResponse(
       );
     }
 
+    if (!driverCount) {
+      return (
+        "Quote intake started for " +
+        productName +
+        " in " +
+        stateCode +
+        ". Please provide the number of household drivers as 1, 2, 3, 4, or 5+ so a broker can continue the quote review."
+      );
+    }
+
     const vehicleUseSuffix =
       vehicleUse === "personal"
         ? " Vehicle use: personal."
@@ -714,6 +743,11 @@ function buildResolvedResponse(
             ? " Prior insurance status: lapsed."
             : "";
 
+    const driverCountSuffix =
+      driverCount === "1" || driverCount === "2" || driverCount === "3" || driverCount === "4" || driverCount === "5+"
+        ? " Driver count: " + driverCount + "."
+        : "";
+
     const contactSuffix =
       contactPreference === "call"
         ? " Preferred contact: call."
@@ -731,6 +765,7 @@ function buildResolvedResponse(
       ". A broker can now continue with eligibility, underwriting review, and premium estimation." +
       vehicleUseSuffix +
       priorInsuranceStatusSuffix +
+      driverCountSuffix +
       contactSuffix
     );
   }
@@ -1181,6 +1216,16 @@ export function runCustomerServiceAgent(params: {
         normalizedPriorInsuranceStatus === "uninsured" ||
         normalizedPriorInsuranceStatus === "lapsed"
           ? normalizedPriorInsuranceStatus
+          : undefined;
+    } else if (entity.entityId === "driverCount") {
+      const normalizedDriverCount = normalizeLooseEntityText(entity.value);
+      sanitizedValue =
+        normalizedDriverCount === "1" ||
+        normalizedDriverCount === "2" ||
+        normalizedDriverCount === "3" ||
+        normalizedDriverCount === "4" ||
+        normalizedDriverCount === "5+"
+          ? normalizedDriverCount
           : undefined;
     } else {
       sanitizedValue = normalizeLooseEntityText(entity.value);
