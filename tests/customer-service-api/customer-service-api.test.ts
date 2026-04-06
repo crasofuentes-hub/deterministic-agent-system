@@ -292,7 +292,7 @@ describe("customer-service-api", () => {
     });
   });
 
-  it("returns structured quote intake output when product and state are present", () => {
+  it("returns vehicle-use follow-up when product and state are present but vehicle use is missing", () => {
     const result = runCustomerServiceApi({
       sessionId: "CS-QUOTE-002",
       businessContextId: "customer-service-core-v2",
@@ -304,7 +304,7 @@ describe("customer-service-api", () => {
       businessContextId: "customer-service-core-v2",
       resolvedIntentId: "request-quote",
       responseId: "request-quote-resolved",
-      responseText: "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call.",
+      responseText: "Quote intake started for Personal Auto Standard in CA. Please describe the primary vehicle use as personal, commute, business, or rideshare so a broker can continue the quote review.",
       stage: "resolve-quote-intake",
       status: "resolved",
       humanInterventionRequired: false,

@@ -235,6 +235,12 @@ describe("customer-service-api session behavior", () => {
       userMessageText: "California, call me",
     });
 
+    const third = runCustomerServiceApi({
+      sessionId: "CS-QUOTE-SESSION-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "commuting",
+    });
+
     expect(first.resolvedIntentId).toBe("request-quote");
     expect(first.status).toBe("resolved");
     expect(first.responseText).toBe(
@@ -246,7 +252,15 @@ describe("customer-service-api session behavior", () => {
     expect(second.stage).toBe("resolve-quote-intake");
     expect(second.status).toBe("resolved");
     expect(second.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
+      "Quote intake started for Personal Auto Standard in CA. Please describe the primary vehicle use as personal, commute, business, or rideshare so a broker can continue the quote review."
+    );
+
+    expect(third.resolvedIntentId).toBe("request-quote");
+    expect(third.responseId).toBe("request-quote-resolved");
+    expect(third.stage).toBe("resolve-quote-intake");
+    expect(third.status).toBe("resolved");
+    expect(third.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Preferred contact: call."
     );
   });
 });

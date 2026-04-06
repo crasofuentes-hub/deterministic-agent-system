@@ -327,6 +327,28 @@ function extractContactPreference(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractVehicleUse(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  if (/\brideshare\b|\buber\b|\blyft\b|\bdelivery\b/i.test(normalized)) {
+    return "rideshare";
+  }
+
+  if (/\bbusiness use\b|\bwork vehicle\b|\bcommercial use\b/i.test(normalized)) {
+    return "business";
+  }
+
+  if (/\bcommute\b|\bcommuting\b|\bdrive to work\b|\bwork commute\b/i.test(normalized)) {
+    return "commute";
+  }
+
+  if (/\bpersonal use\b|\bpersonal vehicle\b|\bpleasure\b/i.test(normalized)) {
+    return "personal";
+  }
+
+  return undefined;
+}
+
 function sanitizeQuoteProductCandidate(value: string): string {
   return cleanCapturedValue(value)
     .replace(/\s+\bin\s+(?:CA|TX|AZ|NV|NM|CO|UT|OR|WA|FL)\b.*$/i, "")
@@ -409,13 +431,15 @@ function extractProductName(messageText: string): string | undefined {
 
   const stateCode = extractStateCode(normalized);
   const contactPreference = extractContactPreference(normalized);
+  const vehicleUse = extractVehicleUse(normalized);
 
   if (
     normalized.length > 0 &&
     normalized.length <= 80 &&
     !containsOrderOnlyLanguage(normalized) &&
     !stateCode &&
-    !contactPreference
+    !contactPreference &&
+    !vehicleUse
   ) {
     return normalized;
   }
@@ -435,6 +459,7 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
   const discrepancyType = extractDiscrepancyType(messageText);
   const stateCode = extractStateCode(messageText);
   const contactPreference = extractContactPreference(messageText);
+  const vehicleUse = extractVehicleUse(messageText);
   const productName = extractProductName(messageText);
 
   if (orderId) {
@@ -513,6 +538,14 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
     out.push({
       entityId: "contactPreference",
       value: contactPreference,
+      confidence: "derived",
+    });
+  }
+
+  if (vehicleUse) {
+    out.push({
+      entityId: "vehicleUse",
+      value: vehicleUse,
       confidence: "derived",
     });
   }

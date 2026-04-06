@@ -544,7 +544,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
+      "Quote intake started for Personal Auto Standard in CA. Please describe the primary vehicle use as personal, commute, business, or rideshare so a broker can continue the quote review."
     );
   });
 
@@ -553,6 +553,12 @@ describe("customer-service semantic invariants", () => {
       sessionId: "CS-INV-QUOTE-SESSION-001",
       businessContextId: "customer-service-core-v2",
       userMessageText: "I need a quote for Personal Auto Standard",
+    });
+
+    runCustomerServiceApi({
+      sessionId: "CS-INV-QUOTE-SESSION-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "commuting",
     });
 
     const result = runCustomerServiceApi({
@@ -569,7 +575,7 @@ describe("customer-service semantic invariants", () => {
     expect(result.handoffReasonCode).toBeUndefined();
     expect(result.handoffQueue).toBeUndefined();
     expect(result.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Preferred contact: call."
     );
   });
 });

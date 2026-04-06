@@ -371,6 +371,10 @@ function getAllowedEntityIdsForIntent(intentId: string): string[] {
     return ["billingTopic", "policyId", "customerId"];
   }
 
+  if (intentId === "request-quote") {
+    return ["productName", "stateCode", "vehicleUse", "contactPreference"];
+  }
+
   return [];
 }
 
@@ -472,16 +476,25 @@ function resolveEffectiveIntentId(session: SessionState, userMessageText: string
   if (session.currentIntentId === "request-quote") {
     const collectedProductName = findEntityValue(session, "productName");
     const collectedStateCode = findEntityValue(session, "stateCode");
+    const collectedVehicleUse = findEntityValue(session, "vehicleUse");
     const extracted = extractEntitiesFromText(userMessageText);
 
     const hasQuoteFollowUpSignal = extracted.some(
-      (entity) => entity.entityId === "stateCode" || entity.entityId === "contactPreference"
+      (entity) =>
+        entity.entityId === "stateCode" ||
+        entity.entityId === "vehicleUse" ||
+        entity.entityId === "contactPreference"
     );
 
     if (
       typeof collectedProductName === "string" &&
       collectedProductName.trim().length > 0 &&
-      (!collectedStateCode || collectedStateCode.trim().length === 0) &&
+      (
+        !collectedStateCode ||
+        collectedStateCode.trim().length === 0 ||
+        !collectedVehicleUse ||
+        collectedVehicleUse.trim().length === 0
+      ) &&
       hasQuoteFollowUpSignal &&
       !hasExplicitIntentSignal(userMessageText, resolved)
     ) {
@@ -588,6 +601,7 @@ function buildResolvedResponse(
     const rawProductName = findEntityValue(session, "productName") ?? "";
     let productName = sanitizeProductNameCandidate(rawProductName);
     let stateCode = findEntityValue(session, "stateCode")?.trim().toUpperCase();
+    let vehicleUse = findEntityValue(session, "vehicleUse")?.trim().toLowerCase();
     let contactPreference = findEntityValue(session, "contactPreference")?.trim().toLowerCase();
 
     const normalizedQuote = String(rawProductName)
@@ -621,6 +635,18 @@ function buildResolvedResponse(
       }
     }
 
+    if (!vehicleUse) {
+      if (/\brideshare\b|\buber\b|\blyft\b|\bdelivery\b/i.test(normalizedQuote)) {
+        vehicleUse = "rideshare";
+      } else if (/\bbusiness use\b|\bwork vehicle\b|\bcommercial use\b/i.test(normalizedQuote)) {
+        vehicleUse = "business";
+      } else if (/\bcommute\b|\bcommuting\b|\bdrive to work\b|\bwork commute\b/i.test(normalizedQuote)) {
+        vehicleUse = "commute";
+      } else if (/\bpersonal use\b|\bpersonal vehicle\b|\bpleasure\b/i.test(normalizedQuote)) {
+        vehicleUse = "personal";
+      }
+    }
+
     if (!productName) {
       return "Quote intake started. Please provide the coverage option name so a quote can be prepared.";
     }
@@ -632,6 +658,27 @@ function buildResolvedResponse(
         ". Please provide the state where coverage is needed so a broker can continue the quote review."
       );
     }
+
+    if (!vehicleUse) {
+      return (
+        "Quote intake started for " +
+        productName +
+        " in " +
+        stateCode +
+        ". Please describe the primary vehicle use as personal, commute, business, or rideshare so a broker can continue the quote review."
+      );
+    }
+
+    const vehicleUseSuffix =
+      vehicleUse === "personal"
+        ? " Vehicle use: personal."
+        : vehicleUse === "commute"
+          ? " Vehicle use: commute."
+          : vehicleUse === "business"
+            ? " Vehicle use: business."
+            : vehicleUse === "rideshare"
+              ? " Vehicle use: rideshare."
+              : "";
 
     const contactSuffix =
       contactPreference === "call"
@@ -648,6 +695,7 @@ function buildResolvedResponse(
       " in " +
       stateCode +
       ". A broker can now continue with eligibility, underwriting review, and premium estimation." +
+      vehicleUseSuffix +
       contactSuffix
     );
   }
@@ -1082,6 +1130,15 @@ export function runCustomerServiceAgent(params: {
       sanitizedValue = sanitizeBillingTopicCandidate(entity.value);
     } else if (entity.entityId === "discrepancyType") {
       sanitizedValue = sanitizeDiscrepancyTypeCandidate(entity.value);
+    } else if (entity.entityId === "vehicleUse") {
+      const normalizedVehicleUse = normalizeLooseEntityText(entity.value)?.toLowerCase();
+      sanitizedValue =
+        normalizedVehicleUse === "personal" ||
+        normalizedVehicleUse === "commute" ||
+        normalizedVehicleUse === "business" ||
+        normalizedVehicleUse === "rideshare"
+          ? normalizedVehicleUse
+          : undefined;
     } else {
       sanitizedValue = normalizeLooseEntityText(entity.value);
     }
