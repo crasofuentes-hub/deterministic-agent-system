@@ -6,9 +6,7 @@ describe("whatsapp store", () => {
     const store = createInMemoryWhatsAppStore({
       businessContextId: "customer-service-core-v2",
     });
-
     const session = store.loadSession("5215512345678");
-
     expect(session).toEqual({
       sessionId: "whatsapp-session:5215512345678",
       businessContextId: "customer-service-core-v2",
@@ -27,7 +25,6 @@ describe("whatsapp store", () => {
     const store = createInMemoryWhatsAppStore({
       businessContextId: "customer-service-core-v2",
     });
-
     const session = store.loadSession("5215512345678");
     const updated = {
       ...session,
@@ -35,9 +32,7 @@ describe("whatsapp store", () => {
       conversationStatus: "waiting-user" as const,
       missingEntityIds: ["productName"],
     };
-
     store.saveSession("5215512345678", updated);
-
     expect(store.loadSession("5215512345678")).toEqual(updated);
   });
 
@@ -45,15 +40,9 @@ describe("whatsapp store", () => {
     const store = createInMemoryWhatsAppStore({
       businessContextId: "customer-service-core-v2",
     });
-
     expect(store.hasProcessedMessage("wamid.001")).toBe(false);
-
     store.markMessageProcessed("wamid.001");
-
-    expect(store.hasProcessedMessage("wamid.001")).toBe(true);
-
     store.markMessageProcessed("wamid.001");
-
     expect(store.hasProcessedMessage("wamid.001")).toBe(true);
   });
 
@@ -62,7 +51,6 @@ describe("whatsapp store", () => {
       businessContextId: "customer-service-core-v2",
       sessionIdPrefix: "wa-session",
     });
-
     const session = store.loadSession("5215512345678");
     expect(session.sessionId).toBe("wa-session:5215512345678");
   });
@@ -70,15 +58,15 @@ describe("whatsapp store", () => {
   it("rejects invalid businessContextId", () => {
     expect(() =>
       createInMemoryWhatsAppStore({
-        businessContextId: "   ",
+        businessContextId: " ",
       })
     ).toThrow("businessContextId must be a non-empty string");
   });
+
   it("persists last conversation evidence by customer id", () => {
     const store = createInMemoryWhatsAppStore({
       businessContextId: "customer-service-core-v2",
     });
-
     expect(store.loadEvidence("5215512345678")).toBeUndefined();
 
     store.saveEvidence({
@@ -88,8 +76,7 @@ describe("whatsapp store", () => {
       lastResolvedIntentId: "request-quote",
       lastStage: "resolve-quote-intake",
       lastStatus: "resolved",
-      lastOutboundText:
-        "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+      lastOutboundText: "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
       humanInterventionRequired: false,
       updatedAtIso: "2026-03-24T00:00:00.000Z",
     });
@@ -101,12 +88,53 @@ describe("whatsapp store", () => {
       lastResolvedIntentId: "request-quote",
       lastStage: "resolve-quote-intake",
       lastStatus: "resolved",
-      lastOutboundText:
-        "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+      lastOutboundText: "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
       humanInterventionRequired: false,
       updatedAtIso: "2026-03-24T00:00:00.000Z",
       handoffReasonCode: undefined,
       handoffQueue: undefined,
     });
+  });
+
+  it("persists handoff queue records in memory", () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    expect(store.listHandoffs()).toEqual([]);
+
+    store.saveHandoff({
+      handoffId: "handoff:5215512345678:wamid.handoff.001",
+      customerId: "5215512345678",
+      createdAtIso: "2026-03-24T00:00:00.000Z",
+      updatedAtIso: "2026-03-24T00:00:00.000Z",
+      handoffReasonCode: "explicit-human-request",
+      handoffQueue: "licensed-broker",
+      status: "open",
+      lastInboundMessageId: "wamid.handoff.001",
+      lastResponseId: "handoff-requested",
+      lastResolvedIntentId: "request-human-handoff",
+      lastStage: "handoff-requested",
+      lastStatus: "handoff",
+      lastOutboundText: "Your conversation will be transferred to a licensed broker specialist.",
+    });
+
+    expect(store.listHandoffs()).toEqual([
+      {
+        handoffId: "handoff:5215512345678:wamid.handoff.001",
+        customerId: "5215512345678",
+        createdAtIso: "2026-03-24T00:00:00.000Z",
+        updatedAtIso: "2026-03-24T00:00:00.000Z",
+        handoffReasonCode: "explicit-human-request",
+        handoffQueue: "licensed-broker",
+        status: "open",
+        lastInboundMessageId: "wamid.handoff.001",
+        lastResponseId: "handoff-requested",
+        lastResolvedIntentId: "request-human-handoff",
+        lastStage: "handoff-requested",
+        lastStatus: "handoff",
+        lastOutboundText: "Your conversation will be transferred to a licensed broker specialist.",
+      },
+    ]);
   });
 });

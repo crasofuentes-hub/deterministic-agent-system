@@ -16,10 +16,8 @@ describe("whatsapp sqlite store", () => {
       dbPath,
       businessContextId: "customer-service-core-v2",
     });
-
     try {
       const session = store.loadSession("5215512345678");
-
       expect(session).toEqual({
         sessionId: "whatsapp-session:5215512345678",
         businessContextId: "customer-service-core-v2",
@@ -39,13 +37,11 @@ describe("whatsapp sqlite store", () => {
 
   it("persists saved session across store reopen", () => {
     const dbPath = createTempDbPath("persist-session");
-
     {
       const store = createSqliteWhatsAppStore({
         dbPath,
         businessContextId: "customer-service-core-v2",
       });
-
       const session = store.loadSession("5215512345678");
       const updated = {
         ...session,
@@ -53,17 +49,14 @@ describe("whatsapp sqlite store", () => {
         conversationStatus: "waiting-user" as const,
         missingEntityIds: ["productName"],
       };
-
       store.saveSession("5215512345678", updated);
       store.close();
     }
-
     {
       const reopened = createSqliteWhatsAppStore({
         dbPath,
         businessContextId: "customer-service-core-v2",
       });
-
       try {
         expect(reopened.loadSession("5215512345678")).toEqual({
           sessionId: "whatsapp-session:5215512345678",
@@ -85,25 +78,21 @@ describe("whatsapp sqlite store", () => {
 
   it("persists processed message ids across reopen", () => {
     const dbPath = createTempDbPath("processed-message");
-
     {
       const store = createSqliteWhatsAppStore({
         dbPath,
         businessContextId: "customer-service-core-v2",
       });
-
       expect(store.hasProcessedMessage("wamid.001")).toBe(false);
       store.markMessageProcessed("wamid.001");
       expect(store.hasProcessedMessage("wamid.001")).toBe(true);
       store.close();
     }
-
     {
       const reopened = createSqliteWhatsAppStore({
         dbPath,
         businessContextId: "customer-service-core-v2",
       });
-
       try {
         expect(reopened.hasProcessedMessage("wamid.001")).toBe(true);
       } finally {
@@ -119,7 +108,6 @@ describe("whatsapp sqlite store", () => {
       businessContextId: "customer-service-core-v2",
       sessionIdPrefix: "wa-session",
     });
-
     try {
       const session = store.loadSession("5215512345678");
       expect(session.sessionId).toBe("wa-session:5215512345678");
@@ -131,28 +119,25 @@ describe("whatsapp sqlite store", () => {
   it("rejects invalid options", () => {
     expect(() =>
       createSqliteWhatsAppStore({
-        dbPath: "   ",
+        dbPath: " ",
         businessContextId: "customer-service-core-v2",
       })
     ).toThrow("dbPath must be a non-empty string");
-
     expect(() =>
       createSqliteWhatsAppStore({
         dbPath: createTempDbPath("invalid-business-context"),
-        businessContextId: "   ",
+        businessContextId: " ",
       })
     ).toThrow("businessContextId must be a non-empty string");
   });
 
   it("persists conversation evidence across store reopen", () => {
     const dbPath = createTempDbPath("persist-evidence");
-
     {
       const store = createSqliteWhatsAppStore({
         dbPath,
         businessContextId: "customer-service-core-v2",
       });
-
       store.saveEvidence({
         customerId: "5215512345678",
         lastInboundMessageId: "wamid.quote.005",
@@ -160,21 +145,17 @@ describe("whatsapp sqlite store", () => {
         lastResolvedIntentId: "request-quote",
         lastStage: "resolve-quote-intake",
         lastStatus: "resolved",
-        lastOutboundText:
-          "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+        lastOutboundText: "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
         humanInterventionRequired: false,
         updatedAtIso: "2026-03-24T00:00:00.000Z",
       });
-
       store.close();
     }
-
     {
       const reopened = createSqliteWhatsAppStore({
         dbPath,
         businessContextId: "customer-service-core-v2",
       });
-
       try {
         expect(reopened.loadEvidence("5215512345678")).toEqual({
           customerId: "5215512345678",
@@ -183,13 +164,65 @@ describe("whatsapp sqlite store", () => {
           lastResolvedIntentId: "request-quote",
           lastStage: "resolve-quote-intake",
           lastStatus: "resolved",
-          lastOutboundText:
-            "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+          lastOutboundText: "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
           humanInterventionRequired: false,
           updatedAtIso: "2026-03-24T00:00:00.000Z",
           handoffReasonCode: undefined,
           handoffQueue: undefined,
         });
+      } finally {
+        reopened.close();
+      }
+    }
+  });
+
+  it("persists handoff queue records across reopen", () => {
+    const dbPath = createTempDbPath("persist-handoff");
+    {
+      const store = createSqliteWhatsAppStore({
+        dbPath,
+        businessContextId: "customer-service-core-v2",
+      });
+      store.saveHandoff({
+        handoffId: "handoff:5215512345678:wamid.handoff.001",
+        customerId: "5215512345678",
+        createdAtIso: "2026-03-24T00:00:00.000Z",
+        updatedAtIso: "2026-03-24T00:00:00.000Z",
+        handoffReasonCode: "explicit-human-request",
+        handoffQueue: "licensed-broker",
+        status: "open",
+        lastInboundMessageId: "wamid.handoff.001",
+        lastResponseId: "handoff-requested",
+        lastResolvedIntentId: "request-human-handoff",
+        lastStage: "handoff-requested",
+        lastStatus: "handoff",
+        lastOutboundText: "Your conversation will be transferred to a licensed broker specialist.",
+      });
+      store.close();
+    }
+    {
+      const reopened = createSqliteWhatsAppStore({
+        dbPath,
+        businessContextId: "customer-service-core-v2",
+      });
+      try {
+        expect(reopened.listHandoffs()).toEqual([
+          {
+            handoffId: "handoff:5215512345678:wamid.handoff.001",
+            customerId: "5215512345678",
+            createdAtIso: "2026-03-24T00:00:00.000Z",
+            updatedAtIso: "2026-03-24T00:00:00.000Z",
+            handoffReasonCode: "explicit-human-request",
+            handoffQueue: "licensed-broker",
+            status: "open",
+            lastInboundMessageId: "wamid.handoff.001",
+            lastResponseId: "handoff-requested",
+            lastResolvedIntentId: "request-human-handoff",
+            lastStage: "handoff-requested",
+            lastStatus: "handoff",
+            lastOutboundText: "Your conversation will be transferred to a licensed broker specialist.",
+          },
+        ]);
       } finally {
         reopened.close();
       }
