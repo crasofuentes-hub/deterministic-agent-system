@@ -441,20 +441,20 @@ describe("customer-service-agent", () => {
     );
   });
 
-  it("requests vehicle use when product and state are present but vehicle use is missing", () => {
+  it("requests prior insurance status when product, state, and vehicle use are present", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
         sessionId: "S-029",
         businessContextId: "customer-service-core-v2",
       }),
-      userMessageText: "I need a quote for Personal Auto Standard in CA, call me",
+      userMessageText: "I need a quote for Personal Auto Standard in CA for commuting, call me",
     });
 
     expect(result.resolvedIntentId).toBe("request-quote");
     expect(result.responseId).toBe("request-quote-resolved");
     expect(result.status).toBe("resolved");
     expect(result.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. Please describe the primary vehicle use as personal, commute, business, or rideshare so a broker can continue the quote review."
+      "Quote intake started for Personal Auto Standard in CA. Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review."
     );
   });
 
@@ -477,6 +477,11 @@ describe("customer-service-agent", () => {
       userMessageText: "commuting",
     });
 
+    const fourth = runCustomerServiceAgent({
+      session: third.session,
+      userMessageText: "currently insured",
+    });
+
     expect(first.resolvedIntentId).toBe("request-quote");
     expect(first.status).toBe("resolved");
     expect(first.responseText).toBe(
@@ -494,7 +499,14 @@ describe("customer-service-agent", () => {
     expect(third.responseId).toBe("request-quote-resolved");
     expect(third.status).toBe("resolved");
     expect(third.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Preferred contact: call."
+      "Quote intake started for Personal Auto Standard in CA. Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review."
+    );
+
+    expect(fourth.resolvedIntentId).toBe("request-quote");
+    expect(fourth.responseId).toBe("request-quote-resolved");
+    expect(fourth.status).toBe("resolved");
+    expect(fourth.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Preferred contact: call."
     );
   });
 });

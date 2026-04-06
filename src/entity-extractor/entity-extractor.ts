@@ -349,6 +349,24 @@ function extractVehicleUse(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractPriorInsuranceStatus(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  if (/\blapsed\b|\bcoverage lapsed\b|\bpolicy lapsed\b|\binsurance lapsed\b/i.test(normalized)) {
+    return "lapsed";
+  }
+
+  if (/\bcurrently uninsured\b|\bno prior insurance\b|\bno insurance\b|\bnot insured\b/i.test(normalized)) {
+    return "uninsured";
+  }
+
+  if (/\bcurrently insured\b|\balready insured\b|\bhave insurance\b|\binsured\b/i.test(normalized)) {
+    return "insured";
+  }
+
+  return undefined;
+}
+
 function sanitizeQuoteProductCandidate(value: string): string {
   return cleanCapturedValue(value)
     .replace(/\s+\bin\s+(?:CA|TX|AZ|NV|NM|CO|UT|OR|WA|FL)\b.*$/i, "")
@@ -432,6 +450,7 @@ function extractProductName(messageText: string): string | undefined {
   const stateCode = extractStateCode(normalized);
   const contactPreference = extractContactPreference(normalized);
   const vehicleUse = extractVehicleUse(normalized);
+  const priorInsuranceStatus = extractPriorInsuranceStatus(normalized);
 
   if (
     normalized.length > 0 &&
@@ -439,7 +458,8 @@ function extractProductName(messageText: string): string | undefined {
     !containsOrderOnlyLanguage(normalized) &&
     !stateCode &&
     !contactPreference &&
-    !vehicleUse
+    !vehicleUse &&
+    !priorInsuranceStatus
   ) {
     return normalized;
   }
@@ -460,6 +480,7 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
   const stateCode = extractStateCode(messageText);
   const contactPreference = extractContactPreference(messageText);
   const vehicleUse = extractVehicleUse(messageText);
+  const priorInsuranceStatus = extractPriorInsuranceStatus(messageText);
   const productName = extractProductName(messageText);
 
   if (orderId) {
@@ -546,6 +567,14 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
     out.push({
       entityId: "vehicleUse",
       value: vehicleUse,
+      confidence: "derived",
+    });
+  }
+
+  if (priorInsuranceStatus) {
+    out.push({
+      entityId: "priorInsuranceStatus",
+      value: priorInsuranceStatus,
       confidence: "derived",
     });
   }

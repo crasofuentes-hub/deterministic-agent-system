@@ -116,6 +116,30 @@ describe("entity-extractor", () => {
     expect(entities.find((item) => item.entityId === "productName")).toBeUndefined();
   });
 
+  it("extracts priorInsuranceStatus as insured", () => {
+    expect(extractEntitiesFromText("I need a quote and I am currently insured")).toContainEqual({
+      entityId: "priorInsuranceStatus",
+      value: "insured",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts priorInsuranceStatus as uninsured", () => {
+    expect(extractEntitiesFromText("I need a quote and I have no prior insurance")).toContainEqual({
+      entityId: "priorInsuranceStatus",
+      value: "uninsured",
+      confidence: "derived",
+    });
+  });
+
+  it("extracts priorInsuranceStatus as lapsed", () => {
+    expect(extractEntitiesFromText("My insurance lapsed")).toContainEqual({
+      entityId: "priorInsuranceStatus",
+      value: "lapsed",
+      confidence: "derived",
+    });
+  });
+
   it("extracts paymentId from payment status message", () => {
     expect(extractEntitiesFromText("What is the status of payment PMT-1001?")).toContainEqual({
       entityId: "paymentId",
@@ -154,5 +178,6 @@ describe("entity-extractor", () => {
       value: "CUS-101",
       confidence: "derived",
     });
-  });
+  });
+
 });

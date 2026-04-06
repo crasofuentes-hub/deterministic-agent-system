@@ -241,6 +241,12 @@ describe("customer-service-api session behavior", () => {
       userMessageText: "commuting",
     });
 
+    const fourth = runCustomerServiceApi({
+      sessionId: "CS-QUOTE-SESSION-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "currently insured",
+    });
+
     expect(first.resolvedIntentId).toBe("request-quote");
     expect(first.status).toBe("resolved");
     expect(first.responseText).toBe(
@@ -260,7 +266,15 @@ describe("customer-service-api session behavior", () => {
     expect(third.stage).toBe("resolve-quote-intake");
     expect(third.status).toBe("resolved");
     expect(third.responseText).toBe(
-      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Preferred contact: call."
+      "Quote intake started for Personal Auto Standard in CA. Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review."
+    );
+
+    expect(fourth.resolvedIntentId).toBe("request-quote");
+    expect(fourth.responseId).toBe("request-quote-resolved");
+    expect(fourth.stage).toBe("resolve-quote-intake");
+    expect(fourth.status).toBe("resolved");
+    expect(fourth.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Preferred contact: call."
     );
   });
 });

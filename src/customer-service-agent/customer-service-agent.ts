@@ -372,7 +372,7 @@ function getAllowedEntityIdsForIntent(intentId: string): string[] {
   }
 
   if (intentId === "request-quote") {
-    return ["productName", "stateCode", "vehicleUse", "contactPreference"];
+    return ["productName", "stateCode", "vehicleUse", "priorInsuranceStatus", "contactPreference"];
   }
 
   return [];
@@ -477,12 +477,14 @@ function resolveEffectiveIntentId(session: SessionState, userMessageText: string
     const collectedProductName = findEntityValue(session, "productName");
     const collectedStateCode = findEntityValue(session, "stateCode");
     const collectedVehicleUse = findEntityValue(session, "vehicleUse");
+    const collectedPriorInsuranceStatus = findEntityValue(session, "priorInsuranceStatus");
     const extracted = extractEntitiesFromText(userMessageText);
 
     const hasQuoteFollowUpSignal = extracted.some(
       (entity) =>
         entity.entityId === "stateCode" ||
         entity.entityId === "vehicleUse" ||
+        entity.entityId === "priorInsuranceStatus" ||
         entity.entityId === "contactPreference"
     );
 
@@ -493,7 +495,9 @@ function resolveEffectiveIntentId(session: SessionState, userMessageText: string
         !collectedStateCode ||
         collectedStateCode.trim().length === 0 ||
         !collectedVehicleUse ||
-        collectedVehicleUse.trim().length === 0
+        collectedVehicleUse.trim().length === 0 ||
+        !collectedPriorInsuranceStatus ||
+        collectedPriorInsuranceStatus.trim().length === 0
       ) &&
       hasQuoteFollowUpSignal &&
       !hasExplicitIntentSignal(userMessageText, resolved)
@@ -602,6 +606,7 @@ function buildResolvedResponse(
     let productName = sanitizeProductNameCandidate(rawProductName);
     let stateCode = findEntityValue(session, "stateCode")?.trim().toUpperCase();
     let vehicleUse = findEntityValue(session, "vehicleUse")?.trim().toLowerCase();
+    let priorInsuranceStatus = findEntityValue(session, "priorInsuranceStatus")?.trim().toLowerCase();
     let contactPreference = findEntityValue(session, "contactPreference")?.trim().toLowerCase();
 
     const normalizedQuote = String(rawProductName)
@@ -647,6 +652,16 @@ function buildResolvedResponse(
       }
     }
 
+    if (!priorInsuranceStatus) {
+      if (/\blapsed\b|\bcoverage lapsed\b|\bpolicy lapsed\b|\binsurance lapsed\b/i.test(normalizedQuote)) {
+        priorInsuranceStatus = "lapsed";
+      } else if (/\bcurrently uninsured\b|\bno prior insurance\b|\bno insurance\b|\bnot insured\b/i.test(normalizedQuote)) {
+        priorInsuranceStatus = "uninsured";
+      } else if (/\bcurrently insured\b|\balready insured\b|\bhave insurance\b|\binsured\b/i.test(normalizedQuote)) {
+        priorInsuranceStatus = "insured";
+      }
+    }
+
     if (!productName) {
       return "Quote intake started. Please provide the coverage option name so a quote can be prepared.";
     }
@@ -669,6 +684,16 @@ function buildResolvedResponse(
       );
     }
 
+    if (!priorInsuranceStatus) {
+      return (
+        "Quote intake started for " +
+        productName +
+        " in " +
+        stateCode +
+        ". Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review."
+      );
+    }
+
     const vehicleUseSuffix =
       vehicleUse === "personal"
         ? " Vehicle use: personal."
@@ -679,6 +704,15 @@ function buildResolvedResponse(
             : vehicleUse === "rideshare"
               ? " Vehicle use: rideshare."
               : "";
+
+    const priorInsuranceStatusSuffix =
+      priorInsuranceStatus === "insured"
+        ? " Prior insurance status: insured."
+        : priorInsuranceStatus === "uninsured"
+          ? " Prior insurance status: uninsured."
+          : priorInsuranceStatus === "lapsed"
+            ? " Prior insurance status: lapsed."
+            : "";
 
     const contactSuffix =
       contactPreference === "call"
@@ -696,6 +730,7 @@ function buildResolvedResponse(
       stateCode +
       ". A broker can now continue with eligibility, underwriting review, and premium estimation." +
       vehicleUseSuffix +
+      priorInsuranceStatusSuffix +
       contactSuffix
     );
   }
@@ -1138,6 +1173,14 @@ export function runCustomerServiceAgent(params: {
         normalizedVehicleUse === "business" ||
         normalizedVehicleUse === "rideshare"
           ? normalizedVehicleUse
+          : undefined;
+    } else if (entity.entityId === "priorInsuranceStatus") {
+      const normalizedPriorInsuranceStatus = normalizeLooseEntityText(entity.value)?.toLowerCase();
+      sanitizedValue =
+        normalizedPriorInsuranceStatus === "insured" ||
+        normalizedPriorInsuranceStatus === "uninsured" ||
+        normalizedPriorInsuranceStatus === "lapsed"
+          ? normalizedPriorInsuranceStatus
           : undefined;
     } else {
       sanitizedValue = normalizeLooseEntityText(entity.value);
