@@ -279,6 +279,62 @@ function extractDiscrepancyType(messageText: string): string | undefined {
   return undefined;
 }
 
+function extractStateCode(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  const direct = normalized.match(/\bin\s+(CA|TX|AZ|NV|NM|CO|UT|OR|WA|FL)\b/i);
+  if (direct?.[1]) {
+    return direct[1].toUpperCase();
+  }
+
+  const phraseMatches = [
+    { pattern: /\bcalifornia\b/i, value: "CA" },
+    { pattern: /\btexas\b/i, value: "TX" },
+    { pattern: /\barizona\b/i, value: "AZ" },
+    { pattern: /\bnevada\b/i, value: "NV" },
+    { pattern: /\bnew mexico\b/i, value: "NM" },
+    { pattern: /\bcolorado\b/i, value: "CO" },
+    { pattern: /\butah\b/i, value: "UT" },
+    { pattern: /\boregon\b/i, value: "OR" },
+    { pattern: /\bwashington\b/i, value: "WA" },
+    { pattern: /\bflorida\b/i, value: "FL" },
+  ];
+
+  for (const item of phraseMatches) {
+    if (item.pattern.test(normalized)) {
+      return item.value;
+    }
+  }
+
+  return undefined;
+}
+
+function extractContactPreference(messageText: string): string | undefined {
+  const normalized = normalizeText(messageText);
+
+  if (/\bcall me\b|\bcall back\b|\bphone call\b/i.test(normalized)) {
+    return "call";
+  }
+
+  if (/\btext me\b|\bsms\b|\btext message\b/i.test(normalized)) {
+    return "text";
+  }
+
+  if (/\bemail me\b|\bemail\b/i.test(normalized)) {
+    return "email";
+  }
+
+  return undefined;
+}
+
+function sanitizeQuoteProductCandidate(value: string): string {
+  return cleanCapturedValue(value)
+    .replace(/\s+\bin\s+(?:CA|TX|AZ|NV|NM|CO|UT|OR|WA|FL)\b.*$/i, "")
+    .replace(/\s+\bin\s+(?:California|Texas|Arizona|Nevada|New Mexico|Colorado|Utah|Oregon|Washington|Florida)\b.*$/i, "")
+    .replace(/,\s*(?:call me|call back|text me|email me|sms)\s*$/i, "")
+    .trim();
+}
+
 function isGenericProductReference(value: string): boolean {
   const normalized = value.trim().toLowerCase();
 
@@ -304,7 +360,7 @@ function extractProductName(messageText: string): string | undefined {
 
   const eligibilityMatch = normalized.match(/^is\s+(.+?)\s+(?:available|eligible|broker\s+review)\??$/i);
   if (eligibilityMatch?.[1]) {
-    const cleaned = cleanCapturedValue(eligibilityMatch[1]);
+    const cleaned = sanitizeQuoteProductCandidate(eligibilityMatch[1]);
     if (cleaned.length > 0 && !isGenericProductReference(cleaned)) {
       return cleaned;
     }
@@ -344,14 +400,23 @@ function extractProductName(messageText: string): string | undefined {
     const match = normalized.match(pattern);
     const captured = match?.[1];
     if (typeof captured === "string") {
-      const cleaned = cleanCapturedValue(captured);
+      const cleaned = sanitizeQuoteProductCandidate(captured);
       if (cleaned.length > 0 && !isGenericProductReference(cleaned)) {
         return cleaned;
       }
     }
   }
 
-  if (normalized.length > 0 && normalized.length <= 80 && !containsOrderOnlyLanguage(normalized)) {
+  const stateCode = extractStateCode(normalized);
+  const contactPreference = extractContactPreference(normalized);
+
+  if (
+    normalized.length > 0 &&
+    normalized.length <= 80 &&
+    !containsOrderOnlyLanguage(normalized) &&
+    !stateCode &&
+    !contactPreference
+  ) {
     return normalized;
   }
 
@@ -368,6 +433,8 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
   const policyAspect = extractPolicyAspect(messageText);
   const billingTopic = extractBillingTopic(messageText);
   const discrepancyType = extractDiscrepancyType(messageText);
+  const stateCode = extractStateCode(messageText);
+  const contactPreference = extractContactPreference(messageText);
   const productName = extractProductName(messageText);
 
   if (orderId) {
@@ -430,6 +497,22 @@ export function extractEntitiesFromText(messageText: string): ExtractedEntity[] 
     out.push({
       entityId: "discrepancyType",
       value: discrepancyType,
+      confidence: "derived",
+    });
+  }
+
+  if (stateCode) {
+    out.push({
+      entityId: "stateCode",
+      value: stateCode,
+      confidence: "derived",
+    });
+  }
+
+  if (contactPreference) {
+    out.push({
+      entityId: "contactPreference",
+      value: contactPreference,
       confidence: "derived",
     });
   }
