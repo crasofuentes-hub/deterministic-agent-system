@@ -424,4 +424,172 @@ describe("whatsapp webhook handler", () => {
       error: "body must be valid JSON",
     });
   });
+  it("keeps quote intake parity across whatsapp webhook multi-turn flow with stored session reuse", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const firstRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-quote-001",
+        },
+      } as any,
+      firstRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.quote.store.001", "I need a quote for Personal Auto Standard"),
+      }
+    );
+
+    const secondRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-quote-002",
+        },
+      } as any,
+      secondRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.quote.store.002", "California, call me"),
+      }
+    );
+
+    const thirdRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-quote-003",
+        },
+      } as any,
+      thirdRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.quote.store.003", "commuting"),
+      }
+    );
+
+    const fourthRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-quote-004",
+        },
+      } as any,
+      fourthRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.quote.store.004", "currently insured"),
+      }
+    );
+
+    const fifthRes = createMockResponse();
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-quote-005",
+        },
+      } as any,
+      fifthRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.quote.store.005", "2 drivers"),
+      }
+    );
+
+    const firstJson = JSON.parse(firstRes.getBody());
+    const secondJson = JSON.parse(secondRes.getBody());
+    const thirdJson = JSON.parse(thirdRes.getBody());
+    const fourthJson = JSON.parse(fourthRes.getBody());
+    const fifthJson = JSON.parse(fifthRes.getBody());
+
+    expect(firstJson.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        outboundText:
+          "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review.",
+        humanInterventionRequired: false,
+      })
+    );
+
+    expect(secondJson.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        outboundText:
+          "Quote intake started for Personal Auto Standard in CA. Please describe the primary vehicle use as personal, commute, business, or rideshare so a broker can continue the quote review.",
+        humanInterventionRequired: false,
+      })
+    );
+
+    expect(thirdJson.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        outboundText:
+          "Quote intake started for Personal Auto Standard in CA. Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review.",
+        humanInterventionRequired: false,
+      })
+    );
+
+    expect(fourthJson.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        outboundText:
+          "Quote intake started for Personal Auto Standard in CA. Please provide the number of household drivers as 1, 2, 3, 4, or 5+ so a broker can continue the quote review.",
+        humanInterventionRequired: false,
+      })
+    );
+
+    expect(fifthJson.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        outboundText:
+          "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+        humanInterventionRequired: false,
+      })
+    );
+
+    expect(fifthJson.results[0].delivery).toEqual({
+      mode: "skipped",
+      result: null,
+      deliveryStatus: "skipped",
+      deliveryError: null,
+    });
+  });
 });

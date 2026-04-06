@@ -189,4 +189,123 @@ describe("whatsapp agent bridge", () => {
       handoffQueue: "billing-specialist",
     });
   });
+  it("keeps quote intake parity across whatsapp multi-turn flow", () => {
+    const first = runWhatsAppCustomerServiceBridge({
+      session: createInitialSessionState({
+        sessionId: "WA-QUOTE-001",
+        businessContextId: "customer-service-core-v2",
+      }),
+      message: createMessage("I need a quote for Personal Auto Standard", "wamid.quote.001"),
+    });
+
+    const second = runWhatsAppCustomerServiceBridge({
+      session: first.session,
+      message: createMessage("California, call me", "wamid.quote.002"),
+    });
+
+    const third = runWhatsAppCustomerServiceBridge({
+      session: second.session,
+      message: createMessage("commuting", "wamid.quote.003"),
+    });
+
+    const fourth = runWhatsAppCustomerServiceBridge({
+      session: third.session,
+      message: createMessage("currently insured", "wamid.quote.004"),
+    });
+
+    const fifth = runWhatsAppCustomerServiceBridge({
+      session: fourth.session,
+      message: createMessage("2 drivers", "wamid.quote.005"),
+    });
+
+    expect(first.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.quote.001",
+      inboundTraceId: "whatsapp:wamid.quote.001",
+      whatsappPhoneNumberId: "phone-number-id-001",
+      profileName: "Oscar Cliente",
+      outboundText:
+        "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review.",
+      responseId: "request-quote-resolved",
+      resolvedIntentId: "request-quote",
+      stage: "resolve-quote-intake",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+
+    expect(second.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.quote.002",
+      inboundTraceId: "whatsapp:wamid.quote.002",
+      whatsappPhoneNumberId: "phone-number-id-001",
+      profileName: "Oscar Cliente",
+      outboundText:
+        "Quote intake started for Personal Auto Standard in CA. Please describe the primary vehicle use as personal, commute, business, or rideshare so a broker can continue the quote review.",
+      responseId: "request-quote-resolved",
+      resolvedIntentId: "request-quote",
+      stage: "resolve-quote-intake",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+
+    expect(third.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.quote.003",
+      inboundTraceId: "whatsapp:wamid.quote.003",
+      whatsappPhoneNumberId: "phone-number-id-001",
+      profileName: "Oscar Cliente",
+      outboundText:
+        "Quote intake started for Personal Auto Standard in CA. Please describe prior insurance status as insured, uninsured, or lapsed so a broker can continue the quote review.",
+      responseId: "request-quote-resolved",
+      resolvedIntentId: "request-quote",
+      stage: "resolve-quote-intake",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+
+    expect(fourth.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.quote.004",
+      inboundTraceId: "whatsapp:wamid.quote.004",
+      whatsappPhoneNumberId: "phone-number-id-001",
+      profileName: "Oscar Cliente",
+      outboundText:
+        "Quote intake started for Personal Auto Standard in CA. Please provide the number of household drivers as 1, 2, 3, 4, or 5+ so a broker can continue the quote review.",
+      responseId: "request-quote-resolved",
+      resolvedIntentId: "request-quote",
+      stage: "resolve-quote-intake",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+
+    expect(fifth.output).toEqual({
+      channel: "whatsapp",
+      customerId: "5215512345678",
+      inboundMessageId: "wamid.quote.005",
+      inboundTraceId: "whatsapp:wamid.quote.005",
+      whatsappPhoneNumberId: "phone-number-id-001",
+      profileName: "Oscar Cliente",
+      outboundText:
+        "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Vehicle use: commute. Prior insurance status: insured. Driver count: 2. Preferred contact: call.",
+      responseId: "request-quote-resolved",
+      resolvedIntentId: "request-quote",
+      stage: "resolve-quote-intake",
+      status: "resolved",
+      humanInterventionRequired: false,
+      handoffReasonCode: undefined,
+      handoffQueue: undefined,
+    });
+  });
 });
