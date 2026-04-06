@@ -469,6 +469,26 @@ function resolveEffectiveIntentId(session: SessionState, userMessageText: string
     return currentIntentId;
   }
 
+  if (session.currentIntentId === "request-quote") {
+    const collectedProductName = findEntityValue(session, "productName");
+    const collectedStateCode = findEntityValue(session, "stateCode");
+    const extracted = extractEntitiesFromText(userMessageText);
+
+    const hasQuoteFollowUpSignal = extracted.some(
+      (entity) => entity.entityId === "stateCode" || entity.entityId === "contactPreference"
+    );
+
+    if (
+      typeof collectedProductName === "string" &&
+      collectedProductName.trim().length > 0 &&
+      (!collectedStateCode || collectedStateCode.trim().length === 0) &&
+      hasQuoteFollowUpSignal &&
+      !hasExplicitIntentSignal(userMessageText, resolved)
+    ) {
+      return "request-quote";
+    }
+  }
+
   return resolved;
 }
 

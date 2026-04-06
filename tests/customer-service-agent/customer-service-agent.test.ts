@@ -457,4 +457,32 @@ describe("customer-service-agent", () => {
       "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
     );
   });
+
+  it("completes quote intake across turns using remembered product context", () => {
+    const first = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-030",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "I need a quote for Personal Auto Standard",
+    });
+
+    const second = runCustomerServiceAgent({
+      session: first.session,
+      userMessageText: "California, call me",
+    });
+
+    expect(first.resolvedIntentId).toBe("request-quote");
+    expect(first.status).toBe("resolved");
+    expect(first.responseText).toBe(
+      "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review."
+    );
+
+    expect(second.resolvedIntentId).toBe("request-quote");
+    expect(second.responseId).toBe("request-quote-resolved");
+    expect(second.status).toBe("resolved");
+    expect(second.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
+    );
+  });
 });

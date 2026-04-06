@@ -547,4 +547,29 @@ describe("customer-service semantic invariants", () => {
       "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
     );
   });
+
+  it("keeps multi-turn quote intake output canonical in the insurance brokerage API", () => {
+    runCustomerServiceApi({
+      sessionId: "CS-INV-QUOTE-SESSION-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "I need a quote for Personal Auto Standard",
+    });
+
+    const result = runCustomerServiceApi({
+      sessionId: "CS-INV-QUOTE-SESSION-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "California, call me",
+    });
+
+    expect(result.resolvedIntentId).toBe("request-quote");
+    expect(result.responseId).toBe("request-quote-resolved");
+    expect(result.stage).toBe("resolve-quote-intake");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toBe(
+      "Quote intake started for Personal Auto Standard in CA. A broker can now continue with eligibility, underwriting review, and premium estimation. Preferred contact: call."
+    );
+  });
 });
