@@ -33,6 +33,7 @@ import { handleWhatsAppWebhook } from "./handlers/whatsapp-webhook";
 import type { WhatsAppRuntimeConfig } from "../channels/whatsapp/runtime";
 import type { WhatsAppStore } from "../channels/whatsapp/store";
 import { handleListWhatsAppHandoffs } from "./handlers/whatsapp-handoffs";
+import { handleCloseWhatsAppHandoff } from "./handlers/whatsapp-handoff-close";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -98,6 +99,25 @@ function getRunRouteParts(
   }
 
   return undefined;
+}
+function getWhatsAppHandoffCloseRoute(url: string): { handoffId: string } | undefined {
+  if (!url.startsWith("/whatsapp/handoffs/") || !url.endsWith("/close")) {
+    return undefined;
+  }
+
+  const parts = url.split("/");
+  if (parts.length !== 5) {
+    return undefined;
+  }
+
+  const handoffId = parts[3];
+  if (typeof handoffId !== "string" || handoffId.length === 0) {
+    return undefined;
+  }
+
+  return {
+    handoffId: decodeURIComponent(handoffId),
+  };
 }
 
 function readRequestBody(req: IncomingMessage): Promise<string> {
@@ -342,6 +362,7 @@ export async function routeRequest(
     const url = (rawUrl.split("?")[0] ?? "").replace(/\/+$/, "") || "/";
     const isRunsCollection = isRunsCollectionPath(url);
     const runRoute = getRunRouteParts(url);
+    const whatsappHandoffCloseRoute = getWhatsAppHandoffCloseRoute(url);
 
     if (url === "/health") {
       if (method !== "GET") {
@@ -356,7 +377,7 @@ export async function routeRequest(
       return;
     }
 
-    if (!isRunsCollection && !runRoute && !ALLOWED_PUBLIC_PATHS.has(url)) {
+    if (!isRunsCollection && !runRoute && !whatsappHandoffCloseRoute && !ALLOWED_PUBLIC_PATHS.has(url)) {
       withRequestId(res, requestId);
       sendNotFound(res);
       logEnd(req, res, requestId, startedAt);
@@ -477,6 +498,26 @@ export async function routeRequest(
 
       withRequestId(res, requestId);
       handleListWhatsAppHandoffs(res, runtimeOptions.whatsappStore, true);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (whatsappHandoffCloseRoute && method === "POST") {
+      if (!runtimeOptions.whatsappStore) {
+        withRequestId(res, requestId);
+        sendJson(res, 500, {
+          ok: false,
+          error: "whatsapp store is not configured",
+          meta: {
+            requestId,
+          },
+        });
+        logEnd(req, res, requestId, startedAt, { error: "whatsapp store is not configured" });
+        return;
+      }
+
+      withRequestId(res, requestId);
+      handleCloseWhatsAppHandoff(res, runtimeOptions.whatsappStore, whatsappHandoffCloseRoute.handoffId);
       logEnd(req, res, requestId, startedAt);
       return;
     }

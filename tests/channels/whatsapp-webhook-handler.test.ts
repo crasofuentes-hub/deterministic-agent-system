@@ -733,4 +733,87 @@ describe("whatsapp webhook handler", () => {
       }),
     ]);
   });
+
+  it("closes a whatsapp handoff through the HTTP route", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const handoffRes = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-handoff-close-001",
+        },
+      } as any,
+      handoffRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.handoff.close.001", "I need to speak with a human agent"),
+      }
+    );
+
+    const { routeRequest } = await import("../../src/http/routes");
+
+    const closeRes = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "POST",
+        url: "/whatsapp/handoffs/" + encodeURIComponent("handoff:5215512345678:wamid.handoff.close.001") + "/close",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      closeRes as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(closeRes.statusCode).toBe(200);
+
+    const closeJson = JSON.parse(closeRes.getBody());
+    expect(closeJson.ok).toBe(true);
+    expect(closeJson.item).toEqual(
+      expect.objectContaining({
+        handoffId: "handoff:5215512345678:wamid.handoff.close.001",
+        customerId: "5215512345678",
+        handoffReasonCode: "explicit-human-request",
+        handoffQueue: "licensed-broker",
+        status: "closed",
+        lastInboundMessageId: "wamid.handoff.close.001",
+        lastResponseId: "handoff-requested",
+        lastResolvedIntentId: "request-human-handoff",
+        lastStage: "handoff-requested",
+        lastStatus: "handoff",
+      })
+    );
+
+    const listRes = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/handoffs",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      listRes as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    const listJson = JSON.parse(listRes.getBody());
+    expect(listJson.ok).toBe(true);
+    expect(listJson.count).toBe(0);
+    expect(listJson.items).toEqual([]);
+  });
 });
