@@ -253,6 +253,25 @@ export async function handleWhatsAppWebhook(
           handoffQueue: bridge.output.handoffQueue,
           updatedAtIso: message.receivedAtIso,
         });
+
+        if (bridge.output.humanInterventionRequired) {
+          options.store.saveHandoff({
+            handoffId: "handoff:" + message.customerId + ":" + message.channelMessageId,
+            customerId: message.customerId,
+            createdAtIso: message.receivedAtIso,
+            updatedAtIso: message.receivedAtIso,
+            handoffReasonCode: bridge.output.handoffReasonCode,
+            handoffQueue: bridge.output.handoffQueue,
+            status: "open",
+            lastInboundMessageId: message.channelMessageId,
+            lastResponseId: bridge.output.responseId,
+            lastResolvedIntentId: bridge.output.resolvedIntentId,
+            lastStage: bridge.output.stage,
+            lastStatus: bridge.output.status,
+            lastOutboundText: bridge.output.outboundText,
+          });
+        }
+
         options.store.markMessageProcessed(message.channelMessageId);
       }
 
