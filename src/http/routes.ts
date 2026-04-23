@@ -32,6 +32,7 @@ import type { JsonObject } from "../tools";
 import { handleWhatsAppWebhook } from "./handlers/whatsapp-webhook";
 import type { WhatsAppRuntimeConfig } from "../channels/whatsapp/runtime";
 import type { WhatsAppStore } from "../channels/whatsapp/store";
+import { handleListWhatsAppHandoffs } from "./handlers/whatsapp-handoffs";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -310,6 +311,7 @@ const ALLOWED_PUBLIC_PATHS = new Set<string>([
   "/schema/agent-capabilities",
   "/schema/replay-bundle",
   "/webhooks/whatsapp",
+  "/whatsapp/handoffs",
 ]);
 
 export interface RouteRuntimeOptions {
@@ -455,6 +457,26 @@ export async function routeRequest(
         sender: runtimeOptions.whatsappRuntime?.sender,
         store: runtimeOptions.whatsappStore,
       });
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (url === "/whatsapp/handoffs" && method === "GET") {
+      if (!runtimeOptions.whatsappStore) {
+        withRequestId(res, requestId);
+        sendJson(res, 500, {
+          ok: false,
+          error: "whatsapp store is not configured",
+          meta: {
+            requestId,
+          },
+        });
+        logEnd(req, res, requestId, startedAt, { error: "whatsapp store is not configured" });
+        return;
+      }
+
+      withRequestId(res, requestId);
+      handleListWhatsAppHandoffs(res, runtimeOptions.whatsappStore, true);
       logEnd(req, res, requestId, startedAt);
       return;
     }

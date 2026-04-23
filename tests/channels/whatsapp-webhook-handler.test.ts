@@ -670,4 +670,67 @@ describe("whatsapp webhook handler", () => {
       updatedAtIso: "2026-03-24T00:00:00.000Z",
     });
   });
+
+  it("lists open whatsapp handoffs through the HTTP route", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const handoffRes = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-handoff-open-001",
+        },
+      } as any,
+      handoffRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.handoff.open.001", "I need to speak with a human agent"),
+      }
+    );
+
+    const { routeRequest } = await import("../../src/http/routes");
+
+    const listRes = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/handoffs",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      listRes as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(listRes.statusCode).toBe(200);
+
+    const json = JSON.parse(listRes.getBody());
+    expect(json.ok).toBe(true);
+    expect(json.count).toBe(1);
+    expect(json.items).toEqual([
+      expect.objectContaining({
+        handoffId: "handoff:5215512345678:wamid.handoff.open.001",
+        customerId: "5215512345678",
+        handoffReasonCode: "explicit-human-request",
+        handoffQueue: "licensed-broker",
+        status: "open",
+        lastInboundMessageId: "wamid.handoff.open.001",
+        lastResponseId: "handoff-requested",
+        lastResolvedIntentId: "request-human-handoff",
+        lastStage: "handoff-requested",
+        lastStatus: "handoff",
+      }),
+    ]);
+  });
 });
