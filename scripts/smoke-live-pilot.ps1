@@ -168,8 +168,55 @@ $handoffResponse = Invoke-WebRequest `
 $handoffResponse.Content | Out-Host
 
 $handoffJson = $handoffResponse.Content | ConvertFrom-Json
-$handoffId = $handoffJson.results[0].agent.handoffReasonCode
 $expectedHandoffId = "handoff:5215512345678:$handoffMessageId"
+
+Write-Host "`n== GET CONVERSATION EVIDENCE ==" -ForegroundColor Cyan
+$evidenceResponse = Invoke-WebRequest `
+  -Uri ($BaseUrl + "/whatsapp/conversations/5215512345678/evidence") `
+  -Method Get `
+  -Headers @{
+    "x-ops-token" = $OpsToken
+  } `
+  -UseBasicParsing
+
+$evidenceResponse.Content | Out-Host
+
+$evidenceJson = $evidenceResponse.Content | ConvertFrom-Json
+if ($evidenceJson.evidence.lastInboundMessageId -ne $handoffMessageId) {
+  throw "Expected evidence lastInboundMessageId to be $handoffMessageId but got $($evidenceJson.evidence.lastInboundMessageId)"
+}
+
+if ($evidenceJson.evidence.lastResolvedIntentId -ne "request-human-handoff") {
+  throw "Expected evidence lastResolvedIntentId to be request-human-handoff but got $($evidenceJson.evidence.lastResolvedIntentId)"
+}
+
+Write-Host "`n== GET CONVERSATION EVENTS ==" -ForegroundColor Cyan
+$eventsResponse = Invoke-WebRequest `
+  -Uri ($BaseUrl + "/whatsapp/conversations/5215512345678/events") `
+  -Method Get `
+  -Headers @{
+    "x-ops-token" = $OpsToken
+  } `
+  -UseBasicParsing
+
+$eventsResponse.Content | Out-Host
+
+$eventsJson = $eventsResponse.Content | ConvertFrom-Json
+$expectedEventIds = @(
+  "event:5215512345678:${quoteMessageId}:inbound",
+  "event:5215512345678:${quoteMessageId}:outbound",
+  "event:5215512345678:${handoffMessageId}:inbound",
+  "event:5215512345678:${handoffMessageId}:outbound",
+  "event:5215512345678:${handoffMessageId}:handoff"
+)
+
+$actualEventIds = @($eventsJson.items | ForEach-Object { $_.eventId })
+
+foreach ($expectedEventId in $expectedEventIds) {
+  if ($actualEventIds -notcontains $expectedEventId) {
+    throw "Expected conversation events to include $expectedEventId"
+  }
+}
 
 Write-Host "`n== LIST OPEN HANDOFFS ==" -ForegroundColor Cyan
 $listResponse = Invoke-WebRequest `
