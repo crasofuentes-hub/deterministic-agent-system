@@ -29,6 +29,21 @@ export interface WhatsAppHandoffRecord {
   lastStatus: string;
   lastOutboundText: string;
 }
+export interface WhatsAppConversationEvent {
+  eventId: string;
+  customerId: string;
+  occurredAtIso: string;
+  kind: "inbound" | "outbound" | "handoff";
+  channelMessageId?: string;
+  responseId?: string;
+  resolvedIntentId?: string;
+  stage?: string;
+  status?: string;
+  text?: string;
+  handoffId?: string;
+  handoffReasonCode?: string;
+  handoffQueue?: string;
+}
 
 export interface WhatsAppStore {
   loadSession(customerId: string): SessionState;
@@ -39,12 +54,47 @@ export interface WhatsAppStore {
   saveEvidence(evidence: WhatsAppConversationEvidence): void;
   listHandoffs(): WhatsAppHandoffRecord[];
   saveHandoff(record: WhatsAppHandoffRecord): void;
+  listConversationEvents(customerId: string): WhatsAppConversationEvent[];
+  saveConversationEvent(event: WhatsAppConversationEvent): void;
 }
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function normalizeConversationEvent(event: WhatsAppConversationEvent): WhatsAppConversationEvent {
+  if (!isNonEmptyString(event.eventId)) {
+    throw new Error("eventId must be a non-empty string");
+  }
+
+  if (!isNonEmptyString(event.customerId)) {
+    throw new Error("customerId must be a non-empty string");
+  }
+
+  if (!isNonEmptyString(event.occurredAtIso)) {
+    throw new Error("occurredAtIso must be a non-empty string");
+  }
+
+  if (event.kind !== "inbound" && event.kind !== "outbound" && event.kind !== "handoff") {
+    throw new Error("event kind must be one of: inbound, outbound, handoff");
+  }
+
+  return {
+    ...event,
+    eventId: event.eventId.trim(),
+    customerId: event.customerId.trim(),
+    occurredAtIso: event.occurredAtIso.trim(),
+    channelMessageId: event.channelMessageId?.trim() || undefined,
+    responseId: event.responseId?.trim() || undefined,
+    resolvedIntentId: event.resolvedIntentId?.trim() || undefined,
+    stage: event.stage?.trim() || undefined,
+    status: event.status?.trim() || undefined,
+    text: event.text?.trim() || undefined,
+    handoffId: event.handoffId?.trim() || undefined,
+    handoffReasonCode: event.handoffReasonCode?.trim() || undefined,
+    handoffQueue: event.handoffQueue?.trim() || undefined,
+  };
+}
 function normalizeHandoffRecord(record: WhatsAppHandoffRecord): WhatsAppHandoffRecord {
   if (!isNonEmptyString(record.handoffId)) {
     throw new Error("handoffId must be a non-empty string");
@@ -111,6 +161,7 @@ export function createInMemoryWhatsAppStore(options: InMemoryWhatsAppStoreOption
   const processedMessageIds = new Set<string>();
   const evidenceByCustomerId = new Map<string, WhatsAppConversationEvidence>();
   const handoffsById = new Map<string, WhatsAppHandoffRecord>();
+  const eventsByCustomerId = new Map<string, WhatsAppConversationEvent[]>();
 
   return {
     loadSession(customerId: string): SessionState {
@@ -177,6 +228,23 @@ export function createInMemoryWhatsAppStore(options: InMemoryWhatsAppStoreOption
     saveHandoff(record: WhatsAppHandoffRecord): void {
       const normalized = normalizeHandoffRecord(record);
       handoffsById.set(normalized.handoffId, normalized);
+    },
+
+    listConversationEvents(customerId: string): WhatsAppConversationEvent[] {
+      if (!isNonEmptyString(customerId)) {
+        throw new Error("customerId must be a non-empty string");
+      }
+
+      return [...(eventsByCustomerId.get(customerId.trim()) ?? [])].sort((left, right) =>
+        left.occurredAtIso.localeCompare(right.occurredAtIso)
+      );
+    },
+
+    saveConversationEvent(event: WhatsAppConversationEvent): void {
+      const normalized = normalizeConversationEvent(event);
+      const existing = eventsByCustomerId.get(normalized.customerId) ?? [];
+      const withoutDuplicate = existing.filter((item) => item.eventId !== normalized.eventId);
+      eventsByCustomerId.set(normalized.customerId, [...withoutDuplicate, normalized]);
     },
   };
 }

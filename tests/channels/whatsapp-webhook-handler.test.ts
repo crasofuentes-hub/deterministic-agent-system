@@ -1006,4 +1006,129 @@ describe("whatsapp webhook handler", () => {
       "handoff:5215512345678:wamid.previous.handoff.001"
     );
   });
+
+  it("persists conversation events for inbound outbound and handoff records", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const quoteRes = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-events-001",
+        },
+      } as any,
+      quoteRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.events.quote.001", "I need a quote for Personal Auto Standard"),
+      }
+    );
+
+    expect(store.listConversationEvents("5215512345678")).toEqual([
+      {
+        eventId: "event:5215512345678:wamid.events.quote.001:inbound",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "inbound",
+        channelMessageId: "wamid.events.quote.001",
+        text: "I need a quote for Personal Auto Standard",
+      },
+      {
+        eventId: "event:5215512345678:wamid.events.quote.001:outbound",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "outbound",
+        channelMessageId: "wamid.events.quote.001",
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        text: "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review.",
+      },
+    ]);
+
+    const handoffRes = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-events-002",
+        },
+      } as any,
+      handoffRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.events.handoff.001", "I need to speak with a human agent"),
+      }
+    );
+
+    expect(store.listConversationEvents("5215512345678")).toEqual([
+      {
+        eventId: "event:5215512345678:wamid.events.quote.001:inbound",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "inbound",
+        channelMessageId: "wamid.events.quote.001",
+        text: "I need a quote for Personal Auto Standard",
+      },
+      {
+        eventId: "event:5215512345678:wamid.events.quote.001:outbound",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "outbound",
+        channelMessageId: "wamid.events.quote.001",
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        text: "Quote intake started for Personal Auto Standard. Please provide the state where coverage is needed so a broker can continue the quote review.",
+      },
+      {
+        eventId: "event:5215512345678:wamid.events.handoff.001:inbound",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "inbound",
+        channelMessageId: "wamid.events.handoff.001",
+        text: "I need to speak with a human agent",
+      },
+      {
+        eventId: "event:5215512345678:wamid.events.handoff.001:outbound",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "outbound",
+        channelMessageId: "wamid.events.handoff.001",
+        responseId: "handoff-requested",
+        resolvedIntentId: "request-human-handoff",
+        stage: "handoff-requested",
+        status: "handoff",
+        text: "Your conversation will be transferred to a licensed broker specialist.",
+      },
+      {
+        eventId: "event:5215512345678:wamid.events.handoff.001:handoff",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "handoff",
+        channelMessageId: "wamid.events.handoff.001",
+        responseId: "handoff-requested",
+        resolvedIntentId: "request-human-handoff",
+        stage: "handoff-requested",
+        status: "handoff",
+        text: "Your conversation will be transferred to a licensed broker specialist.",
+        handoffId: "handoff:5215512345678:wamid.events.handoff.001",
+        handoffReasonCode: "explicit-human-request",
+        handoffQueue: "licensed-broker",
+      },
+    ]);
+  });
 });

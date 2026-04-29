@@ -228,4 +228,72 @@ describe("whatsapp sqlite store", () => {
       }
     }
   });
+
+  it("persists conversation events across reopen in deterministic order", () => {
+    const dbPath = createTempDbPath("persist-events");
+    {
+      const store = createSqliteWhatsAppStore({
+        dbPath,
+        businessContextId: "customer-service-core-v2",
+      });
+
+      store.saveConversationEvent({
+        eventId: "event:5215512345678:002",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:01.000Z",
+        kind: "outbound",
+        channelMessageId: "wamid.event.001",
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        text: "Quote intake started for Personal Auto Standard.",
+      });
+
+      store.saveConversationEvent({
+        eventId: "event:5215512345678:001",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "inbound",
+        channelMessageId: "wamid.event.001",
+        text: "I need a quote for Personal Auto Standard",
+      });
+
+      store.close();
+    }
+
+    {
+      const reopened = createSqliteWhatsAppStore({
+        dbPath,
+        businessContextId: "customer-service-core-v2",
+      });
+
+      try {
+        expect(reopened.listConversationEvents("5215512345678")).toEqual([
+          {
+            eventId: "event:5215512345678:001",
+            customerId: "5215512345678",
+            occurredAtIso: "2026-03-24T00:00:00.000Z",
+            kind: "inbound",
+            channelMessageId: "wamid.event.001",
+            text: "I need a quote for Personal Auto Standard",
+          },
+          {
+            eventId: "event:5215512345678:002",
+            customerId: "5215512345678",
+            occurredAtIso: "2026-03-24T00:00:01.000Z",
+            kind: "outbound",
+            channelMessageId: "wamid.event.001",
+            responseId: "request-quote-resolved",
+            resolvedIntentId: "request-quote",
+            stage: "resolve-quote-intake",
+            status: "resolved",
+            text: "Quote intake started for Personal Auto Standard.",
+          },
+        ]);
+      } finally {
+        reopened.close();
+      }
+    }
+  });
 });

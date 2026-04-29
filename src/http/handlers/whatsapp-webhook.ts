@@ -301,6 +301,28 @@ export async function handleWhatsAppWebhook(
       }
 
       if (options.store) {
+        options.store.saveConversationEvent({
+          eventId: "event:" + message.customerId + ":" + message.channelMessageId + ":inbound",
+          customerId: message.customerId,
+          occurredAtIso: message.receivedAtIso,
+          kind: "inbound",
+          channelMessageId: message.channelMessageId,
+          text: message.text,
+        });
+
+        options.store.saveConversationEvent({
+          eventId: "event:" + message.customerId + ":" + message.channelMessageId + ":outbound",
+          customerId: message.customerId,
+          occurredAtIso: message.receivedAtIso,
+          kind: "outbound",
+          channelMessageId: message.channelMessageId,
+          responseId: bridge.output.responseId,
+          resolvedIntentId: bridge.output.resolvedIntentId,
+          stage: bridge.output.stage,
+          status: bridge.output.status,
+          text: bridge.output.outboundText,
+        });
+
         options.store.saveSession(message.customerId, bridge.session);
         options.store.saveEvidence({
           customerId: message.customerId,
@@ -323,8 +345,10 @@ export async function handleWhatsAppWebhook(
           bridge.output.stage === "handoff-requested" &&
           bridge.output.status === "handoff"
         ) {
+          const handoffId = "handoff:" + message.customerId + ":" + message.channelMessageId;
+
           options.store.saveHandoff({
-            handoffId: "handoff:" + message.customerId + ":" + message.channelMessageId,
+            handoffId,
             customerId: message.customerId,
             createdAtIso: message.receivedAtIso,
             updatedAtIso: message.receivedAtIso,
@@ -337,6 +361,22 @@ export async function handleWhatsAppWebhook(
             lastStage: bridge.output.stage,
             lastStatus: bridge.output.status,
             lastOutboundText: bridge.output.outboundText,
+          });
+
+          options.store.saveConversationEvent({
+            eventId: "event:" + message.customerId + ":" + message.channelMessageId + ":handoff",
+            customerId: message.customerId,
+            occurredAtIso: message.receivedAtIso,
+            kind: "handoff",
+            channelMessageId: message.channelMessageId,
+            responseId: bridge.output.responseId,
+            resolvedIntentId: bridge.output.resolvedIntentId,
+            stage: bridge.output.stage,
+            status: bridge.output.status,
+            text: bridge.output.outboundText,
+            handoffId,
+            handoffReasonCode: bridge.output.handoffReasonCode,
+            handoffQueue: bridge.output.handoffQueue,
           });
         }
 

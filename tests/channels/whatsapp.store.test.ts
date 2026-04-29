@@ -137,4 +137,67 @@ describe("whatsapp store", () => {
       },
     ]);
   });
+
+  it("persists conversation events in deterministic order in memory", () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    expect(store.listConversationEvents("5215512345678")).toEqual([]);
+
+    store.saveConversationEvent({
+      eventId: "event:5215512345678:002",
+      customerId: "5215512345678",
+      occurredAtIso: "2026-03-24T00:00:01.000Z",
+      kind: "outbound",
+      channelMessageId: "wamid.event.001",
+      responseId: "request-quote-resolved",
+      resolvedIntentId: "request-quote",
+      stage: "resolve-quote-intake",
+      status: "resolved",
+      text: "Quote intake started for Personal Auto Standard.",
+    });
+
+    store.saveConversationEvent({
+      eventId: "event:5215512345678:001",
+      customerId: "5215512345678",
+      occurredAtIso: "2026-03-24T00:00:00.000Z",
+      kind: "inbound",
+      channelMessageId: "wamid.event.001",
+      text: "I need a quote for Personal Auto Standard",
+    });
+
+    expect(store.listConversationEvents("5215512345678")).toEqual([
+      {
+        eventId: "event:5215512345678:001",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:00.000Z",
+        kind: "inbound",
+        channelMessageId: "wamid.event.001",
+        text: "I need a quote for Personal Auto Standard",
+        responseId: undefined,
+        resolvedIntentId: undefined,
+        stage: undefined,
+        status: undefined,
+        handoffId: undefined,
+        handoffReasonCode: undefined,
+        handoffQueue: undefined,
+      },
+      {
+        eventId: "event:5215512345678:002",
+        customerId: "5215512345678",
+        occurredAtIso: "2026-03-24T00:00:01.000Z",
+        kind: "outbound",
+        channelMessageId: "wamid.event.001",
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+        text: "Quote intake started for Personal Auto Standard.",
+        handoffId: undefined,
+        handoffReasonCode: undefined,
+        handoffQueue: undefined,
+      },
+    ]);
+  });
 });
