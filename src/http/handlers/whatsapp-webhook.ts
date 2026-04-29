@@ -316,7 +316,13 @@ export async function handleWhatsAppWebhook(
           updatedAtIso: message.receivedAtIso,
         });
 
-        if (bridge.output.humanInterventionRequired) {
+        if (
+          bridge.output.humanInterventionRequired &&
+          bridge.output.resolvedIntentId === "request-human-handoff" &&
+          bridge.output.responseId === "handoff-requested" &&
+          bridge.output.stage === "handoff-requested" &&
+          bridge.output.status === "handoff"
+        ) {
           options.store.saveHandoff({
             handoffId: "handoff:" + message.customerId + ":" + message.channelMessageId,
             customerId: message.customerId,

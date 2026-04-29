@@ -1,12 +1,43 @@
 param(
   [string]$BaseUrl = "http://127.0.0.1:3000",
-  [string]$VerifyToken = $env:WHATSAPP_VERIFY_TOKEN
+  [string]$VerifyToken = $env:WHATSAPP_VERIFY_TOKEN,
+  [string]$OpsToken = $env:OPS_API_TOKEN,
+  [string]$AppSecret = $env:WHATSAPP_APP_SECRET
 )
 
 $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($VerifyToken)) {
   throw "WHATSAPP_VERIFY_TOKEN must be set in the current session or passed as -VerifyToken."
+}
+
+if ([string]::IsNullOrWhiteSpace($OpsToken)) {
+  throw "OPS_API_TOKEN must be set in the current session or passed as -OpsToken."
+}
+
+function New-HmacSha256Signature {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$BodyText,
+
+    [Parameter(Mandatory = $true)]
+    [string]$Secret
+  )
+
+  $encoding = [System.Text.Encoding]::UTF8
+  $keyBytes = $encoding.GetBytes($Secret)
+  $bodyBytes = $encoding.GetBytes($BodyText)
+
+  $hmac = New-Object System.Security.Cryptography.HMACSHA256
+  $hmac.Key = $keyBytes
+
+  try {
+    $hashBytes = $hmac.ComputeHash($bodyBytes)
+    $hex = -join ($hashBytes | ForEach-Object { $_.ToString("x2") })
+    return "sha256=$hex"
+  } finally {
+    $hmac.Dispose()
+  }
 }
 
 Write-Host "`n== HEALTH ==" -ForegroundColor Cyan
@@ -19,11 +50,12 @@ $verify = Invoke-WebRequest -Uri $verifyUrl -UseBasicParsing
 $verify.Content | Out-Host
 
 Write-Host "`n== POST SAMPLE MESSAGE ==" -ForegroundColor Cyan
-$body = @{
+$quoteMessageId = "wamid.livepilot.quote." + [Guid]::NewGuid().ToString("N")
+$quoteBody = @{
   object = "whatsapp_business_account"
   entry = @(
     @{
-      id = "entry-001"
+      id = "entry-quote-001"
       changes = @(
         @{
           field = "messages"
@@ -43,7 +75,7 @@ $body = @{
             messages = @(
               @{
                 from = "5215512345678"
-                id = "wamid.livepilot.001"
+                id = $quoteMessageId
                 timestamp = "1774310400"
                 type = "text"
                 text = @{
@@ -58,12 +90,116 @@ $body = @{
   )
 } | ConvertTo-Json -Depth 10
 
-$response = Invoke-WebRequest `
+$quoteHeaders = @{
+  "x-request-id" = "req-live-pilot-smoke-quote"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($AppSecret)) {
+  $quoteHeaders["x-hub-signature-256"] = New-HmacSha256Signature -BodyText $quoteBody -Secret $AppSecret
+}
+
+$quoteResponse = Invoke-WebRequest `
   -Uri ($BaseUrl + "/webhooks/whatsapp") `
   -Method Post `
   -ContentType "application/json" `
-  -Headers @{ "x-request-id" = "req-live-pilot-smoke-001" } `
-  -Body $body `
+  -Headers $quoteHeaders `
+  -Body $quoteBody `
   -UseBasicParsing
 
-$response.Content | Out-Host
+$quoteResponse.Content | Out-Host
+
+Write-Host "`n== POST HANDOFF MESSAGE ==" -ForegroundColor Cyan
+$handoffMessageId = "wamid.livepilot.handoff." + [Guid]::NewGuid().ToString("N")
+$handoffBody = @{
+  object = "whatsapp_business_account"
+  entry = @(
+    @{
+      id = "entry-handoff-001"
+      changes = @(
+        @{
+          field = "messages"
+          value = @{
+            metadata = @{
+              display_phone_number = "15551234567"
+              phone_number_id = "phone-number-id-001"
+            }
+            contacts = @(
+              @{
+                profile = @{
+                  name = "Live Pilot Customer"
+                }
+                wa_id = "5215512345678"
+              }
+            )
+            messages = @(
+              @{
+                from = "5215512345678"
+                id = $handoffMessageId
+                timestamp = "1774310400"
+                type = "text"
+                text = @{
+                  body = "I need to speak with a human agent"
+                }
+              }
+            )
+          }
+        }
+      )
+    }
+  )
+} | ConvertTo-Json -Depth 10
+
+$handoffHeaders = @{
+  "x-request-id" = "req-live-pilot-smoke-handoff"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($AppSecret)) {
+  $handoffHeaders["x-hub-signature-256"] = New-HmacSha256Signature -BodyText $handoffBody -Secret $AppSecret
+}
+
+$handoffResponse = Invoke-WebRequest `
+  -Uri ($BaseUrl + "/webhooks/whatsapp") `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $handoffHeaders `
+  -Body $handoffBody `
+  -UseBasicParsing
+
+$handoffResponse.Content | Out-Host
+
+$handoffJson = $handoffResponse.Content | ConvertFrom-Json
+$handoffId = $handoffJson.results[0].agent.handoffReasonCode
+$expectedHandoffId = "handoff:5215512345678:$handoffMessageId"
+
+Write-Host "`n== LIST OPEN HANDOFFS ==" -ForegroundColor Cyan
+$listResponse = Invoke-WebRequest `
+  -Uri ($BaseUrl + "/whatsapp/handoffs") `
+  -Method Get `
+  -Headers @{
+    "x-ops-token" = $OpsToken
+  } `
+  -UseBasicParsing
+
+$listResponse.Content | Out-Host
+
+Write-Host "`n== CLOSE HANDOFF ==" -ForegroundColor Cyan
+$closeResponse = Invoke-WebRequest `
+  -Uri ($BaseUrl + "/whatsapp/handoffs/" + [uri]::EscapeDataString($expectedHandoffId) + "/close") `
+  -Method Post `
+  -Headers @{
+    "x-ops-token" = $OpsToken
+  } `
+  -UseBasicParsing
+
+$closeResponse.Content | Out-Host
+
+Write-Host "`n== LIST OPEN HANDOFFS AFTER CLOSE ==" -ForegroundColor Cyan
+$listAfterCloseResponse = Invoke-WebRequest `
+  -Uri ($BaseUrl + "/whatsapp/handoffs") `
+  -Method Get `
+  -Headers @{
+    "x-ops-token" = $OpsToken
+  } `
+  -UseBasicParsing
+
+$listAfterCloseResponse.Content | Out-Host

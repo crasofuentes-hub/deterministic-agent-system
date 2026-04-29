@@ -944,4 +944,66 @@ describe("whatsapp webhook handler", () => {
       error: "invalid whatsapp webhook signature",
     });
   });
+
+  it("does not create handoff queue records for non-handoff responses even when session is already marked for handoff", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const previousHandoffRes = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-previous-handoff-001",
+        },
+      } as any,
+      previousHandoffRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.previous.handoff.001", "I need to speak with a human agent"),
+      }
+    );
+
+    expect(store.listHandoffs()).toHaveLength(1);
+
+    const quoteRes = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-quote-after-handoff-001",
+        },
+      } as any,
+      quoteRes as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.quote.after.handoff.001", "I need a quote for Personal Auto Standard"),
+      }
+    );
+
+    const quoteJson = JSON.parse(quoteRes.getBody());
+
+    expect(quoteJson.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "request-quote-resolved",
+        resolvedIntentId: "request-quote",
+        stage: "resolve-quote-intake",
+        status: "resolved",
+      })
+    );
+
+    expect(store.listHandoffs()).toHaveLength(1);
+    expect(store.listHandoffs()[0].handoffId).toBe(
+      "handoff:5215512345678:wamid.previous.handoff.001"
+    );
+  });
 });
