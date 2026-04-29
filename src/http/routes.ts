@@ -478,6 +478,7 @@ export async function routeRequest(
         deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
         sender: runtimeOptions.whatsappRuntime?.sender,
         store: runtimeOptions.whatsappStore,
+        appSecret: process.env.WHATSAPP_APP_SECRET,
       });
       logEnd(req, res, requestId, startedAt);
       return;
@@ -569,6 +570,7 @@ export async function routeRequest(
         deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
         sender: runtimeOptions.whatsappRuntime?.sender,
         store: runtimeOptions.whatsappStore,
+        appSecret: process.env.WHATSAPP_APP_SECRET,
       });
       logEnd(req, res, requestId, startedAt);
       return;

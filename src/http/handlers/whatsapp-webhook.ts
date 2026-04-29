@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { runWhatsAppCustomerServiceBridge } from "../../channels/whatsapp/agent-bridge";
 import { createMockWhatsAppSender, type WhatsAppSender } from "../../channels/whatsapp/client";
@@ -19,6 +20,58 @@ function readQueryParam(url: URL, key: string): string | undefined {
 function getRequestId(request: IncomingMessage): string | undefined {
   const value = request.headers["x-request-id"];
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+function getSignatureHeader(request: IncomingMessage): string | undefined {
+  const value = request.headers["x-hub-signature-256"];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function isValidMetaWebhookSignature(bodyText: string, appSecret: string, signatureHeader: string): boolean {
+  const expectedPrefix = "sha256=";
+  if (!signatureHeader.startsWith(expectedPrefix)) {
+    return false;
+  }
+
+  const receivedHex = signatureHeader.slice(expectedPrefix.length);
+  if (!/^[a-fA-F0-9]{64}$/.test(receivedHex)) {
+    return false;
+  }
+
+  const expectedHex = crypto.createHmac("sha256", appSecret).update(bodyText, "utf8").digest("hex");
+
+  const received = Buffer.from(receivedHex, "hex");
+  const expected = Buffer.from(expectedHex, "hex");
+
+  return received.length === expected.length && crypto.timingSafeEqual(received, expected);
+}
+
+function validateMetaWebhookSignature(
+  request: IncomingMessage,
+  bodyText: string,
+  appSecret: string | undefined
+): { ok: true } | { ok: false; statusCode: 400 | 403; error: string } {
+  if (typeof appSecret !== "string" || appSecret.trim().length === 0) {
+    return { ok: true };
+  }
+
+  const signatureHeader = getSignatureHeader(request);
+  if (!signatureHeader) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: "x-hub-signature-256 header is required",
+    };
+  }
+
+  if (!isValidMetaWebhookSignature(bodyText, appSecret.trim(), signatureHeader)) {
+    return {
+      ok: false,
+      statusCode: 403,
+      error: "invalid whatsapp webhook signature",
+    };
+  }
+
+  return { ok: true };
 }
 
 function extractProviderMessageId(result: unknown): string | null {
@@ -54,6 +107,7 @@ export interface HandleWhatsAppWebhookOptions {
   sender?: WhatsAppSender;
   store?: WhatsAppStore;
   businessContextId?: string;
+  appSecret?: string;
 }
 
 export async function handleWhatsAppWebhook(
@@ -115,6 +169,14 @@ export async function handleWhatsAppWebhook(
   }
 
   const bodyText = options.bodyText ?? "";
+
+  const signatureValidation = validateMetaWebhookSignature(request, bodyText, options.appSecret);
+  if (!signatureValidation.ok) {
+    return sendJson(response, signatureValidation.statusCode, {
+      ok: false,
+      error: signatureValidation.error,
+    });
+  }
 
   let parsed: unknown;
   try {

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { createMockWhatsAppSender } from "../../src/channels/whatsapp/client";
 import { handleWhatsAppWebhook } from "../../src/http/handlers/whatsapp-webhook";
@@ -23,6 +24,10 @@ function createMockResponse() {
   };
 }
 
+
+function signWhatsAppBody(bodyText: string, appSecret: string): string {
+  return "sha256=" + crypto.createHmac("sha256", appSecret).update(bodyText, "utf8").digest("hex");
+}
 function buildInboundBody(messageId: string, userText: string): string {
   return JSON.stringify({
     object: "whatsapp_business_account",
@@ -853,6 +858,90 @@ describe("whatsapp webhook handler", () => {
     expect(JSON.parse(res.getBody())).toEqual({
       ok: false,
       error: "x-ops-token header is required",
+    });
+  });
+
+  it("accepts whatsapp webhook POST when appSecret signature is valid", async () => {
+    const res = createMockResponse();
+    const bodyText = buildInboundBody("wamid.signature.valid.001", "I need a quote for Personal Auto Standard");
+    const appSecret = "app-secret-123";
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-hub-signature-256": signWhatsAppBody(bodyText, appSecret),
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        appSecret,
+        bodyText,
+      }
+    );
+
+    expect(res.statusCode).toBe(200);
+    const json = JSON.parse(res.getBody());
+    expect(json.ok).toBe(true);
+    expect(json.results[0].duplicate).toBe(false);
+    expect(json.results[0].agent.responseId).toBe("request-quote-resolved");
+  });
+
+  it("rejects whatsapp webhook POST when appSecret signature is missing", async () => {
+    const res = createMockResponse();
+    const bodyText = buildInboundBody("wamid.signature.missing.001", "I need a quote for Personal Auto Standard");
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        appSecret: "app-secret-123",
+        bodyText,
+      }
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: "x-hub-signature-256 header is required",
+    });
+  });
+
+  it("rejects whatsapp webhook POST when appSecret signature is invalid", async () => {
+    const res = createMockResponse();
+    const bodyText = buildInboundBody("wamid.signature.invalid.001", "I need a quote for Personal Auto Standard");
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-hub-signature-256": "sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        appSecret: "app-secret-123",
+        bodyText,
+      }
+    );
+
+    expect(res.statusCode).toBe(403);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: "invalid whatsapp webhook signature",
     });
   });
 });
