@@ -1131,4 +1131,107 @@ describe("whatsapp webhook handler", () => {
       },
     ]);
   });
+
+  it("lists whatsapp conversation events through the HTTP route", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-http-events-001",
+        },
+      } as any,
+      createMockResponse() as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.http.events.001", "I need to speak with a human agent"),
+      }
+    );
+
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const res = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/events",
+        headers: {
+          host: "localhost:3000",
+          "x-ops-token": "ops-token-123",
+        },
+      } as any,
+      res as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(res.statusCode).toBe(200);
+
+    const json = JSON.parse(res.getBody());
+    expect(json.ok).toBe(true);
+    expect(json.customerId).toBe("5215512345678");
+    expect(json.count).toBe(3);
+    expect(json.items).toEqual([
+      expect.objectContaining({
+        kind: "inbound",
+        channelMessageId: "wamid.http.events.001",
+        text: "I need to speak with a human agent",
+      }),
+      expect.objectContaining({
+        kind: "outbound",
+        channelMessageId: "wamid.http.events.001",
+        responseId: "handoff-requested",
+        resolvedIntentId: "request-human-handoff",
+        stage: "handoff-requested",
+        status: "handoff",
+      }),
+      expect.objectContaining({
+        kind: "handoff",
+        channelMessageId: "wamid.http.events.001",
+        handoffId: "handoff:5215512345678:wamid.http.events.001",
+        handoffReasonCode: "explicit-human-request",
+        handoffQueue: "licensed-broker",
+      }),
+    ]);
+  });
+
+  it("rejects whatsapp conversation events route without ops token", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const res = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/events",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      res as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: "x-ops-token header is required",
+    });
+  });
 });
