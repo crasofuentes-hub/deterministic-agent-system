@@ -1234,4 +1234,132 @@ describe("whatsapp webhook handler", () => {
       error: "x-ops-token header is required",
     });
   });
+
+  it("returns whatsapp conversation evidence through the HTTP route", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        url: "/webhooks/whatsapp",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-http-evidence-001",
+        },
+      } as any,
+      createMockResponse() as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.http.evidence.001", "I need to speak with a human agent"),
+      }
+    );
+
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const res = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/evidence",
+        headers: {
+          host: "localhost:3000",
+          "x-ops-token": "ops-token-123",
+        },
+      } as any,
+      res as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(res.statusCode).toBe(200);
+
+    const json = JSON.parse(res.getBody());
+    expect(json).toEqual({
+      ok: true,
+      customerId: "5215512345678",
+      evidence: {
+        customerId: "5215512345678",
+        lastInboundMessageId: "wamid.http.evidence.001",
+        lastResponseId: "handoff-requested",
+        lastResolvedIntentId: "request-human-handoff",
+        lastStage: "handoff-requested",
+        lastStatus: "handoff",
+        lastOutboundText: "Your conversation will be transferred to a licensed broker specialist.",
+        humanInterventionRequired: true,
+        handoffReasonCode: "explicit-human-request",
+        handoffQueue: "licensed-broker",
+        updatedAtIso: "2026-03-24T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("rejects whatsapp conversation evidence route without ops token", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const res = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/evidence",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      res as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: "x-ops-token header is required",
+    });
+  });
+
+  it("returns not found for missing whatsapp conversation evidence", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const res = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/evidence",
+        headers: {
+          host: "localhost:3000",
+          "x-ops-token": "ops-token-123",
+        },
+      } as any,
+      res as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: "conversation evidence not found",
+      customerId: "5215512345678",
+    });
+  });
 });

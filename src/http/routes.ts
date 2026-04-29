@@ -36,6 +36,7 @@ import { handleListWhatsAppHandoffs } from "./handlers/whatsapp-handoffs";
 import { handleCloseWhatsAppHandoff } from "./handlers/whatsapp-handoff-close";
 import { requireOpsToken } from "./handlers/ops-auth";
 import { handleListWhatsAppConversationEvents } from "./handlers/whatsapp-conversation-events";
+import { handleGetWhatsAppConversationEvidence } from "./handlers/whatsapp-conversation-evidence";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -123,6 +124,25 @@ function getWhatsAppHandoffCloseRoute(url: string): { handoffId: string } | unde
 }
 function getWhatsAppConversationEventsRoute(url: string): { customerId: string } | undefined {
   if (!url.startsWith("/whatsapp/conversations/") || !url.endsWith("/events")) {
+    return undefined;
+  }
+
+  const parts = url.split("/");
+  if (parts.length !== 5) {
+    return undefined;
+  }
+
+  const customerId = parts[3];
+  if (typeof customerId !== "string" || customerId.length === 0) {
+    return undefined;
+  }
+
+  return {
+    customerId: decodeURIComponent(customerId),
+  };
+}
+function getWhatsAppConversationEvidenceRoute(url: string): { customerId: string } | undefined {
+  if (!url.startsWith("/whatsapp/conversations/") || !url.endsWith("/evidence")) {
     return undefined;
   }
 
@@ -385,6 +405,7 @@ export async function routeRequest(
     const runRoute = getRunRouteParts(url);
     const whatsappHandoffCloseRoute = getWhatsAppHandoffCloseRoute(url);
     const whatsappConversationEventsRoute = getWhatsAppConversationEventsRoute(url);
+    const whatsappConversationEvidenceRoute = getWhatsAppConversationEvidenceRoute(url);
 
     if (url === "/health") {
       if (method !== "GET") {
@@ -404,6 +425,7 @@ export async function routeRequest(
       !runRoute &&
       !whatsappHandoffCloseRoute &&
       !whatsappConversationEventsRoute &&
+      !whatsappConversationEvidenceRoute &&
       !ALLOWED_PUBLIC_PATHS.has(url)
     ) {
       withRequestId(res, requestId);
@@ -585,6 +607,35 @@ export async function routeRequest(
         res,
         runtimeOptions.whatsappStore,
         whatsappConversationEventsRoute.customerId
+      );
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (whatsappConversationEvidenceRoute && method === "GET") {
+      if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
+        logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
+        return;
+      }
+
+      if (!runtimeOptions.whatsappStore) {
+        withRequestId(res, requestId);
+        sendJson(res, 500, {
+          ok: false,
+          error: "whatsapp store is not configured",
+          meta: {
+            requestId,
+          },
+        });
+        logEnd(req, res, requestId, startedAt, { error: "whatsapp store is not configured" });
+        return;
+      }
+
+      withRequestId(res, requestId);
+      handleGetWhatsAppConversationEvidence(
+        res,
+        runtimeOptions.whatsappStore,
+        whatsappConversationEvidenceRoute.customerId
       );
       logEnd(req, res, requestId, startedAt);
       return;
