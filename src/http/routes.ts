@@ -34,6 +34,7 @@ import type { WhatsAppRuntimeConfig } from "../channels/whatsapp/runtime";
 import type { WhatsAppStore } from "../channels/whatsapp/store";
 import { handleListWhatsAppHandoffs } from "./handlers/whatsapp-handoffs";
 import { handleCloseWhatsAppHandoff } from "./handlers/whatsapp-handoff-close";
+import { requireOpsToken } from "./handlers/ops-auth";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -483,6 +484,11 @@ export async function routeRequest(
     }
 
     if (url === "/whatsapp/handoffs" && method === "GET") {
+      if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
+        logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
+        return;
+      }
+
       if (!runtimeOptions.whatsappStore) {
         withRequestId(res, requestId);
         sendJson(res, 500, {
@@ -503,6 +509,11 @@ export async function routeRequest(
     }
 
     if (whatsappHandoffCloseRoute && method === "POST") {
+      if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
+        logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
+        return;
+      }
+
       if (!runtimeOptions.whatsappStore) {
         withRequestId(res, requestId);
         sendJson(res, 500, {

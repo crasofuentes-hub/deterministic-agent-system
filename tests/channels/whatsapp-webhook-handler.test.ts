@@ -697,6 +697,8 @@ describe("whatsapp webhook handler", () => {
 
     const { routeRequest } = await import("../../src/http/routes");
 
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
     const listRes = createMockResponse();
 
     await routeRequest(
@@ -705,6 +707,7 @@ describe("whatsapp webhook handler", () => {
         url: "/whatsapp/handoffs",
         headers: {
           host: "localhost:3000",
+          "x-ops-token": "ops-token-123",
         },
       } as any,
       listRes as any,
@@ -760,6 +763,8 @@ describe("whatsapp webhook handler", () => {
 
     const { routeRequest } = await import("../../src/http/routes");
 
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
     const closeRes = createMockResponse();
 
     await routeRequest(
@@ -768,6 +773,7 @@ describe("whatsapp webhook handler", () => {
         url: "/whatsapp/handoffs/" + encodeURIComponent("handoff:5215512345678:wamid.handoff.close.001") + "/close",
         headers: {
           host: "localhost:3000",
+          "x-ops-token": "ops-token-123",
         },
       } as any,
       closeRes as any,
@@ -803,6 +809,7 @@ describe("whatsapp webhook handler", () => {
         url: "/whatsapp/handoffs",
         headers: {
           host: "localhost:3000",
+          "x-ops-token": "ops-token-123",
         },
       } as any,
       listRes as any,
@@ -815,5 +822,37 @@ describe("whatsapp webhook handler", () => {
     expect(listJson.ok).toBe(true);
     expect(listJson.count).toBe(0);
     expect(listJson.items).toEqual([]);
+  });
+
+  it("rejects whatsapp handoff listing without ops token", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+
+    const res = createMockResponse();
+
+    await routeRequest(
+      {
+        method: "GET",
+        url: "/whatsapp/handoffs",
+        headers: {
+          host: "localhost:3000",
+        },
+      } as any,
+      res as any,
+      {
+        whatsappStore: store,
+      }
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: "x-ops-token header is required",
+    });
   });
 });
