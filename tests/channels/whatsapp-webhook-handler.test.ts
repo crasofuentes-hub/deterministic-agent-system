@@ -1553,4 +1553,132 @@ describe("whatsapp webhook handler", () => {
       }
     }
   });
+
+  it("returns ready when operational configuration is complete", async () => {
+    const previousVerifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+    const previousOpsToken = process.env.OPS_API_TOKEN;
+    const previousDeliveryMode = process.env.WHATSAPP_DELIVERY_MODE;
+    const previousStoreMode = process.env.WHATSAPP_STORE_MODE;
+    const previousSqlitePath = process.env.WHATSAPP_SQLITE_PATH;
+    const previousAppSecret = process.env.WHATSAPP_APP_SECRET;
+    const previousRateWindow = process.env.HTTP_RATE_LIMIT_WINDOW_MS;
+    const previousRateMax = process.env.HTTP_RATE_LIMIT_MAX;
+
+    process.env.WHATSAPP_VERIFY_TOKEN = "token-123";
+    process.env.OPS_API_TOKEN = "ops-token-123";
+    process.env.WHATSAPP_DELIVERY_MODE = "mock";
+    process.env.WHATSAPP_STORE_MODE = "sqlite";
+    process.env.WHATSAPP_SQLITE_PATH = ".runtime-data/test.sqlite";
+    process.env.WHATSAPP_APP_SECRET = "app-secret-123";
+    process.env.HTTP_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.HTTP_RATE_LIMIT_MAX = "60";
+
+    try {
+      const { routeRequest } = await import("../../src/http/routes");
+      const res = createMockResponse();
+
+      await routeRequest(
+        {
+          method: "GET",
+          url: "/ready",
+          headers: {
+            host: "localhost:3000",
+          },
+        } as any,
+        res as any
+      );
+
+      expect(res.statusCode).toBe(200);
+      const json = JSON.parse(res.getBody());
+      expect(json.ok).toBe(true);
+      expect(json.status).toBe("ready");
+      expect(json.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "http.service", status: "pass" }),
+          expect.objectContaining({ id: "whatsapp.verifyToken", status: "pass" }),
+          expect.objectContaining({ id: "ops.apiToken", status: "pass" }),
+          expect.objectContaining({ id: "whatsapp.storeMode", status: "pass" }),
+          expect.objectContaining({ id: "whatsapp.sqlitePath", status: "pass" }),
+          expect.objectContaining({ id: "whatsapp.appSecret", status: "pass" }),
+          expect.objectContaining({ id: "http.rateLimit", status: "pass" }),
+        ])
+      );
+    } finally {
+      if (typeof previousVerifyToken === "string") process.env.WHATSAPP_VERIFY_TOKEN = previousVerifyToken;
+      else delete process.env.WHATSAPP_VERIFY_TOKEN;
+
+      if (typeof previousOpsToken === "string") process.env.OPS_API_TOKEN = previousOpsToken;
+      else delete process.env.OPS_API_TOKEN;
+
+      if (typeof previousDeliveryMode === "string") process.env.WHATSAPP_DELIVERY_MODE = previousDeliveryMode;
+      else delete process.env.WHATSAPP_DELIVERY_MODE;
+
+      if (typeof previousStoreMode === "string") process.env.WHATSAPP_STORE_MODE = previousStoreMode;
+      else delete process.env.WHATSAPP_STORE_MODE;
+
+      if (typeof previousSqlitePath === "string") process.env.WHATSAPP_SQLITE_PATH = previousSqlitePath;
+      else delete process.env.WHATSAPP_SQLITE_PATH;
+
+      if (typeof previousAppSecret === "string") process.env.WHATSAPP_APP_SECRET = previousAppSecret;
+      else delete process.env.WHATSAPP_APP_SECRET;
+
+      if (typeof previousRateWindow === "string") process.env.HTTP_RATE_LIMIT_WINDOW_MS = previousRateWindow;
+      else delete process.env.HTTP_RATE_LIMIT_WINDOW_MS;
+
+      if (typeof previousRateMax === "string") process.env.HTTP_RATE_LIMIT_MAX = previousRateMax;
+      else delete process.env.HTTP_RATE_LIMIT_MAX;
+    }
+  });
+
+  it("returns not ready when critical operational configuration is missing", async () => {
+    const previousVerifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+    const previousOpsToken = process.env.OPS_API_TOKEN;
+    const previousStoreMode = process.env.WHATSAPP_STORE_MODE;
+    const previousSqlitePath = process.env.WHATSAPP_SQLITE_PATH;
+
+    delete process.env.WHATSAPP_VERIFY_TOKEN;
+    delete process.env.OPS_API_TOKEN;
+    process.env.WHATSAPP_STORE_MODE = "sqlite";
+    delete process.env.WHATSAPP_SQLITE_PATH;
+
+    try {
+      const { routeRequest } = await import("../../src/http/routes");
+      const res = createMockResponse();
+
+      await routeRequest(
+        {
+          method: "GET",
+          url: "/ready",
+          headers: {
+            host: "localhost:3000",
+          },
+        } as any,
+        res as any
+      );
+
+      expect(res.statusCode).toBe(503);
+      const json = JSON.parse(res.getBody());
+      expect(json.ok).toBe(false);
+      expect(json.status).toBe("not-ready");
+      expect(json.checks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "whatsapp.verifyToken", status: "fail" }),
+          expect.objectContaining({ id: "ops.apiToken", status: "fail" }),
+          expect.objectContaining({ id: "whatsapp.sqlitePath", status: "fail" }),
+        ])
+      );
+    } finally {
+      if (typeof previousVerifyToken === "string") process.env.WHATSAPP_VERIFY_TOKEN = previousVerifyToken;
+      else delete process.env.WHATSAPP_VERIFY_TOKEN;
+
+      if (typeof previousOpsToken === "string") process.env.OPS_API_TOKEN = previousOpsToken;
+      else delete process.env.OPS_API_TOKEN;
+
+      if (typeof previousStoreMode === "string") process.env.WHATSAPP_STORE_MODE = previousStoreMode;
+      else delete process.env.WHATSAPP_STORE_MODE;
+
+      if (typeof previousSqlitePath === "string") process.env.WHATSAPP_SQLITE_PATH = previousSqlitePath;
+      else delete process.env.WHATSAPP_SQLITE_PATH;
+    }
+  });
 });

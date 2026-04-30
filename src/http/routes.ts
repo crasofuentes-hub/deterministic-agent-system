@@ -37,6 +37,7 @@ import { handleCloseWhatsAppHandoff } from "./handlers/whatsapp-handoff-close";
 import { requireOpsToken } from "./handlers/ops-auth";
 import { handleListWhatsAppConversationEvents } from "./handlers/whatsapp-conversation-events";
 import { handleGetWhatsAppConversationEvidence } from "./handlers/whatsapp-conversation-evidence";
+import { handleReadiness } from "./handlers/readiness";
 import { enforceRateLimit, resolveRateLimitConfig } from "./handlers/rate-limit";
 
 type UnknownRecord = Record<string, unknown>;
@@ -429,6 +430,20 @@ export async function routeRequest(
       }
 
       sendHealth(res, requestId);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (url === "/ready") {
+      if (method !== "GET") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      withRequestId(res, requestId);
+      handleReadiness(res, process.env as Record<string, string | undefined>);
       logEnd(req, res, requestId, startedAt);
       return;
     }
