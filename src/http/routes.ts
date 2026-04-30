@@ -37,6 +37,7 @@ import { handleCloseWhatsAppHandoff } from "./handlers/whatsapp-handoff-close";
 import { requireOpsToken } from "./handlers/ops-auth";
 import { handleListWhatsAppConversationEvents } from "./handlers/whatsapp-conversation-events";
 import { handleGetWhatsAppConversationEvidence } from "./handlers/whatsapp-conversation-evidence";
+import { enforceRateLimit, resolveRateLimitConfig } from "./handlers/rate-limit";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -359,6 +360,18 @@ function logEnd(
     ...(extra ?? {}),
   });
 }
+function enforceConfiguredRateLimit(
+  req: IncomingMessage,
+  res: ServerResponse,
+  scope: string
+): boolean {
+  return enforceRateLimit(
+    req,
+    res,
+    scope,
+    resolveRateLimitConfig(process.env as Record<string, string | undefined>)
+  );
+}
 
 const ALLOWED_PUBLIC_PATHS = new Set<string>([
   "/execute",
@@ -534,6 +547,11 @@ export async function routeRequest(
     }
 
     if (url === "/whatsapp/handoffs" && method === "GET") {
+      if (!enforceConfiguredRateLimit(req, res, "whatsapp-ops")) {
+        logEnd(req, res, requestId, startedAt, { error: "rate limit exceeded" });
+        return;
+      }
+
       if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
         logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
         return;
@@ -559,6 +577,11 @@ export async function routeRequest(
     }
 
     if (whatsappHandoffCloseRoute && method === "POST") {
+      if (!enforceConfiguredRateLimit(req, res, "whatsapp-ops")) {
+        logEnd(req, res, requestId, startedAt, { error: "rate limit exceeded" });
+        return;
+      }
+
       if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
         logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
         return;
@@ -584,6 +607,11 @@ export async function routeRequest(
     }
 
     if (whatsappConversationEventsRoute && method === "GET") {
+      if (!enforceConfiguredRateLimit(req, res, "whatsapp-ops")) {
+        logEnd(req, res, requestId, startedAt, { error: "rate limit exceeded" });
+        return;
+      }
+
       if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
         logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
         return;
@@ -613,6 +641,11 @@ export async function routeRequest(
     }
 
     if (whatsappConversationEvidenceRoute && method === "GET") {
+      if (!enforceConfiguredRateLimit(req, res, "whatsapp-ops")) {
+        logEnd(req, res, requestId, startedAt, { error: "rate limit exceeded" });
+        return;
+      }
+
       if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
         logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
         return;
@@ -670,6 +703,11 @@ export async function routeRequest(
     }
 
     if (url === "/webhooks/whatsapp") {
+      if (!enforceConfiguredRateLimit(req, res, "whatsapp-webhook")) {
+        logEnd(req, res, requestId, startedAt, { error: "rate limit exceeded" });
+        return;
+      }
+
       withRequestId(res, requestId);
       await handleWhatsAppWebhook(req, res, {
         verifyToken: runtimeOptions.whatsappRuntime?.verifyToken ?? "",

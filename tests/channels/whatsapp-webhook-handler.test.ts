@@ -28,6 +28,31 @@ function createMockResponse() {
 function signWhatsAppBody(bodyText: string, appSecret: string): string {
   return "sha256=" + crypto.createHmac("sha256", appSecret).update(bodyText, "utf8").digest("hex");
 }
+
+function createMockPostRequest(url: string, bodyText: string, headers: Record<string, string> = {}) {
+  return {
+    method: "POST",
+    url,
+    headers: {
+      host: "localhost:3000",
+      ...headers,
+    },
+    socket: {
+      remoteAddress: "127.0.0.1",
+    },
+    on(eventName: string, callback: (...args: any[]) => void) {
+      if (eventName === "data") {
+        callback(Buffer.from(bodyText, "utf8"));
+      }
+
+      if (eventName === "end") {
+        callback();
+      }
+
+      return this;
+    },
+  };
+}
 function buildInboundBody(messageId: string, userText: string): string {
   return JSON.stringify({
     object: "whatsapp_business_account",
@@ -1361,5 +1386,171 @@ describe("whatsapp webhook handler", () => {
       error: "conversation evidence not found",
       customerId: "5215512345678",
     });
+  });
+
+  it("rate limits whatsapp ops endpoints when configured", async () => {
+    const previousWindow = process.env.HTTP_RATE_LIMIT_WINDOW_MS;
+    const previousMax = process.env.HTTP_RATE_LIMIT_MAX;
+    const previousOpsToken = process.env.OPS_API_TOKEN;
+
+    process.env.HTTP_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.HTTP_RATE_LIMIT_MAX = "1";
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const { resetRateLimitStateForTests } = await import("../../src/http/handlers/rate-limit");
+    resetRateLimitStateForTests();
+
+    try {
+      const store = createInMemoryWhatsAppStore({
+        businessContextId: "customer-service-core-v2",
+      });
+
+      const first = createMockResponse();
+
+      await routeRequest(
+        {
+          method: "GET",
+          url: "/whatsapp/handoffs",
+          headers: {
+            host: "localhost:3000",
+            "x-forwarded-for": "203.0.113.10",
+            "x-ops-token": "ops-token-123",
+          },
+          socket: {
+            remoteAddress: "203.0.113.10",
+          },
+        } as any,
+        first as any,
+        {
+          whatsappStore: store,
+        }
+      );
+
+      expect(first.statusCode).toBe(200);
+
+      const second = createMockResponse();
+
+      await routeRequest(
+        {
+          method: "GET",
+          url: "/whatsapp/handoffs",
+          headers: {
+            host: "localhost:3000",
+            "x-forwarded-for": "203.0.113.10",
+            "x-ops-token": "ops-token-123",
+          },
+          socket: {
+            remoteAddress: "203.0.113.10",
+          },
+        } as any,
+        second as any,
+        {
+          whatsappStore: store,
+        }
+      );
+
+      expect(second.statusCode).toBe(429);
+      expect(JSON.parse(second.getBody())).toEqual({
+        ok: false,
+        error: "rate limit exceeded",
+        retryAfterSeconds: 60,
+      });
+    } finally {
+      resetRateLimitStateForTests();
+
+      if (typeof previousWindow === "string") {
+        process.env.HTTP_RATE_LIMIT_WINDOW_MS = previousWindow;
+      } else {
+        delete process.env.HTTP_RATE_LIMIT_WINDOW_MS;
+      }
+
+      if (typeof previousMax === "string") {
+        process.env.HTTP_RATE_LIMIT_MAX = previousMax;
+      } else {
+        delete process.env.HTTP_RATE_LIMIT_MAX;
+      }
+
+      if (typeof previousOpsToken === "string") {
+        process.env.OPS_API_TOKEN = previousOpsToken;
+      } else {
+        delete process.env.OPS_API_TOKEN;
+      }
+    }
+  });
+
+  it("rate limits whatsapp webhook POST when configured", async () => {
+    const previousWindow = process.env.HTTP_RATE_LIMIT_WINDOW_MS;
+    const previousMax = process.env.HTTP_RATE_LIMIT_MAX;
+    const previousAppSecret = process.env.WHATSAPP_APP_SECRET;
+
+    process.env.HTTP_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.HTTP_RATE_LIMIT_MAX = "1";
+    delete process.env.WHATSAPP_APP_SECRET;
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const { resetRateLimitStateForTests } = await import("../../src/http/handlers/rate-limit");
+    resetRateLimitStateForTests();
+
+    try {
+      const store = createInMemoryWhatsAppStore({
+        businessContextId: "customer-service-core-v2",
+      });
+
+      const firstBody = buildInboundBody("wamid.rate.webhook.001", "I need a quote for Personal Auto Standard");
+      const first = createMockResponse();
+
+      await routeRequest(
+        createMockPostRequest("/webhooks/whatsapp", firstBody, {
+          "x-forwarded-for": "203.0.113.20",
+        }) as any,
+        first as any,
+        {
+          whatsappStore: store,
+        }
+      );
+
+      expect(first.statusCode).toBe(200);
+
+      const secondBody = buildInboundBody("wamid.rate.webhook.002", "I need a quote for Personal Auto Standard");
+      const second = createMockResponse();
+
+      await routeRequest(
+        createMockPostRequest("/webhooks/whatsapp", secondBody, {
+          "x-forwarded-for": "203.0.113.20",
+        }) as any,
+        second as any,
+        {
+          whatsappStore: store,
+        }
+      );
+
+      expect(second.statusCode).toBe(429);
+      expect(JSON.parse(second.getBody())).toEqual({
+        ok: false,
+        error: "rate limit exceeded",
+        retryAfterSeconds: 60,
+      });
+    } finally {
+      resetRateLimitStateForTests();
+
+      if (typeof previousWindow === "string") {
+        process.env.HTTP_RATE_LIMIT_WINDOW_MS = previousWindow;
+      } else {
+        delete process.env.HTTP_RATE_LIMIT_WINDOW_MS;
+      }
+
+      if (typeof previousMax === "string") {
+        process.env.HTTP_RATE_LIMIT_MAX = previousMax;
+      } else {
+        delete process.env.HTTP_RATE_LIMIT_MAX;
+      }
+
+      if (typeof previousAppSecret === "string") {
+        process.env.WHATSAPP_APP_SECRET = previousAppSecret;
+      } else {
+        delete process.env.WHATSAPP_APP_SECRET;
+      }
+    }
   });
 });
