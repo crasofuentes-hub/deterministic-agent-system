@@ -1681,4 +1681,109 @@ describe("whatsapp webhook handler", () => {
       else delete process.env.WHATSAPP_SQLITE_PATH;
     }
   });
+
+  it("returns protected http metrics snapshot", async () => {
+    const previousOpsToken = process.env.OPS_API_TOKEN;
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const { resetHttpMetricsForTests } = await import("../../src/http/handlers/metrics");
+    resetHttpMetricsForTests();
+
+    try {
+      const healthRes = createMockResponse();
+
+      await routeRequest(
+        {
+          method: "GET",
+          url: "/health",
+          headers: {
+            host: "localhost:3000",
+          },
+        } as any,
+        healthRes as any
+      );
+
+      expect(healthRes.statusCode).toBe(200);
+
+      const metricsRes = createMockResponse();
+
+      await routeRequest(
+        {
+          method: "GET",
+          url: "/metrics",
+          headers: {
+            host: "localhost:3000",
+            "x-ops-token": "ops-token-123",
+          },
+        } as any,
+        metricsRes as any
+      );
+
+      expect(metricsRes.statusCode).toBe(200);
+
+      const json = JSON.parse(metricsRes.getBody());
+      expect(json.ok).toBe(true);
+      expect(json.metrics.totalRequests).toBeGreaterThanOrEqual(1);
+      expect(json.metrics.byRoute).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            key: "GET /health",
+            method: "GET",
+            path: "/health",
+            count: 1,
+            errors: 0,
+            rateLimited: 0,
+            lastStatusCode: 200,
+          }),
+        ])
+      );
+    } finally {
+      resetHttpMetricsForTests();
+
+      if (typeof previousOpsToken === "string") {
+        process.env.OPS_API_TOKEN = previousOpsToken;
+      } else {
+        delete process.env.OPS_API_TOKEN;
+      }
+    }
+  });
+
+  it("rejects metrics endpoint without ops token", async () => {
+    const previousOpsToken = process.env.OPS_API_TOKEN;
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const { routeRequest } = await import("../../src/http/routes");
+    const { resetHttpMetricsForTests } = await import("../../src/http/handlers/metrics");
+    resetHttpMetricsForTests();
+
+    try {
+      const res = createMockResponse();
+
+      await routeRequest(
+        {
+          method: "GET",
+          url: "/metrics",
+          headers: {
+            host: "localhost:3000",
+          },
+        } as any,
+        res as any
+      );
+
+      expect(res.statusCode).toBe(401);
+      expect(JSON.parse(res.getBody())).toEqual({
+        ok: false,
+        error: "x-ops-token header is required",
+      });
+    } finally {
+      resetHttpMetricsForTests();
+
+      if (typeof previousOpsToken === "string") {
+        process.env.OPS_API_TOKEN = previousOpsToken;
+      } else {
+        delete process.env.OPS_API_TOKEN;
+      }
+    }
+  });
 });

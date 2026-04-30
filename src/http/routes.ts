@@ -39,6 +39,7 @@ import { handleListWhatsAppConversationEvents } from "./handlers/whatsapp-conver
 import { handleGetWhatsAppConversationEvidence } from "./handlers/whatsapp-conversation-evidence";
 import { handleReadiness } from "./handlers/readiness";
 import { enforceRateLimit, resolveRateLimitConfig } from "./handlers/rate-limit";
+import { handleMetrics, recordHttpMetric } from "./handlers/metrics";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -351,14 +352,26 @@ function logEnd(
   startedAt: number,
   extra?: Record<string, unknown>
 ): void {
+  const durationMs = Date.now() - startedAt;
+  const method = req.method ?? "GET";
+  const url = req.url ?? "/";
+
   logHttpEvent({
     event: "request.end",
     requestId,
-    method: req.method ?? "GET",
-    url: req.url ?? "/",
+    method,
+    url,
     statusCode: res.statusCode,
-    durationMs: Date.now() - startedAt,
+    durationMs,
     ...(extra ?? {}),
+  });
+
+  recordHttpMetric({
+    method,
+    path: (url.split("?")[0] ?? "").replace(/\/+$/, "") || "/",
+    statusCode: res.statusCode,
+    durationMs,
+    error: typeof extra?.error === "string" ? extra.error : undefined,
   });
 }
 function enforceConfiguredRateLimit(
@@ -444,6 +457,25 @@ export async function routeRequest(
 
       withRequestId(res, requestId);
       handleReadiness(res, process.env as Record<string, string | undefined>);
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+
+    if (url === "/metrics") {
+      if (method !== "GET") {
+        withRequestId(res, requestId);
+        sendMethodNotAllowed(res);
+        logEnd(req, res, requestId, startedAt);
+        return;
+      }
+
+      if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
+        logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
+        return;
+      }
+
+      withRequestId(res, requestId);
+      handleMetrics(res);
       logEnd(req, res, requestId, startedAt);
       return;
     }
