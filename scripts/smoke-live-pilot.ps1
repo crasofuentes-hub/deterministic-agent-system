@@ -44,6 +44,17 @@ Write-Host "`n== HEALTH ==" -ForegroundColor Cyan
 $health = Invoke-WebRequest -Uri ($BaseUrl + "/health") -UseBasicParsing
 $health.Content | Out-Host
 
+Write-Host "`n== READY ==" -ForegroundColor Cyan
+$ready = Invoke-WebRequest -Uri ($BaseUrl + "/ready") -UseBasicParsing
+$ready.Content | Out-Host
+$readyJson = $ready.Content | ConvertFrom-Json
+if ($readyJson.ok -ne $true) {
+  throw "Expected readiness ok=true but got $($ready.Content)"
+}
+if ($readyJson.status -ne "ready") {
+  throw "Expected readiness status=ready but got $($readyJson.status)"
+}
+
 Write-Host "`n== VERIFY WEBHOOK ==" -ForegroundColor Cyan
 $verifyUrl = $BaseUrl + "/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=" + $VerifyToken + "&hub.challenge=challenge-001"
 $verify = Invoke-WebRequest -Uri $verifyUrl -UseBasicParsing
@@ -250,3 +261,19 @@ $listAfterCloseResponse = Invoke-WebRequest `
   -UseBasicParsing
 
 $listAfterCloseResponse.Content | Out-Host
+
+$listAfterCloseJson = $listAfterCloseResponse.Content | ConvertFrom-Json
+if ($listAfterCloseJson.count -ne 0) {
+  throw "Expected final open handoff count to be 0 but got $($listAfterCloseJson.count)"
+}
+
+Write-Host "`n== METRICS ==" -ForegroundColor Cyan
+$metricsResponse = Invoke-WebRequest -Uri ($BaseUrl + "/metrics") -Method Get -Headers @{ "x-ops-token" = $OpsToken } -UseBasicParsing
+$metricsResponse.Content | Out-Host
+$metricsJson = $metricsResponse.Content | ConvertFrom-Json
+if ($metricsJson.ok -ne $true) {
+  throw "Expected metrics ok=true but got $($metricsResponse.Content)"
+}
+if ($metricsJson.metrics.totalRequests -lt 1) {
+  throw "Expected metrics totalRequests to be greater than or equal to 1 but got $($metricsJson.metrics.totalRequests)"
+}
