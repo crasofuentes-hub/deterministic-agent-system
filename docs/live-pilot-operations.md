@@ -200,3 +200,45 @@ Before exposing beyond local development:
 Public repository:
 
     https://github.com/crasofuentes-hub/deterministic-agent-system
+
+## Inspect operational metrics
+
+The metrics endpoint is protected with x-ops-token.
+
+    Set-Location "C:\repos\deterministic-agent-system"
+
+    . .\scripts\live-pilot.env.ps1
+
+    Invoke-WebRequest -Uri "http://127.0.0.1:3000/metrics" -Method Get -Headers @{ "x-ops-token" = $env:OPS_API_TOKEN } -UseBasicParsing
+
+The metrics response includes:
+
+- total request count.
+- total error count.
+- total rate-limited request count.
+- per-route counters.
+- normalized route keys for customer and handoff routes.
+
+## Check pending handoff alerts
+
+Use this script when a local monitor, scheduler, or operator check needs to fail if there are open handoffs.
+
+    Set-Location "C:\repos\deterministic-agent-system"
+
+    . .\scripts\live-pilot.env.ps1
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\check-whatsapp-handoffs.ps1
+
+Expected result when there are no open handoffs:
+
+    "ok": true
+    "openHandoffCount": 0
+
+Exit codes:
+
+- 0 means there are no open handoffs, or -AllowOpen was used.
+- 2 means there are open handoffs and -AllowOpen was not used.
+
+To report open handoffs without failing the process:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\check-whatsapp-handoffs.ps1 -AllowOpen
