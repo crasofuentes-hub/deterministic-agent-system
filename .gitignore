@@ -45,3 +45,5 @@ backups/
 release-notes-v0.3.0.md
 
 reddit/
+.runtime-backups/
+scripts/live-pilot.env.ps1
