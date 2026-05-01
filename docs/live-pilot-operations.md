@@ -242,3 +242,52 @@ Exit codes:
 To report open handoffs without failing the process:
 
     powershell -ExecutionPolicy Bypass -File .\scripts\check-whatsapp-handoffs.ps1 -AllowOpen
+
+## Create a daily operational snapshot
+
+Use this script to generate a single JSON snapshot for daily audit evidence.
+
+The snapshot includes:
+
+- readiness state from /ready.
+- metrics from /metrics.
+- open handoff count from /whatsapp/handoffs.
+- open handoff records.
+- optional SQLite backup result.
+- exit code 0 when the pilot is operational.
+- exit code 2 when the pilot is not operational or open handoffs exist.
+
+Run without backup:
+
+    Set-Location "C:\repos\deterministic-agent-system"
+
+    . .\scripts\live-pilot.env.ps1
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\snapshot-live-pilot-ops.ps1 -SkipBackup
+
+Run with SQLite backup:
+
+    Set-Location "C:\repos\deterministic-agent-system"
+
+    . .\scripts\live-pilot.env.ps1
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\snapshot-live-pilot-ops.ps1
+
+Expected healthy result:
+
+    "ok": true
+    "openHandoffCount": 0
+    "backup": {
+      "ok": true,
+      "backupPath": "...",
+      "manifestPath": "...",
+      "sha256": "...",
+      "bytes": 45056
+    }
+
+Recommended usage:
+
+- Run once after starting the pilot.
+- Run after meaningful pilot activity.
+- Run before shutdown.
+- Store the JSON output outside the repository if used as audit evidence.
