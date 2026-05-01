@@ -291,3 +291,47 @@ Recommended usage:
 - Run after meaningful pilot activity.
 - Run before shutdown.
 - Store the JSON output outside the repository if used as audit evidence.
+
+## Use the local CLI
+
+The local CLI wraps the operational PowerShell scripts without duplicating their logic.
+
+Build first:
+
+    Set-Location "C:\repos\deterministic-agent-system"
+
+    npm run build
+
+Show help:
+
+    npm run cli -- help
+
+Run the live pilot smoke:
+
+    . .\scripts\live-pilot.env.ps1
+
+    npm run cli -- smoke
+
+Create an operational snapshot without backup:
+
+    . .\scripts\live-pilot.env.ps1
+
+    npm run cli -- snapshot -SkipBackup
+
+Check pending handoffs:
+
+    . .\scripts\live-pilot.env.ps1
+
+    npm run cli -- check-handoffs
+
+Create a SQLite backup:
+
+    . .\scripts\live-pilot.env.ps1
+
+    npm run cli -- backup -KeepLast 20
+
+The package also defines a local bin entry:
+
+    det-agent
+
+It is prepared for future npm packaging, but the package remains private for now.
