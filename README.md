@@ -60,7 +60,7 @@ This project is intentionally engineered for environments where correctness, tra
 - System Design Principles
 - Operational Guarantees and Boundaries
 - Current Development Status
-- Stable Insurance Brokerage Slice (v0.4.0)
+- Stable Insurance Brokerage and Local Operations Slice (v0.5.0)
 - Repository Structure
 - Quickstart (Windows PowerShell + TypeScript)
 - High-Level Architecture
@@ -273,7 +273,7 @@ When boundary violations occur, the correct system behavior is to surface the pr
 ---
 
 ## Current Development Status
-### v0.4.0 stable slice update
+### v0.5.0 local enterprise operations update
 
 The repository now includes a verified stable business slice for **Northwind Insurance Brokers** in addition to the broader deterministic agent platform work.
 
@@ -291,8 +291,8 @@ This stabilized slice currently covers:
 
 Current verified stable baseline:
 
-- **20 test files**
-- **130 tests**
+- **13 contractual test files**
+- **191 contractual tests**
 - **0 failures**
 
 
@@ -400,7 +400,7 @@ The intent of this path is controlled materialization of plans, not unconstraine
 | Next | Stronger contract assertions | Expand verification beyond minimum shape into more semantic result guarantees |
 | Next | Additional deterministic tools | Increase practical agent value while keeping bounded and verifiable behavior |
 
-## Stable Insurance Brokerage Slice (v0.4.0)
+## Stable Insurance Brokerage and Local Operations Slice (v0.5.0)
 
 The repository now includes a stabilized domain slice for **Northwind Insurance Brokers**.
 
@@ -510,13 +510,13 @@ This slice demonstrates how the deterministic agent architecture can support a r
 
 ### Verified stable baseline
 
-- **20 test files**
-- **130 tests**
+- **13 contractual test files**
+- **191 contractual tests**
 - **0 failures**
 
 ### Release alignment
 
-- **`v0.4.0 - Insurance brokerage domain specialization and broker eligibility hardening**
+- **`v0.5.0 - Local enterprise operations, WhatsApp pilot hardening, metrics, readiness, backup, snapshot, and CLI**
 
 ---
 ## Repository Structure
