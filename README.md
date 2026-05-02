@@ -519,6 +519,19 @@ This slice demonstrates how the deterministic agent architecture can support a r
 - **`v0.5.0 - Local enterprise operations, WhatsApp pilot hardening, metrics, readiness, backup, snapshot, and CLI**
 
 ---
+
+## Examples
+
+Start here if you want copyable local usage flows:
+
+- examples/local-cli/ - local CLI wrapper usage.
+- examples/live-pilot-ops/ - supervised WhatsApp live pilot operations.
+- examples/payment-audit/ - deterministic insurance payment-audit vertical.
+
+Recommended entry point:
+
+    examples/README.md
+
 ## Repository Structure
 
 The repository is organized to separate implementation, scripts, documentation, and testing concerns.
