@@ -1,5 +1,47 @@
 # Deterministic Agent System
 
+## Quick Start: v0.5.0 Local Enterprise Operations
+
+This release focuses on local enterprise-style operation of a supervised deterministic agent runtime.
+
+Core operational features:
+
+- Readiness endpoint: GET /ready.
+- Protected metrics endpoint: GET /metrics.
+- WhatsApp live pilot with signed webhook validation.
+- SQLite-backed sessions, evidence, events, and handoffs.
+- Handoff list and close operations.
+- SQLite backup with SHA-256 manifest.
+- Operational snapshot and pending handoff alert scripts.
+- Local CLI wrapper through npm run cli.
+
+Build and verify:
+
+    Set-Location "C:\repos\deterministic-agent-system"
+
+    npm install
+    npm run build
+    npm run test:baseline:contractual
+
+Run local CLI help:
+
+    npm run cli -- help
+
+Run the live pilot smoke after configuring scripts/live-pilot.env.ps1:
+
+    . .\scripts\live-pilot.env.ps1
+    npm run cli -- smoke
+
+Create an operational snapshot:
+
+    . .\scripts\live-pilot.env.ps1
+    npm run cli -- snapshot -SkipBackup
+
+Current release:
+
+    v0.5.0 - Local Enterprise Operations
+
+
 A deterministic, auditable, and replayable autonomous agent system for controlled execution, bounded behavior, and verifiable outcomes.
 
 This repository is centered on one primary objective: **building a deterministic agent system**. Internal execution layers, adapters, and validation tooling exist to support that objective, but they are implementation details rather than the identity of the project.
