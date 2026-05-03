@@ -14,13 +14,26 @@ if ($KeepLast -lt 1) {
   throw "KeepLast must be greater than or equal to 1."
 }
 
-$resolvedDbPath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $DbPath))
+function Resolve-OperationalPath {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$PathValue
+  )
+
+  if ([System.IO.Path]::IsPathRooted($PathValue)) {
+    return [System.IO.Path]::GetFullPath($PathValue)
+  }
+
+  return [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $PathValue))
+}
+
+$resolvedDbPath = Resolve-OperationalPath -PathValue $DbPath
 
 if (!(Test-Path $resolvedDbPath)) {
   throw "SQLite database not found: $resolvedDbPath"
 }
 
-$resolvedBackupDir = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $BackupDir))
+$resolvedBackupDir = Resolve-OperationalPath -PathValue $BackupDir
 
 if (!(Test-Path $resolvedBackupDir)) {
   New-Item -ItemType Directory -Path $resolvedBackupDir -Force | Out-Null

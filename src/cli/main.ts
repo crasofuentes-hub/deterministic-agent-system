@@ -42,7 +42,8 @@ function printHelp(): void {
   console.log("det-agent local CLI");
   console.log("");
   console.log("Usage:");
-  console.log("  node dist/src/cli/main.js <command> [script-args...]");
+  console.log("  det-agent <command> [script-args...]");
+  console.log("  npm run cli -- <command> [script-args...]");
   console.log("");
   console.log("Commands:");
 
@@ -52,10 +53,10 @@ function printHelp(): void {
 
   console.log("");
   console.log("Examples:");
-  console.log("  node dist/src/cli/main.js smoke");
-  console.log("  node dist/src/cli/main.js snapshot -SkipBackup");
-  console.log("  node dist/src/cli/main.js check-handoffs -AllowOpen");
-  console.log("  node dist/src/cli/main.js backup -KeepLast 20");
+  console.log("  det-agent smoke");
+  console.log("  det-agent snapshot -SkipBackup");
+  console.log("  det-agent check-handoffs -AllowOpen");
+  console.log("  det-agent backup -KeepLast 20");
 }
 
 function resolveCommand(value: string | undefined): CommandDefinition {
@@ -73,7 +74,8 @@ function resolveCommand(value: string | undefined): CommandDefinition {
 }
 
 function runPowerShellScript(scriptPath: string, args: readonly string[]): never {
-  const absoluteScriptPath = join(process.cwd(), scriptPath);
+  const packageRoot = join(__dirname, "../../..");
+  const absoluteScriptPath = join(packageRoot, scriptPath);
 
   if (!existsSync(absoluteScriptPath)) {
     console.error("Script not found: " + absoluteScriptPath);
