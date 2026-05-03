@@ -1,5 +1,22 @@
 # Deterministic Agent System
 
+## Install from npm
+
+The package is published on npm as:
+
+    deterministic-agent-system@0.5.1
+
+Install locally in a project:
+
+    npm install deterministic-agent-system@0.5.1
+
+Run CLI help:
+
+    npx det-agent help
+
+The published package exposes:
+
+    det-agent -> dist/src/cli/main.js
 ## Quick Start: v0.5.0 Local Enterprise Operations
 
 This release focuses on local enterprise-style operation of a supervised deterministic agent runtime.

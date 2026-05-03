@@ -6,8 +6,8 @@ This document records the current npm packaging readiness state for deterministi
 
 - Package version: 0.5.0
 - Package name: deterministic-agent-system
-- Package remains private: true
-- npm publication has not been performed
+- Package is now public: private=false
+- npm publication has been performed
 - Local packaging preflight has been validated
 - Installation from a generated .tgz has been validated
 - det-agent help works from an installed package
@@ -106,6 +106,30 @@ Do not publish until these items are explicitly reviewed:
 - release notes mention npm publication
 - installed-package smoke is repeated from a clean temporary directory
 
+
+## Published npm package
+
+The package has been published to npm:
+
+    deterministic-agent-system@0.5.1
+
+Install:
+
+    npm install deterministic-agent-system@0.5.1
+
+CLI usage:
+
+    npx det-agent help
+
+Validated from the public npm package:
+
+    npx det-agent help
+    npx det-agent backup -KeepLast 1
+
+NPM dist-tag:
+
+    latest: 0.5.1
+
 ## Current recommendation
 
-The package is ready for a publication decision, but npm publication should remain a separate explicit release step.
+The package has been published to npm as deterministic-agent-system@0.5.1. Future npm releases should remain explicit versioned release steps.
