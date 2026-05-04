@@ -430,6 +430,46 @@ describe("whatsapp webhook handler", () => {
     expect(json.results[0].session.businessContextId).toBe("customer-service-payment-audit-v1");
   });
 
+  it("returns insurance coverage lookup response through whatsapp webhook", async () => {
+    const res = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-coverage-001",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        businessContextId: "customer-service-core-v2",
+        bodyText: buildInboundBody("wamid.coverage.001", "Coverage details for POL-AUTO-1001"),
+      }
+    );
+
+    const json = JSON.parse(res.getBody());
+
+    expect(res.statusCode).toBe(200);
+    expect(json.ok).toBe(true);
+    expect(json.messagesReceived).toBe(1);
+    expect(json.results[0].duplicate).toBe(false);
+    expect(json.results[0].agent).toEqual(
+      expect.objectContaining({
+        responseId: "consult-coverage-resolved",
+        resolvedIntentId: "consult-coverage",
+        stage: "resolve-coverage",
+        status: "resolved",
+        humanInterventionRequired: false,
+      })
+    );
+    expect(json.results[0].agent.outboundText).toContain("Policy NMA-****-1001 for Maria Alvarez");
+    expect(json.results[0].agent.outboundText).toContain("Carrier: Northwind Mutual Auto");
+    expect(json.results[0].agent.outboundText).toContain("Selected coverages: 7 of 8");
+    expect(json.results[0].agent.outboundText).toContain("- Collision: selected. Limits: covered vehicle actual cash value subject to policy terms. Deductible: $500.");
+    expect(json.results[0].session.businessContextId).toBe("customer-service-core-v2");
+  });
   it("rejects invalid JSON POST bodies", async () => {
     const res = createMockResponse();
 
