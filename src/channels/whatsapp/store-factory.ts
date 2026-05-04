@@ -1,9 +1,23 @@
-import { parsePostgresPoolConfig, type PostgresPoolConfigInput } from "../../storage/postgres-config";
+import {
+  parsePostgresPoolConfig,
+  type PostgresPoolConfig,
+  type PostgresPoolConfigInput,
+} from "../../storage/postgres-config";
+import { applyPostgresMigrations } from "../../storage/postgres-migrations";
+import {
+  createPostgresPool,
+  type DeterministicPostgresPool,
+} from "../../storage/postgres-pool";
 import {
   createInMemoryWhatsAppStore,
   type InMemoryWhatsAppStoreOptions,
   type WhatsAppStore,
 } from "./store";
+import {
+  adaptSyncWhatsAppStoreToAsync,
+  type AsyncWhatsAppStore,
+} from "./store-async";
+import { createPostgresWhatsAppStore } from "./store-postgres";
 import { createSqliteWhatsAppStore, type SqliteWhatsAppStore } from "./store-sqlite";
 
 export type WhatsAppStoreBackend = "memory" | "sqlite" | "postgres";
@@ -84,4 +98,63 @@ export function createWhatsAppStore(options: WhatsAppStoreFactoryOptions): Creat
 
   parsePostgresPoolConfig(options.postgres ?? {});
   throw new Error("postgres whatsapp store is not implemented yet");
+}
+
+export interface AsyncWhatsAppStoreFactoryOptions extends WhatsAppStoreFactoryOptions {
+  readonly migrationAppliedAtIso?: string;
+  readonly processedAtIso?: string;
+  readonly createPool?: (config: PostgresPoolConfig) => DeterministicPostgresPool;
+}
+
+export interface CreatedAsyncWhatsAppStore {
+  readonly backend: WhatsAppStoreBackend;
+  readonly store: AsyncWhatsAppStore;
+  close(): Promise<void>;
+}
+
+export async function createAsyncWhatsAppStore(
+  options: AsyncWhatsAppStoreFactoryOptions
+): Promise<CreatedAsyncWhatsAppStore> {
+  const backend = parseWhatsAppStoreBackend(options.backend);
+
+  if (backend === "memory" || backend === "sqlite") {
+    const created = createWhatsAppStore(options);
+
+    return {
+      backend,
+      store: adaptSyncWhatsAppStoreToAsync(created.store),
+      async close(): Promise<void> {
+        created.close();
+      },
+    };
+  }
+
+  const businessContextId = readRequiredString(options.businessContextId, "businessContextId");
+  const config = parsePostgresPoolConfig(options.postgres ?? {});
+  const pool = options.createPool ? options.createPool(config) : createPostgresPool({ config });
+
+  try {
+    await applyPostgresMigrations(
+      pool,
+      options.migrationAppliedAtIso ?? "2026-03-24T00:00:00.000Z"
+    );
+  } catch (error) {
+    await pool.close();
+    throw error;
+  }
+
+  const store = createPostgresWhatsAppStore({
+    pool,
+    businessContextId,
+    sessionIdPrefix: options.sessionIdPrefix,
+    processedAtIso: options.processedAtIso,
+  });
+
+  return {
+    backend,
+    store,
+    async close(): Promise<void> {
+      await store.close();
+    },
+  };
 }
