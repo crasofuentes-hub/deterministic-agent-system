@@ -312,4 +312,26 @@ describe("customer-service-api", () => {
       handoffQueue: undefined,
     });
   });
+
+  it("returns real policy coverage lookup output for the insurance brokerage context", () => {
+    const result = runCustomerServiceApi({
+      sessionId: "CS-COV-REAL-001",
+      businessContextId: "customer-service-core-v2",
+      userMessageText: "Coverage details for POL-AUTO-1001",
+    });
+
+    expect(result.sessionId).toBe("CS-COV-REAL-001");
+    expect(result.businessContextId).toBe("customer-service-core-v2");
+    expect(result.resolvedIntentId).toBe("consult-coverage");
+    expect(result.responseId).toBe("consult-coverage-resolved");
+    expect(result.stage).toBe("resolve-coverage");
+    expect(result.status).toBe("resolved");
+    expect(result.humanInterventionRequired).toBe(false);
+    expect(result.handoffReasonCode).toBeUndefined();
+    expect(result.handoffQueue).toBeUndefined();
+    expect(result.responseText).toContain("Policy NMA-****-1001 for Maria Alvarez");
+    expect(result.responseText).toContain("Carrier: Northwind Mutual Auto");
+    expect(result.responseText).toContain("Selected coverages: 7 of 8");
+    expect(result.responseText).toContain("- Collision: selected. Limits: covered vehicle actual cash value subject to policy terms. Deductible: $500.");
+  });
 });
