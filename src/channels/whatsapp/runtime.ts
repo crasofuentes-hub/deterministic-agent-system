@@ -1,10 +1,10 @@
 import { createMockWhatsAppSender, type WhatsAppSender } from "./client";
 import { createHttpWhatsAppSender, type WhatsAppHttpFetch } from "./send-http";
-import { createInMemoryWhatsAppStore, type WhatsAppStore } from "./store";
-import { createSqliteWhatsAppStore } from "./store-sqlite";
+import type { WhatsAppStore } from "./store";
+import { createWhatsAppStore, type WhatsAppStoreBackend } from "./store-factory";
 
 export type WhatsAppDeliveryMode = "skipped" | "mock" | "http";
-export type WhatsAppStoreMode = "memory" | "sqlite";
+export type WhatsAppStoreMode = WhatsAppStoreBackend;
 
 export interface WhatsAppRuntimeConfig {
   verifyToken: string;
@@ -41,8 +41,8 @@ export function resolveWhatsAppRuntime(
 
   const storeMode = readTrimmedNonEmpty(params.env, "WHATSAPP_STORE_MODE") ?? "memory";
 
-  if (storeMode !== "memory" && storeMode !== "sqlite") {
-    throw new Error("WHATSAPP_STORE_MODE must be one of: memory, sqlite");
+  if (storeMode !== "memory" && storeMode !== "sqlite" && storeMode !== "postgres") {
+    throw new Error("WHATSAPP_STORE_MODE must be one of: memory, sqlite, postgres");
   }
 
   const businessContextId =
@@ -51,24 +51,28 @@ export function resolveWhatsAppRuntime(
   const sessionIdPrefix =
     readTrimmedNonEmpty(params.env, "WHATSAPP_SESSION_ID_PREFIX") ?? "whatsapp-session";
 
-  const store =
-    storeMode === "memory"
-      ? createInMemoryWhatsAppStore({
-          businessContextId,
-          sessionIdPrefix,
-        })
-      : (() => {
-          const dbPath = readTrimmedNonEmpty(params.env, "WHATSAPP_SQLITE_PATH");
-          if (!dbPath) {
-            throw new Error("WHATSAPP_SQLITE_PATH is required for sqlite store mode");
-          }
+  const sqliteDbPath =
+    storeMode === "sqlite" ? readTrimmedNonEmpty(params.env, "WHATSAPP_SQLITE_PATH") : undefined;
 
-          return createSqliteWhatsAppStore({
-            dbPath,
-            businessContextId,
-            sessionIdPrefix,
-          });
-        })();
+  if (storeMode === "sqlite" && !sqliteDbPath) {
+    throw new Error("WHATSAPP_SQLITE_PATH is required for sqlite store mode");
+  }
+
+  const createdStore = createWhatsAppStore({
+    backend: storeMode,
+    businessContextId,
+    sessionIdPrefix,
+    sqliteDbPath,
+    postgres: {
+      DATABASE_URL: readTrimmedNonEmpty(params.env, "DATABASE_URL"),
+      POSTGRES_POOL_MAX: readTrimmedNonEmpty(params.env, "POSTGRES_POOL_MAX"),
+      POSTGRES_IDLE_TIMEOUT_MS: readTrimmedNonEmpty(params.env, "POSTGRES_IDLE_TIMEOUT_MS"),
+      POSTGRES_CONNECTION_TIMEOUT_MS: readTrimmedNonEmpty(params.env, "POSTGRES_CONNECTION_TIMEOUT_MS"),
+      POSTGRES_STATEMENT_TIMEOUT_MS: readTrimmedNonEmpty(params.env, "POSTGRES_STATEMENT_TIMEOUT_MS"),
+    },
+  });
+
+  const store = createdStore.store;
 
   const deliveryMode = readTrimmedNonEmpty(params.env, "WHATSAPP_DELIVERY_MODE") ?? "skipped";
 

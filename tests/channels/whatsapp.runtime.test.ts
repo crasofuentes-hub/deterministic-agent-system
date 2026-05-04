@@ -163,7 +163,7 @@ describe("whatsapp runtime", () => {
           WHATSAPP_STORE_MODE: "banana",
         },
       })
-    ).toThrow("WHATSAPP_STORE_MODE must be one of: memory, sqlite");
+    ).toThrow("WHATSAPP_STORE_MODE must be one of: memory, sqlite, postgres");
   });
 
   it("rejects incomplete sqlite configuration", () => {
@@ -177,6 +177,28 @@ describe("whatsapp runtime", () => {
     ).toThrow("WHATSAPP_SQLITE_PATH is required for sqlite store mode");
   });
 
+  it("validates postgres store configuration before adapter creation", () => {
+    expect(() =>
+      resolveWhatsAppRuntime({
+        env: {
+          WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+          WHATSAPP_STORE_MODE: "postgres",
+        },
+      })
+    ).toThrow("DATABASE_URL must be a non-empty string");
+  });
+
+  it("keeps postgres store mode explicit until adapter is implemented", () => {
+    expect(() =>
+      resolveWhatsAppRuntime({
+        env: {
+          WHATSAPP_VERIFY_TOKEN: "verify-token-001",
+          WHATSAPP_STORE_MODE: "postgres",
+          DATABASE_URL: "postgres://user:pass@localhost:5432/deterministic_agent_system",
+        },
+      })
+    ).toThrow("postgres whatsapp store is not implemented yet");
+  });
   it("rejects incomplete http configuration", () => {
     expect(() =>
       resolveWhatsAppRuntime({
