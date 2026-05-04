@@ -1,0 +1,85 @@
+{
+  "policies": [
+    {
+      "policyId": "POL-AUTO-1001",
+      "customerId": "CUS-INS-1001",
+      "carrierName": "Northwind Mutual Auto",
+      "lineOfBusiness": "personal-auto",
+      "policyNumberMasked": "NMA-****-1001",
+      "effectiveDate": "2026-01-15",
+      "expirationDate": "2026-07-15",
+      "stateCode": "CA",
+      "namedInsured": "Maria Alvarez",
+      "vehicles": [
+        {
+          "vehicleId": "VEH-1001",
+          "year": 2021,
+          "make": "Toyota",
+          "model": "Camry",
+          "vinLast4": "4821"
+        }
+      ],
+      "coverages": [
+        {
+          "code": "bodily-injury-liability",
+          "selected": true,
+          "limits": [
+            { "label": "per person", "value": "$50,000" },
+            { "label": "per accident", "value": "$100,000" }
+          ]
+        },
+        {
+          "code": "property-damage-liability",
+          "selected": true,
+          "limits": [
+            { "label": "per accident", "value": "$50,000" }
+          ]
+        },
+        {
+          "code": "collision",
+          "selected": true,
+          "deductible": "$500",
+          "limits": [
+            { "label": "covered vehicle", "value": "actual cash value subject to policy terms" }
+          ]
+        },
+        {
+          "code": "comprehensive",
+          "selected": true,
+          "deductible": "$500",
+          "limits": [
+            { "label": "covered vehicle", "value": "actual cash value subject to policy terms" }
+          ]
+        },
+        {
+          "code": "uninsured-motorist-bodily-injury",
+          "selected": true,
+          "limits": [
+            { "label": "per person", "value": "$50,000" },
+            { "label": "per accident", "value": "$100,000" }
+          ]
+        },
+        {
+          "code": "medical-payments",
+          "selected": true,
+          "limits": [
+            { "label": "per person", "value": "$5,000" }
+          ]
+        },
+        {
+          "code": "rental-reimbursement",
+          "selected": true,
+          "limits": [
+            { "label": "daily", "value": "$40" },
+            { "label": "maximum", "value": "$1,200" }
+          ]
+        },
+        {
+          "code": "roadside-assistance",
+          "selected": false,
+          "limits": []
+        }
+      ]
+    }
+  ]
+}
