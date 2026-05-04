@@ -13,6 +13,7 @@ import {
   listPaymentAuditRecordsByPolicyId,
 } from "../data-layer/payment-audit-repository";
 import { findProductByName } from "../data-layer/product-repository";
+import { askInsuranceCoverageQuestion } from "../insurance/coverage-query-facade";
 import { extractEntitiesFromText } from "../entity-extractor/entity-extractor";
 import { resolveIntentFromTextForContext } from "../intent-resolver/intent-resolver";
 import type { SessionState } from "../session-state/session-state";
@@ -244,7 +245,7 @@ function sanitizePolicyIdCandidate(value: string): string | undefined {
     return undefined;
   }
 
-  if (!/^POL-[A-Z0-9]+$/.test(cleaned)) {
+  if (!/^POL-[A-Z0-9-]+$/.test(cleaned)) {
     return undefined;
   }
 
@@ -258,7 +259,7 @@ function sanitizeCustomerIdCandidate(value: string): string | undefined {
     return undefined;
   }
 
-  if (!/^CUS-[A-Z0-9]+$/.test(cleaned)) {
+  if (!/^CUS-[A-Z0-9-]+$/.test(cleaned)) {
     return undefined;
   }
 
@@ -349,6 +350,10 @@ function getAllowedEntityIdsForIntent(intentId: string): string[] {
 
   if (intentId === "consult-policy") {
     return ["policyTopic", "policyAspect"];
+  }
+
+  if (intentId === "consult-coverage") {
+    return ["productName", "policyId", "customerId"];
   }
 
   if (intentId === "consult-payment-status") {
@@ -518,6 +523,16 @@ function buildResolvedResponse(
   session: SessionState
 ): string | undefined {
   if (resolvedIntentId === "consult-coverage") {
+    const policyId = sanitizePolicyIdCandidate(findEntityValue(session, "policyId") ?? "");
+    const customerId = sanitizeCustomerIdCandidate(findEntityValue(session, "customerId") ?? "");
+
+    if (policyId || customerId) {
+      return askInsuranceCoverageQuestion({
+        policyId,
+        customerId,
+      }).text;
+    }
+
     const rawProductName = findEntityValue(session, "productName") ?? "";
     const normalizedCoverage = String(rawProductName)
       .normalize("NFC")

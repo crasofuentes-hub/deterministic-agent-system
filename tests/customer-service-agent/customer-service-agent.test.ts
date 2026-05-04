@@ -424,6 +424,39 @@ describe("customer-service-agent", () => {
     );
   });
 
+  it("returns real policy coverage details when policy id is provided", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-028A",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "Coverage details for POL-AUTO-1001",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-coverage");
+    expect(result.responseId).toBe("consult-coverage-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toContain("Policy NMA-****-1001 for Maria Alvarez");
+    expect(result.responseText).toContain("Selected coverages: 7 of 8");
+    expect(result.responseText).toContain("- Collision: selected. Limits: covered vehicle actual cash value subject to policy terms. Deductible: $500.");
+  });
+
+  it("returns real policy coverage details when customer id is provided", () => {
+    const result = runCustomerServiceAgent({
+      session: createInitialSessionState({
+        sessionId: "S-028B",
+        businessContextId: "customer-service-core-v2",
+      }),
+      userMessageText: "Coverage details for customer CUS-INS-1001",
+    });
+
+    expect(result.resolvedIntentId).toBe("consult-coverage");
+    expect(result.responseId).toBe("consult-coverage-resolved");
+    expect(result.status).toBe("resolved");
+    expect(result.responseText).toContain("Policy NMA-****-1001 for Maria Alvarez");
+    expect(result.responseText).toContain("Carrier: Northwind Mutual Auto");
+  });
+
   it("requests state when quote product is present but state is missing", () => {
     const result = runCustomerServiceAgent({
       session: createInitialSessionState({
