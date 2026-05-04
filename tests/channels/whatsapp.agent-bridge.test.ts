@@ -189,6 +189,36 @@ describe("whatsapp agent bridge", () => {
       handoffQueue: "billing-specialist",
     });
   });
+  it("keeps insurance coverage lookup parity across whatsapp bridge flow", () => {
+    const result = runWhatsAppCustomerServiceBridge({
+      session: createInitialSessionState({
+        sessionId: "WA-COVERAGE-001",
+        businessContextId: "customer-service-core-v2",
+      }),
+      message: createMessage("Coverage details for POL-AUTO-1001", "wamid.coverage.001"),
+    });
+
+    expect(result.output).toEqual(
+      expect.objectContaining({
+        channel: "whatsapp",
+        customerId: "5215512345678",
+        inboundMessageId: "wamid.coverage.001",
+        inboundTraceId: "whatsapp:wamid.coverage.001",
+        whatsappPhoneNumberId: "phone-number-id-001",
+        profileName: "Oscar Cliente",
+        responseId: "consult-coverage-resolved",
+        resolvedIntentId: "consult-coverage",
+        stage: "resolve-coverage",
+        status: "resolved",
+        humanInterventionRequired: false,
+      })
+    );
+
+    expect(result.output.outboundText).toContain("Policy NMA-****-1001 for Maria Alvarez");
+    expect(result.output.outboundText).toContain("Carrier: Northwind Mutual Auto");
+    expect(result.output.outboundText).toContain("Selected coverages: 7 of 8");
+    expect(result.output.outboundText).toContain("Collision: selected");
+  });
   it("keeps quote intake parity across whatsapp multi-turn flow", () => {
     const first = runWhatsAppCustomerServiceBridge({
       session: createInitialSessionState({
