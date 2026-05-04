@@ -663,6 +663,55 @@ describe("whatsapp webhook handler", () => {
     });
   });
 
+  it("persists insurance coverage evidence after whatsapp webhook lookup", async () => {
+    const store = createInMemoryWhatsAppStore({
+      businessContextId: "customer-service-core-v2",
+    });
+
+    const res = createMockResponse();
+
+    await handleWhatsAppWebhook(
+      {
+        method: "POST",
+        headers: {
+          host: "localhost:3000",
+          "x-request-id": "req-whatsapp-coverage-evidence-001",
+        },
+      } as any,
+      res as any,
+      {
+        verifyToken: "token-123",
+        store,
+        bodyText: buildInboundBody("wamid.coverage.evidence.001", "Coverage details for POL-AUTO-1001"),
+      }
+    );
+
+    const evidence = store.loadEvidence("5215512345678");
+
+    expect(evidence).toEqual(
+      expect.objectContaining({
+        customerId: "5215512345678",
+        lastInboundMessageId: "wamid.coverage.evidence.001",
+        lastResponseId: "consult-coverage-resolved",
+        lastResolvedIntentId: "consult-coverage",
+        lastStage: "resolve-coverage",
+        lastStatus: "resolved",
+        humanInterventionRequired: false,
+        handoffReasonCode: undefined,
+        handoffQueue: undefined,
+        updatedAtIso: "2026-03-24T00:00:00.000Z",
+      })
+    );
+
+    if (!evidence) {
+      throw new Error("Expected coverage evidence to be persisted");
+    }
+
+    expect(evidence.lastOutboundText).toContain("Policy NMA-****-1001 for Maria Alvarez");
+    expect(evidence.lastOutboundText).toContain("Carrier: Northwind Mutual Auto");
+    expect(evidence.lastOutboundText).toContain("Selected coverages: 7 of 8");
+    expect(evidence.lastOutboundText).toContain("- Collision: selected. Limits: covered vehicle actual cash value subject to policy terms. Deductible: $500.");
+  });
   it("persists conversation evidence after a resolved whatsapp message", async () => {
     const store = createInMemoryWhatsAppStore({
       businessContextId: "customer-service-core-v2",
