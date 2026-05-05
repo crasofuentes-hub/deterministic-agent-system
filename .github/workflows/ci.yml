@@ -34,13 +34,18 @@ jobs:
       - name: Contractual baseline tests
         run: npm run test:baseline:contractual
 
+
+      - name: LLM live contractual tests
+        run: npm run test:llm-live:contractual
       - name: Publish contractual baseline summary
         shell: pwsh
         run: |
           "## Contractual baseline" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
           "- Build: ``npm run build``" >> $env:GITHUB_STEP_SUMMARY
-          "- Tests: ``npm run test:baseline:contractual``" >> $env:GITHUB_STEP_SUMMARY
+          "- Tests: `npm run test:baseline:contractual`
+          - LLM/live hardening: `npm run test:llm-live:contractual`
+- LLM/live hardening: ``npm run test:llm-live:contractual``" >> $env:GITHUB_STEP_SUMMARY
           "- Current verified baseline: **28 test files / 262 tests**" >> $env:GITHUB_STEP_SUMMARY
           "- Storage milestone: Postgres + pooling foundation, async WhatsApp runtime, async WhatsApp webhook handler" >> $env:GITHUB_STEP_SUMMARY
       - name: Replay tests
