@@ -126,6 +126,19 @@ describe("server async whatsapp runtime", () => {
     }
   });
 
+  it("rejects async postgres runtime when database url is missing", async () => {
+    process.env.WHATSAPP_VERIFY_TOKEN = "token-123";
+    process.env.WHATSAPP_RUNTIME_MODE = "async";
+    process.env.WHATSAPP_STORE_MODE = "postgres";
+    delete process.env.DATABASE_URL;
+
+    await expect(
+      startServer({
+        port: 0,
+        host: "127.0.0.1",
+      })
+    ).rejects.toThrow("DATABASE_URL must be a non-empty string");
+  });
   it("rejects invalid whatsapp runtime mode during startup", async () => {
     process.env.WHATSAPP_VERIFY_TOKEN = "token-123";
     process.env.WHATSAPP_RUNTIME_MODE = "banana";
