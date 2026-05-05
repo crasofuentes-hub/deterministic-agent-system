@@ -9,12 +9,6 @@
   },
   "files": [
     "dist/",
-    "scripts/backup-live-pilot-sqlite.ps1",
-    "scripts/check-whatsapp-handoffs.ps1",
-    "scripts/smoke-live-pilot.ps1",
-    "scripts/snapshot-live-pilot-ops.ps1",
-    "scripts/start-live-pilot.ps1",
-    "scripts/live-pilot.env.ps1.example",
     "LICENSE",
     "README.md",
     "package.json"
@@ -43,7 +37,7 @@
     "test:replay": "node tests/agent.replay.e2e.test.js",
     "verify": "npm run verify:bootstrap && npm run verify:contracts",
     "build": "tsc -p tsconfig.scripts.json",
-    "verify:pack": "powershell -ExecutionPolicy Bypass -File .\\scripts\\verify-pack.ps1",
+    "verify:pack": "npm run build && node dist/src/scripts/verify-pack.js",
     "verify:contracts": "node dist/scripts/verify-contract.js",
     "demo:determinism": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\demo-determinism.ps1 -Runs 5",
     "demo:tools": "node -e \"(async()=>{const {startServer}=require('./dist/src/http/server');const r=await startServer({port:0});const base='http://127.0.0.1:'+r.port;const res=await fetch(base+'/tools');console.log(await res.text());await r.close();})().catch(e=>{console.error(e);process.exit(1);});\"",

@@ -135,3 +135,12 @@ NPM command: npm run smoke:whatsapp:postgres
 Windows wrapper: scripts/smoke-async-postgres-whatsapp.ps1
 Removed duplicate CJS source: scripts/smoke-async-postgres-whatsapp.cjs
 ```
+
+### Verify pack
+
+```text
+Source of truth: src/scripts/verify-pack.ts
+NPM command: npm run verify:pack
+Windows wrapper: scripts/verify-pack.ps1
+Package policy: published tarball must not include package/scripts/*
+```
