@@ -63,7 +63,7 @@
     "test:demo:payment-audit": "node tests/demo.payment-audit.test.js",
     "cli": "node ./dist/src/cli/main.js",
     "smoke:whatsapp:postgres": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-async-postgres-whatsapp.ps1",
-    "test:llm-live:contractual": "npm run build && node tests/planner.llm-live.parse.test.js && node tests/http.agent-run.llm-live.test.js && node tests/http.agent-run.llm-live.normalize.test.js && node tests/http.agent-run.llm-live.extract.test.js && node tests/http.agent-run.llm-live.extract-chain.test.js && node tests/http.agent-run.llm-live.extract-merge.test.js && node tests/http.agent-run.llm-live.openai-compatible.stub.test.js && node tests/http.agent-run.llm-live.openai-compatible.config.test.js && node tests/http.agent-run.llm-live.cap-synth.test.js && node tests/demo.llm-live-real.test.js"
+    "test:llm-live:contractual": "npm run build && node tests/planner.llm-live.parse.test.js && node tests/http.agent-run.llm-live.test.js && node tests/http.agent-run.llm-live.normalize.test.js && node tests/http.agent-run.llm-live.extract.test.js && node tests/http.agent-run.llm-live.extract-chain.test.js && node tests/http.agent-run.llm-live.extract-merge.test.js && node tests/http.agent-run.llm-live.openai-compatible.stub.test.js && node tests/http.agent-run.llm-live.openai-compatible.config.test.js && node tests/http.agent-run.llm-live.openai-compatible.invalid-plan-text.test.js && node tests/http.agent-run.llm-live.cap-synth.test.js && node tests/demo.llm-live-real.test.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
