@@ -1,5 +1,20 @@
 # Deterministic Agent System
 
+<!-- CURRENT_VERIFIED_BASELINE_START -->
+
+## Current verified baseline
+
+This repository currently tracks a contractual baseline that is verified locally and in GitHub Actions.
+
+- Build command: `npm run build`
+- Contractual test command: `npm run test:baseline:contractual`
+- Current verified baseline: **26 test files / 256 tests**
+- Latest storage milestone: **Postgres + pooling foundation**
+- Latest WhatsApp milestone: **async WhatsApp runtime + async WhatsApp webhook handler**
+- Current persistence path: deterministic config -> pg driver -> pool wrapper -> migrations -> async store contract -> Postgres WhatsApp store adapter -> async factory -> async runtime -> async webhook handler
+
+<!-- CURRENT_VERIFIED_BASELINE_END -->
+
 ## Install from npm
 
 The package is published on npm as:
