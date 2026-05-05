@@ -31,6 +31,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Contractual baseline tests
+        run: npm run test:baseline:contractual
+
+      - name: Publish contractual baseline summary
+        shell: pwsh
+        run: |
+          "## Contractual baseline" >> $env:GITHUB_STEP_SUMMARY
+          "" >> $env:GITHUB_STEP_SUMMARY
+          "- Build: ``npm run build``" >> $env:GITHUB_STEP_SUMMARY
+          "- Tests: ``npm run test:baseline:contractual``" >> $env:GITHUB_STEP_SUMMARY
+          "- Current verified baseline: **26 test files / 256 tests**" >> $env:GITHUB_STEP_SUMMARY
+          "- Storage milestone: Postgres + pooling foundation, async WhatsApp runtime, async WhatsApp webhook handler" >> $env:GITHUB_STEP_SUMMARY
       - name: Replay tests
         run: npm run test:replay
 
