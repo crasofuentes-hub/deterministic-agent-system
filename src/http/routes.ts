@@ -30,8 +30,11 @@ import {
 import { validateExecuteRequest } from "./request-validate";
 import type { JsonObject } from "../tools";
 import { handleWhatsAppWebhook } from "./handlers/whatsapp-webhook";
+import { handleAsyncWhatsAppWebhook } from "./handlers/whatsapp-webhook-async";
 import type { WhatsAppRuntimeConfig } from "../channels/whatsapp/runtime";
+import type { AsyncWhatsAppRuntimeConfig } from "../channels/whatsapp/runtime-async";
 import type { WhatsAppStore } from "../channels/whatsapp/store";
+import type { AsyncWhatsAppStore } from "../channels/whatsapp/store-async";
 import { handleListWhatsAppHandoffs } from "./handlers/whatsapp-handoffs";
 import { handleCloseWhatsAppHandoff } from "./handlers/whatsapp-handoff-close";
 import { requireOpsToken } from "./handlers/ops-auth";
@@ -405,6 +408,8 @@ const ALLOWED_PUBLIC_PATHS = new Set<string>([
 export interface RouteRuntimeOptions {
   whatsappRuntime?: WhatsAppRuntimeConfig;
   whatsappStore?: WhatsAppStore;
+  asyncWhatsAppRuntime?: AsyncWhatsAppRuntimeConfig;
+  asyncWhatsAppStore?: AsyncWhatsAppStore;
 }
 
 export async function routeRequest(
@@ -582,13 +587,25 @@ export async function routeRequest(
 
     if (url === "/webhooks/whatsapp" && method === "GET") {
       withRequestId(res, requestId);
-      await handleWhatsAppWebhook(req, res, {
-        verifyToken: runtimeOptions.whatsappRuntime?.verifyToken ?? "",
-        deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
-        sender: runtimeOptions.whatsappRuntime?.sender,
-        store: runtimeOptions.whatsappStore,
-        appSecret: process.env.WHATSAPP_APP_SECRET,
-      });
+
+      if (runtimeOptions.asyncWhatsAppRuntime || runtimeOptions.asyncWhatsAppStore) {
+        await handleAsyncWhatsAppWebhook(req, res, {
+          verifyToken: runtimeOptions.asyncWhatsAppRuntime?.verifyToken ?? "",
+          deliveryMode: runtimeOptions.asyncWhatsAppRuntime?.deliveryMode,
+          sender: runtimeOptions.asyncWhatsAppRuntime?.sender,
+          store: runtimeOptions.asyncWhatsAppStore ?? runtimeOptions.asyncWhatsAppRuntime?.store,
+          appSecret: process.env.WHATSAPP_APP_SECRET,
+        });
+      } else {
+        await handleWhatsAppWebhook(req, res, {
+          verifyToken: runtimeOptions.whatsappRuntime?.verifyToken ?? "",
+          deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
+          sender: runtimeOptions.whatsappRuntime?.sender,
+          store: runtimeOptions.whatsappStore,
+          appSecret: process.env.WHATSAPP_APP_SECRET,
+        });
+      }
+
       logEnd(req, res, requestId, startedAt);
       return;
     }
@@ -756,14 +773,27 @@ export async function routeRequest(
       }
 
       withRequestId(res, requestId);
-      await handleWhatsAppWebhook(req, res, {
-        verifyToken: runtimeOptions.whatsappRuntime?.verifyToken ?? "",
-        bodyText: raw,
-        deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
-        sender: runtimeOptions.whatsappRuntime?.sender,
-        store: runtimeOptions.whatsappStore,
-        appSecret: process.env.WHATSAPP_APP_SECRET,
-      });
+
+      if (runtimeOptions.asyncWhatsAppRuntime || runtimeOptions.asyncWhatsAppStore) {
+        await handleAsyncWhatsAppWebhook(req, res, {
+          verifyToken: runtimeOptions.asyncWhatsAppRuntime?.verifyToken ?? "",
+          bodyText: raw,
+          deliveryMode: runtimeOptions.asyncWhatsAppRuntime?.deliveryMode,
+          sender: runtimeOptions.asyncWhatsAppRuntime?.sender,
+          store: runtimeOptions.asyncWhatsAppStore ?? runtimeOptions.asyncWhatsAppRuntime?.store,
+          appSecret: process.env.WHATSAPP_APP_SECRET,
+        });
+      } else {
+        await handleWhatsAppWebhook(req, res, {
+          verifyToken: runtimeOptions.whatsappRuntime?.verifyToken ?? "",
+          bodyText: raw,
+          deliveryMode: runtimeOptions.whatsappRuntime?.deliveryMode,
+          sender: runtimeOptions.whatsappRuntime?.sender,
+          store: runtimeOptions.whatsappStore,
+          appSecret: process.env.WHATSAPP_APP_SECRET,
+        });
+      }
+
       logEnd(req, res, requestId, startedAt);
       return;
     }
