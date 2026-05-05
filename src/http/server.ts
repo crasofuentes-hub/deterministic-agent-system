@@ -5,11 +5,14 @@ import {
   resolveAsyncWhatsAppRuntime,
   type AsyncWhatsAppRuntimeConfig,
 } from "../channels/whatsapp/runtime-async";
+import type { PostgresPoolConfig } from "../storage/postgres-config";
+import type { DeterministicPostgresPool } from "../storage/postgres-pool";
 import { routeRequest } from "./routes";
 
 export interface StartServerOptions {
   port?: number;
   host?: string;
+  createPostgresPool?: (config: PostgresPoolConfig) => DeterministicPostgresPool;
 }
 
 export interface RunningServer {
@@ -32,7 +35,7 @@ function readRuntimeMode(): "sync" | "async" {
   throw new Error("WHATSAPP_RUNTIME_MODE must be one of: sync, async");
 }
 
-async function tryResolveWhatsAppRuntimes(): Promise<{
+async function tryResolveWhatsAppRuntimes(options: Pick<StartServerOptions, "createPostgresPool">): Promise<{
   whatsappRuntime?: WhatsAppRuntimeConfig;
   asyncWhatsAppRuntime?: AsyncWhatsAppRuntimeConfig;
 }> {
@@ -56,6 +59,7 @@ async function tryResolveWhatsAppRuntimes(): Promise<{
       asyncWhatsAppRuntime: await resolveAsyncWhatsAppRuntime({
         env: process.env as Record<string, string | undefined>,
         fetchImpl,
+        createPostgresPool: options.createPostgresPool,
       }),
     };
   }
@@ -72,7 +76,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Run
   const host = options.host ?? "127.0.0.1";
   const port = typeof options.port === "number" ? options.port : 3000;
 
-  const { whatsappRuntime, asyncWhatsAppRuntime } = await tryResolveWhatsAppRuntimes();
+  const { whatsappRuntime, asyncWhatsAppRuntime } = await tryResolveWhatsAppRuntimes(options);
 
   const server = createServer((req, res) => {
     void routeRequest(req, res, {
