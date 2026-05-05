@@ -8,7 +8,7 @@ This repository currently tracks a contractual baseline that is verified locally
 
 - Build command: `npm run build`
 - Contractual test command: `npm run test:baseline:contractual`
-- Current verified baseline: **26 test files / 256 tests**
+- Current verified baseline: **27 test files / 258 tests**
 - Latest storage milestone: **Postgres + pooling foundation**
 - Latest WhatsApp milestone: **async WhatsApp runtime + async WhatsApp webhook handler**
 - Current persistence path: deterministic config -> pg driver -> pool wrapper -> migrations -> async store contract -> Postgres WhatsApp store adapter -> async factory -> async runtime -> async webhook handler
