@@ -41,7 +41,7 @@ jobs:
           "" >> $env:GITHUB_STEP_SUMMARY
           "- Build: ``npm run build``" >> $env:GITHUB_STEP_SUMMARY
           "- Tests: ``npm run test:baseline:contractual``" >> $env:GITHUB_STEP_SUMMARY
-          "- Current verified baseline: **27 test files / 258 tests**" >> $env:GITHUB_STEP_SUMMARY
+          "- Current verified baseline: **28 test files / 260 tests**" >> $env:GITHUB_STEP_SUMMARY
           "- Storage milestone: Postgres + pooling foundation, async WhatsApp runtime, async WhatsApp webhook handler" >> $env:GITHUB_STEP_SUMMARY
       - name: Replay tests
         run: npm run test:replay
