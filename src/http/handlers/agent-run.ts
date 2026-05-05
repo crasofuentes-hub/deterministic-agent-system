@@ -165,6 +165,44 @@ function attachDomainResult(result: unknown): unknown {
   return enriched;
 }
 
+function normalizeLlmLivePlannerError(error: unknown): JsonObject | undefined {
+  const message = error instanceof Error ? error.message.trim() : String(error ?? "").trim();
+
+  if (message === "llm_live_not_configured") {
+    return {
+      ok: false,
+      error: {
+        code: "LLM_LIVE_NOT_CONFIGURED",
+        message: "llm_live_not_configured",
+        retryable: false,
+      },
+    };
+  }
+
+  if (message === "llm_live_requires_async_planner") {
+    return {
+      ok: false,
+      error: {
+        code: "LLM_LIVE_REQUIRES_ASYNC_PLANNER",
+        message: "llm_live_requires_async_planner",
+        retryable: false,
+      },
+    };
+  }
+
+  if (message.startsWith("llm_live_invalid_plan_text:")) {
+    return {
+      ok: false,
+      error: {
+        code: "LLM_LIVE_INVALID_PLAN_TEXT",
+        message,
+        retryable: false,
+      },
+    };
+  }
+
+  return undefined;
+}
 export async function handleAgentRun(res: ServerResponse, body: JsonObject): Promise<void> {
   const parsed = parseAgentRunInput(body);
   if (!parsed.ok) {
@@ -199,7 +237,15 @@ export async function handleAgentRun(res: ServerResponse, body: JsonObject): Pro
     const planner = selectPlanner(parsed.value.planner);
     const result = await runAgent(parsed.value, planner);
     sendJson(res, 200, attachDomainResult(result) as JsonObject);
-  } catch (_err) {
+  } catch (err) {
+    const llmLiveError =
+      parsed.value.planner === "llm-live" ? normalizeLlmLivePlannerError(err) : undefined;
+
+    if (llmLiveError) {
+      sendJson(res, 200, llmLiveError);
+      return;
+    }
+
     sendInternalError(res);
   }
 }

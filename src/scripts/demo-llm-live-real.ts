@@ -111,6 +111,8 @@ async function main(): Promise<void> {
     }
 
     if (!isObject(r.json) || r.json.ok !== true || !isObject(r.json.result)) {
+      const errObj = isObject(r.json) && isObject(r.json.error) ? r.json.error : {};
+
       const failure = {
         ok: false,
         goal: body.goal,
@@ -120,6 +122,8 @@ async function main(): Promise<void> {
         usedStubPlanText: typeof body.llmPlanText === "string",
         safeEvidence,
         status: r.status,
+        errorCode: errObj.code ?? null,
+        errorMessage: errObj.message ?? null,
         body: r.json,
       };
 

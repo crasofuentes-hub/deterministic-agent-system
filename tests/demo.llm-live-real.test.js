@@ -90,5 +90,5 @@ test("demo llm-live real prints safeEvidence for unconfigured real-provider path
   assert.equal(json.safeEvidence.providerConfigPresent, false);
   assert.equal(json.safeEvidence.baseUrlConfigured, false);
   assert.equal(json.safeEvidence.apiKeyConfigured, false);
-  assert.equal(json.errorCode, "INTERNAL_ERROR");
+  assert.equal(json.errorCode, "LLM_LIVE_NOT_CONFIGURED");
 });
