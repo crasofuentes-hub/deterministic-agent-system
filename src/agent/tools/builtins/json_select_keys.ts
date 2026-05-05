@@ -1,7 +1,7 @@
 import type { Tool, Json } from "../types";
 
 type SelectKeysIn = Readonly<{
-  text: string;
+  text: Json;
   keys: string[];
 }>;
 
@@ -55,21 +55,26 @@ export const toolJsonSelectKeys: Tool<SelectKeysIn, SelectKeysOut> = {
   validateInput: (x: unknown): x is SelectKeysIn => {
     if (typeof x !== "object" || x === null) return false;
     const o = x as Record<string, unknown>;
-    return typeof o.text === "string" &&
+    return (typeof o.text === "string" || isObjectRecord(o.text)) &&
       Array.isArray(o.keys) &&
       o.keys.every((k) => typeof k === "string" && k.trim().length > 0);
   },
   run: (_ctx, input) => {
-    const text = String(input.text).normalize("NFC").trim();
-    if (text.length === 0) {
-      throw new Error("json_select_keys_empty_text");
-    }
-
     let parsed: unknown;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      throw new Error("json_select_keys_invalid_json");
+
+    if (typeof input.text === "string") {
+      const text = input.text.normalize("NFC").trim();
+      if (text.length === 0) {
+        throw new Error("json_select_keys_empty_text");
+      }
+
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error("json_select_keys_invalid_json");
+      }
+    } else {
+      parsed = input.text;
     }
 
     if (!isObjectRecord(parsed)) {
