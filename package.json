@@ -61,7 +61,8 @@
     "demo:payment-audit": "node dist/src/scripts/demo-payment-audit.js",
     "demo:payment-audit:customer": "node -e \"const {runCustomerServiceApi}=require('./dist/src/customer-service-api/customer-service-api'); console.log(JSON.stringify(runCustomerServiceApi({sessionId:'demo-payment-audit-customer-001',businessContextId:'customer-service-payment-audit-v1',userMessageText:'Show me the payment history for customer CUS-101'}), null, 2));\"",
     "test:demo:payment-audit": "node tests/demo.payment-audit.test.js",
-    "cli": "node ./dist/src/cli/main.js"
+    "cli": "node ./dist/src/cli/main.js",
+    "smoke:whatsapp:postgres": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-async-postgres-whatsapp.ps1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
