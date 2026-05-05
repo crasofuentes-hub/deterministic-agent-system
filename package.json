@@ -62,7 +62,7 @@
     "demo:payment-audit:customer": "node -e \"const {runCustomerServiceApi}=require('./dist/src/customer-service-api/customer-service-api'); console.log(JSON.stringify(runCustomerServiceApi({sessionId:'demo-payment-audit-customer-001',businessContextId:'customer-service-payment-audit-v1',userMessageText:'Show me the payment history for customer CUS-101'}), null, 2));\"",
     "test:demo:payment-audit": "node tests/demo.payment-audit.test.js",
     "cli": "node ./dist/src/cli/main.js",
-    "smoke:whatsapp:postgres": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-async-postgres-whatsapp.ps1",
+    "smoke:whatsapp:postgres": "npm run build && node dist/src/scripts/smoke-async-postgres-whatsapp.js",
     "test:llm-live:contractual": "npm run build && node tests/planner.llm-live.parse.test.js && node tests/http.agent-run.llm-live.test.js && node tests/http.agent-run.llm-live.normalize.test.js && node tests/http.agent-run.llm-live.extract.test.js && node tests/http.agent-run.llm-live.extract-chain.test.js && node tests/http.agent-run.llm-live.extract-merge.test.js && node tests/http.agent-run.llm-live.openai-compatible.stub.test.js && node tests/http.agent-run.llm-live.openai-compatible.config.test.js && node tests/http.agent-run.llm-live.openai-compatible.invalid-plan-text.test.js && node tests/http.agent-run.llm-live.cap-synth.test.js && node tests/demo.llm-live-real.test.js"
   },
   "devDependencies": {

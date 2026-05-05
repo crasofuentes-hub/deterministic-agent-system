@@ -126,3 +126,13 @@ npm run test:baseline:contractual
 npm run test:llm-live:contractual
 git status --short
 ```
+## Completed migrations
+
+### Async Postgres WhatsApp smoke
+
+```text
+Source of truth: src/scripts/smoke-async-postgres-whatsapp.ts
+NPM command: npm run smoke:whatsapp:postgres
+Windows wrapper: scripts/smoke-async-postgres-whatsapp.ps1
+Removed duplicate CJS source: scripts/smoke-async-postgres-whatsapp.cjs
+```
