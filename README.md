@@ -8,7 +8,7 @@ This repository currently tracks a contractual baseline that is verified locally
 
 - Build command: `npm run build`
 - Contractual test command: `npm run test:baseline:contractual`
-- Current verified baseline: **28 test files / 261 tests**
+- Current verified baseline: **28 test files / 262 tests**
 - Latest storage milestone: **Postgres + pooling foundation**
 - Latest WhatsApp milestone: **async WhatsApp runtime + async WhatsApp webhook handler + async webhook routing**
 - Current persistence path: deterministic config -> pg driver -> pool wrapper -> migrations -> async store contract -> Postgres WhatsApp store adapter -> async factory -> async runtime -> async webhook handler -> async webhook routing
@@ -324,7 +324,7 @@ This stabilized slice currently covers:
 Current verified stable baseline:
 
 - **28 contractual test files**
-- **261 contractual tests**
+- **262 contractual tests**
 - **0 failures**
 
 
@@ -543,7 +543,7 @@ This slice demonstrates how the deterministic agent architecture can support a r
 ### Verified stable baseline
 
 - **28 contractual test files**
-- **261 contractual tests**
+- **262 contractual tests**
 - **0 failures**
 
 ### Release alignment
