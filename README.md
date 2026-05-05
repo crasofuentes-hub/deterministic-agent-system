@@ -15,6 +15,8 @@ This repository currently tracks a contractual baseline that is verified locally
 
 <!-- CURRENT_VERIFIED_BASELINE_END -->
 
+- [LLM/live contractual hardening](docs/LLM_LIVE_HARDENING.md)
+
 <!-- ASYNC_POSTGRES_WHATSAPP_RUNTIME_START -->
 
 ## Async Postgres WhatsApp runtime
