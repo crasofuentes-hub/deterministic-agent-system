@@ -12,21 +12,20 @@ PowerShell wrappers may remain only as thin wrappers around Node.js / TypeScript
 
 ## Current PowerShell inventory
 
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-- $_
-
+- backup-live-pilot-sqlite.ps1
+- check-whatsapp-handoffs.ps1
+- demo-determinism.ps1
+- generate-status.ps1
+- guardrail-staged.ps1
+- live-pilot.env.ps1
+- smoke-async-postgres-whatsapp.ps1
+- smoke-live-pilot.ps1
+- snapshot-live-pilot-ops.ps1
+- start-live-pilot.ps1
+- test-tap.ps1
+- verify-bootstrap.ps1
+- verify-contract.ps1
+- verify-pack.ps1
 ## Migration classes
 
 ### A. Core verification
