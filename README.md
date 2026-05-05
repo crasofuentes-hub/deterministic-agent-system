@@ -15,6 +15,70 @@ This repository currently tracks a contractual baseline that is verified locally
 
 <!-- CURRENT_VERIFIED_BASELINE_END -->
 
+<!-- ASYNC_POSTGRES_WHATSAPP_RUNTIME_START -->
+
+## Async Postgres WhatsApp runtime
+
+The WhatsApp runtime can run in the original synchronous mode or in the async runtime path required for Postgres-backed persistence.
+
+The default remains synchronous. To enable the async Postgres-backed path, configure:
+
+``env
+WHATSAPP_VERIFY_TOKEN=your-verify-token
+WHATSAPP_RUNTIME_MODE=async
+WHATSAPP_STORE_MODE=postgres
+DATABASE_URL=postgres://user:password@localhost:5432/deterministic_agent_system
+WHATSAPP_DELIVERY_MODE=skipped
+``
+
+Delivery mode options:
+
+- `skipped`: process the webhook and persist deterministic state without sending an outbound WhatsApp message.
+- `mock`: use the deterministic mock WhatsApp sender.
+- `http`: send through the configured WhatsApp HTTP sender.
+
+For `http` delivery mode, also configure:
+
+``env
+WHATSAPP_API_VERSION=v23.0
+WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
+WHATSAPP_ACCESS_TOKEN=your-access-token
+``
+
+Postgres pool tuning variables:
+
+``env
+POSTGRES_POOL_MAX=10
+POSTGRES_IDLE_TIMEOUT_MS=30000
+POSTGRES_CONNECTION_TIMEOUT_MS=5000
+POSTGRES_STATEMENT_TIMEOUT_MS=15000
+``
+
+Optional deterministic test/runtime timestamp overrides:
+
+``env
+POSTGRES_MIGRATION_APPLIED_AT_ISO=2026-03-24T00:00:00.000Z
+WHATSAPP_PROCESSED_AT_ISO=2026-03-24T00:00:00.000Z
+``
+
+Execution path:
+
+``text
+server.ts
+-> WHATSAPP_RUNTIME_MODE=async
+-> resolveAsyncWhatsAppRuntime(...)
+-> createAsyncWhatsAppStore(...)
+-> createPostgresPool(...)
+-> applyPostgresMigrations(...)
+-> createPostgresWhatsAppStore(...)
+-> routeRequest(...)
+-> handleAsyncWhatsAppWebhook(...)
+``
+
+The async route is explicitly enabled by configuration and does not change the synchronous default path.
+
+<!-- ASYNC_POSTGRES_WHATSAPP_RUNTIME_END -->
+
 ## Install from npm
 
 The package is published on npm as:
