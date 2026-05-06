@@ -640,6 +640,7 @@ Start here if you want copyable local usage flows:
 - examples/local-cli/ - local CLI wrapper usage.
 - examples/live-pilot-ops/ - supervised WhatsApp live pilot operations.
 - examples/payment-audit/ - deterministic insurance payment-audit vertical.
+- docs/insurance-account-manager-alerts.md - deterministic account manager alert query facade.
 
 Recommended entry point:
 
