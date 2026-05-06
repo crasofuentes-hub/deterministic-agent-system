@@ -8,7 +8,11 @@ The goal is to keep the deterministic-agent-system framework reusable while allo
 
 The current primary vertical implementation lives in:
 
-- src/insurance
+- src/verticals/insurance-brokerage
+
+Compatibility/public barrel:
+
+- src/insurance/index.ts
 
 Known responsibilities:
 
@@ -85,7 +89,7 @@ Avoid:
 
 ## Migration note
 
-The current acceptable intermediate location is src/insurance.
+The current implementation location is src/verticals/insurance-brokerage. The src/insurance/index.ts file remains as a compatibility/public barrel.
 
 A future migration may move this vertical to one of:
 

@@ -23,13 +23,14 @@ These paths must not depend on insurance, brokerage, carrier, coverage, premium,
 
 Domain-specific logic belongs in vertical-specific areas such as:
 
-- src/insurance
+- src/verticals/insurance-brokerage
+- src/insurance/index.ts as a compatibility/public barrel
 - config/business-context
 - data
 - tests/insurance
 - channel or customer-service tests that explicitly prove vertical integration
 
-The current insurance brokerage slice is a vertical implementation. It may model policy coverage, payment audit records, account-manager alerts, and WhatsApp/API parity as long as the framework core remains clean.
+The current insurance brokerage slice is a vertical implementation under src/verticals/insurance-brokerage. The src/insurance/index.ts file is a compatibility/public barrel and should not contain domain implementation logic.
 
 ## Allowed dependency direction
 
