@@ -16,6 +16,7 @@ This repository currently tracks a contractual baseline that is verified locally
 <!-- CURRENT_VERIFIED_BASELINE_END -->
 
 - [LLM/live contractual hardening](docs/LLM_LIVE_HARDENING.md)
+- [Async Task Queue Contract](docs/async-task-queue.md)
 
 <!-- ASYNC_POSTGRES_WHATSAPP_RUNTIME_START -->
 
