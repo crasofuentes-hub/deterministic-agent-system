@@ -142,7 +142,21 @@ Current release:
 
 A deterministic, auditable, and replayable autonomous agent system for controlled execution, bounded behavior, and verifiable outcomes.
 
-This repository is centered on one primary objective: **building a deterministic agent system**. Internal execution layers, adapters, and validation tooling exist to support that objective, but they are implementation details rather than the identity of the project.
+This repository is centered on one primary objective: **building a deterministic agent system**.
+## Core Framework vs Verticals
+
+This repository is structured as a reusable deterministic agent framework with optional vertical implementations.
+
+The core system must remain domain-agnostic. It owns deterministic planning, bounded execution, replayability, traceability, tool contracts, runtime interfaces, and verification semantics.
+
+Verticals live behind explicit boundaries and demonstrate how the framework can be applied to real business domains. The current insurance brokerage work is a reference vertical, not the framework core.
+
+Relevant references:
+
+- [Core and Vertical Boundary](docs/architecture/core-vertical-boundary.md)
+- [Vertical Isolation Status](docs/architecture/vertical-isolation-status.md)
+- [Domain-Agnostic Workflow Example](examples/domain-agnostic-workflow/)
+ Internal execution layers, adapters, and validation tooling exist to support that objective, but they are implementation details rather than the identity of the project.
 
 This project is intentionally engineered for environments where correctness, traceability, and reproducibility matter more than superficial demonstrations.
 
