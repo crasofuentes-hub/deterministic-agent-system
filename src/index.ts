@@ -1,4 +1,5 @@
 import { startServer } from "./http/server";
+import { resolveServeEnv } from "./http/server-env";
 import { executeDeterministicPlan } from "./agent/executor";
 import { executeDeterministicPlanAsync } from "./agent/executor-async";
 import type { DeterministicAgentPlan } from "./agent/plan-types";
@@ -34,7 +35,8 @@ function printBanner(): void {
 }
 
 async function runServe(): Promise<void> {
-  const running = await startServer({ port: 3000, host: "127.0.0.1" });
+  const serveEnv = resolveServeEnv(process.env as Record<string, string | undefined>);
+  const running = await startServer({ port: serveEnv.port, host: serveEnv.host });
   process.stdout.write(
     "HTTP server listening on http://" + running.host + ":" + running.port + "\n"
   );
