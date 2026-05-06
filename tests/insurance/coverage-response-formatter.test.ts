@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { explainPolicyCoveragesByPolicyId } from "../../src/insurance/coverage-service";
-import { formatCoverageServiceResponse } from "../../src/insurance/coverage-response-formatter";
+import { explainPolicyCoveragesByPolicyId } from "../../src/verticals/insurance-brokerage/coverage-service";
+import { formatCoverageServiceResponse } from "../../src/verticals/insurance-brokerage/coverage-response-formatter";
 
 describe("insurance coverage response formatter", () => {
   it("formats a successful coverage explanation into stable customer-facing text", () => {

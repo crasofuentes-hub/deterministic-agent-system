@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { listPaymentAuditRecords } from "../../src/data-layer/payment-audit-repository";
-import { deriveAccountManagerAlertsFromPaymentRecords } from "../../src/insurance/account-manager-alerts";
+import { deriveAccountManagerAlertsFromPaymentRecords } from "../../src/verticals/insurance-brokerage/account-manager-alerts";
 
 describe("insurance account manager alerts", () => {
   it("derives deterministic account manager alerts from payment audit records", () => {

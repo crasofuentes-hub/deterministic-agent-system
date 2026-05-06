@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { explainPolicyCoverages } from "../../src/insurance/coverage-explainer";
-import type { InsurancePolicy } from "../../src/insurance/policy-types";
+import { explainPolicyCoverages } from "../../src/verticals/insurance-brokerage/coverage-explainer";
+import type { InsurancePolicy } from "../../src/verticals/insurance-brokerage/policy-types";
 
 interface InsurancePolicyFixture {
   readonly policies: readonly InsurancePolicy[];

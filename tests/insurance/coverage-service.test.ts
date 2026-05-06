@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   explainPolicyCoveragesByCustomerId,
   explainPolicyCoveragesByPolicyId,
-} from "../../src/insurance/coverage-service";
+} from "../../src/verticals/insurance-brokerage/coverage-service";
 
 describe("insurance coverage service", () => {
   it("explains policy coverages by policy id", () => {

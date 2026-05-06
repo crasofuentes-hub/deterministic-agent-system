@@ -1,4 +1,4 @@
-import type { PaymentAuditRecord } from "../data-layer/payment-audit-repository";
+import type { PaymentAuditRecord } from "../../data-layer/payment-audit-repository";
 
 export type AccountManagerAlertType =
   | "missed-payment"

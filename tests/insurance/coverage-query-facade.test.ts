@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { askInsuranceCoverageQuestion } from "../../src/insurance/coverage-query-facade";
+import { askInsuranceCoverageQuestion } from "../../src/verticals/insurance-brokerage/coverage-query-facade";
 
 describe("insurance coverage query facade", () => {
   it("answers a coverage question by policy id", () => {

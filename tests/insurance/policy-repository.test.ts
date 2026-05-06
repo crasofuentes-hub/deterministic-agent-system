@@ -3,7 +3,7 @@ import {
   findInsurancePolicyByPolicyId,
   listInsurancePolicies,
   listInsurancePoliciesByCustomerId,
-} from "../../src/insurance/policy-repository";
+} from "../../src/verticals/insurance-brokerage/policy-repository";
 
 describe("insurance policy repository", () => {
   it("lists insurance policies deterministically", () => {
