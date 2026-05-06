@@ -36,6 +36,11 @@ Current implementation files:
 Current tests:
 
     tests/journal/execution-journal.test.ts
+    tests/http/whatsapp-webhook-async-journal.test.ts
+
+Current runtime integrations:
+
+    docs/async-whatsapp-journal-integration.md
 
 ## Event model
 

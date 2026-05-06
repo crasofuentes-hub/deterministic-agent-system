@@ -18,7 +18,16 @@ The WhatsApp runtime supports:
 - Conversation evidence persistence.
 - Conversation event persistence.
 - Handoff persistence.
+- Tamper-evident journal events for async WhatsApp message processing.
 - Async Postgres-backed runtime for production-like operation.
+
+## Journal integration
+
+The async WhatsApp runtime records tamper-evident journal events for inbound and processed messages.
+
+See:
+
+    docs/async-whatsapp-journal-integration.md
 
 ## Runtime modes
 
