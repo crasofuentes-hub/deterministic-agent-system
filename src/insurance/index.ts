@@ -15,3 +15,4 @@ export {
   type AccountManagerAlertQuery,
   type AccountManagerAlertQueryResult,
 } from "../verticals/insurance-brokerage/account-manager-alert-query-facade";
+export { insuranceBrokerageDomainExtension } from "../verticals/insurance-brokerage/insurance-brokerage-domain-extension";
