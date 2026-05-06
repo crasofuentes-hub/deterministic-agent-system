@@ -622,6 +622,7 @@ This slice demonstrates how the deterministic agent architecture can support a r
 
 Start here if you want copyable local usage flows:
 
+- examples/domain-agnostic-workflow/ - generic deterministic workflow without domain assumptions.
 - examples/local-cli/ - local CLI wrapper usage.
 - examples/live-pilot-ops/ - supervised WhatsApp live pilot operations.
 - examples/payment-audit/ - deterministic insurance payment-audit vertical.

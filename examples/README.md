@@ -6,6 +6,18 @@ They are designed to help a new user understand the current v0.5.0 local enterpr
 
 ## Available examples
 
+### Domain-Agnostic Workflow
+
+Path:
+
+    examples/domain-agnostic-workflow/
+
+Shows the framework without insurance, brokerage, payment, or customer-service assumptions:
+
+- mock LLM planner demo
+- deterministic tool-loop demo
+- replay verification workflow
+
 ### Local CLI
 
 Path:
@@ -51,9 +63,10 @@ Shows the deterministic insurance payment-audit vertical:
 
 ## Recommended order
 
-1. Start with examples/local-cli.
-2. Then run examples/live-pilot-ops.
-3. Then inspect examples/payment-audit.
+1. Start with examples/domain-agnostic-workflow.
+2. Then run examples/local-cli.
+3. Then run examples/live-pilot-ops.
+4. Then inspect examples/payment-audit.
 
 ## Validation
 
