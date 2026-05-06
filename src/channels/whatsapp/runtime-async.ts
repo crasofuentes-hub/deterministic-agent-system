@@ -38,7 +38,9 @@ function readTrimmedNonEmpty(
 }
 
 function readStoreMode(env: Record<string, string | undefined>): WhatsAppStoreBackend {
-  const storeMode = readTrimmedNonEmpty(env, "WHATSAPP_STORE_MODE") ?? "memory";
+  const explicitStoreMode = readTrimmedNonEmpty(env, "WHATSAPP_STORE_MODE");
+  const runtimeMode = readTrimmedNonEmpty(env, "WHATSAPP_RUNTIME_MODE");
+  const storeMode = explicitStoreMode ?? (runtimeMode === "async" ? "postgres" : "memory");
 
   if (storeMode !== "memory" && storeMode !== "sqlite" && storeMode !== "postgres") {
     throw new Error("WHATSAPP_STORE_MODE must be one of: memory, sqlite, postgres");

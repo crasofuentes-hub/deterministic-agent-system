@@ -23,16 +23,22 @@ This repository currently tracks a contractual baseline that is verified locally
 
 The WhatsApp runtime can run in the original synchronous mode or in the async runtime path required for Postgres-backed persistence.
 
-The default remains synchronous. To enable the async Postgres-backed path, configure:
+The default remains synchronous for zero-config local use. When `WHATSAPP_RUNTIME_MODE=async` is explicitly enabled, the async runtime prefers the Postgres-backed store unless `WHATSAPP_STORE_MODE` is set explicitly.
+
+Recommended async Postgres configuration:
 
 ``env
 WHATSAPP_VERIFY_TOKEN=your-verify-token
 WHATSAPP_RUNTIME_MODE=async
-WHATSAPP_STORE_MODE=postgres
 DATABASE_URL=postgres://user:password@localhost:5432/deterministic_agent_system
 WHATSAPP_DELIVERY_MODE=skipped
 ``
 
+Optional local override for async development without Postgres:
+
+``env
+WHATSAPP_STORE_MODE=memory
+``
 Delivery mode options:
 
 - `skipped`: process the webhook and persist deterministic state without sending an outbound WhatsApp message.
