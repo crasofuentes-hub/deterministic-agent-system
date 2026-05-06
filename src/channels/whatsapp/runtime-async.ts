@@ -1,3 +1,4 @@
+import { createInMemoryExecutionJournal, type ExecutionJournal } from "../../journal";
 import type { PostgresPoolConfig } from "../../storage/postgres-config";
 import type { DeterministicPostgresPool } from "../../storage/postgres-pool";
 import { createMockWhatsAppSender, type WhatsAppSender } from "./client";
@@ -15,6 +16,7 @@ export interface AsyncWhatsAppRuntimeConfig {
   sender?: WhatsAppSender;
   store: AsyncWhatsAppStore;
   close(): Promise<void>;
+  readonly journal: ExecutionJournal;
 }
 
 export interface ResolveAsyncWhatsAppRuntimeParams {
@@ -116,6 +118,7 @@ export async function resolveAsyncWhatsAppRuntime(
       verifyToken,
       deliveryMode,
       store: createdStore.store,
+      journal: createInMemoryExecutionJournal(),
       close,
     };
   }
@@ -126,6 +129,7 @@ export async function resolveAsyncWhatsAppRuntime(
       deliveryMode,
       sender: createMockWhatsAppSender(),
       store: createdStore.store,
+      journal: createInMemoryExecutionJournal(),
       close,
     };
   }
@@ -166,6 +170,7 @@ export async function resolveAsyncWhatsAppRuntime(
       fetchImpl: params.fetchImpl,
     }),
     store: createdStore.store,
+    journal: createInMemoryExecutionJournal(),
     close,
   };
 }

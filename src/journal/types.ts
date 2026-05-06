@@ -3,6 +3,8 @@ export type JournalEventType =
   | "tool_call"
   | "tool_result"
   | "llm_response"
+  | "message_received"
+  | "message_processed"
   | "handoff"
   | "error"
   | "convergence";

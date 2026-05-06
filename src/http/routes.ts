@@ -594,6 +594,7 @@ export async function routeRequest(
           deliveryMode: runtimeOptions.asyncWhatsAppRuntime?.deliveryMode,
           sender: runtimeOptions.asyncWhatsAppRuntime?.sender,
           store: runtimeOptions.asyncWhatsAppStore ?? runtimeOptions.asyncWhatsAppRuntime?.store,
+          journal: runtimeOptions.asyncWhatsAppRuntime?.journal,
           appSecret: process.env.WHATSAPP_APP_SECRET,
         });
       } else {
@@ -781,6 +782,7 @@ export async function routeRequest(
           deliveryMode: runtimeOptions.asyncWhatsAppRuntime?.deliveryMode,
           sender: runtimeOptions.asyncWhatsAppRuntime?.sender,
           store: runtimeOptions.asyncWhatsAppStore ?? runtimeOptions.asyncWhatsAppRuntime?.store,
+          journal: runtimeOptions.asyncWhatsAppRuntime?.journal,
           appSecret: process.env.WHATSAPP_APP_SECRET,
         });
       } else {

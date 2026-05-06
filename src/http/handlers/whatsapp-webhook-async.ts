@@ -7,6 +7,7 @@ import { buildWhatsAppTextOutbound } from "../../channels/whatsapp/send";
 import type { AsyncWhatsAppStore } from "../../channels/whatsapp/store-async";
 import { createInitialSessionState, type SessionState } from "../../session-state/session-state";
 import { sendJson } from "../responses";
+import type { ExecutionJournal } from "../../journal";
 
 type AsyncWhatsAppDeliveryMode = "skipped" | "mock" | "http";
 
@@ -19,6 +20,7 @@ export interface HandleAsyncWhatsAppWebhookOptions {
   store?: AsyncWhatsAppStore;
   businessContextId?: string;
   appSecret?: string;
+  journal?: ExecutionJournal;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -117,6 +119,28 @@ function logDeliveryEvent(event: Record<string, unknown>): void {
       ...event,
     })
   );
+}
+
+function buildJournalSessionId(customerId: string): string {
+  return "whatsapp:" + customerId;
+}
+
+async function appendJournalEvent(
+  journal: ExecutionJournal | undefined,
+  event: {
+    readonly eventId: string;
+    readonly sessionId: string;
+    readonly timestamp: string;
+    readonly type: "message_received" | "message_processed" | "handoff" | "error";
+    readonly payload: Record<string, unknown>;
+    readonly metadata?: Record<string, unknown>;
+  }
+): Promise<void> {
+  if (!journal) {
+    return;
+  }
+
+  await journal.appendEvent(event);
 }
 
 export async function handleAsyncWhatsAppWebhook(
@@ -227,6 +251,23 @@ export async function handleAsyncWhatsAppWebhook(
   const results = [];
 
   for (const message of normalized.value) {
+    const journalSessionId = buildJournalSessionId(message.customerId);
+
+    await appendJournalEvent(options.journal, {
+      eventId: "journal:" + message.customerId + ":" + message.channelMessageId + ":received",
+      sessionId: journalSessionId,
+      timestamp: message.receivedAtIso,
+      type: "message_received",
+      payload: {
+        channel: "whatsapp",
+        customerId: message.customerId,
+        channelMessageId: message.channelMessageId,
+        text: message.text,
+      },
+      metadata: {
+        requestId: requestId ?? null,
+      },
+    });
     if (options.store && (await options.store.hasProcessedMessage(message.channelMessageId))) {
       logDeliveryEvent({
         event: "delivery.duplicate",
@@ -240,6 +281,30 @@ export async function handleAsyncWhatsAppWebhook(
         deliveryError: null,
       });
 
+      const duplicateSession = await options.store.loadSession(message.customerId);
+
+      await appendJournalEvent(options.journal, {
+        eventId: "journal:" + message.customerId + ":" + message.channelMessageId + ":processed",
+        sessionId: journalSessionId,
+        timestamp: message.receivedAtIso,
+        type: "message_processed",
+        payload: {
+          channel: "whatsapp",
+          customerId: message.customerId,
+          channelMessageId: message.channelMessageId,
+          duplicate: true,
+          deliveryStatus: "skipped",
+          responseId: null,
+          resolvedIntentId: null,
+          stage: null,
+          status: null,
+          humanInterventionRequired: null,
+        },
+        metadata: {
+          requestId: requestId ?? null,
+        },
+      });
+
       results.push({
         message,
         duplicate: true,
@@ -251,7 +316,7 @@ export async function handleAsyncWhatsAppWebhook(
           deliveryStatus: "skipped",
           deliveryError: null,
         },
-        session: await options.store.loadSession(message.customerId),
+        session: duplicateSession,
       });
       continue;
     }
@@ -392,10 +457,54 @@ export async function handleAsyncWhatsAppWebhook(
           handoffReasonCode: bridge.output.handoffReasonCode,
           handoffQueue: bridge.output.handoffQueue,
         });
+
+        await appendJournalEvent(options.journal, {
+          eventId: "journal:" + message.customerId + ":" + message.channelMessageId + ":handoff",
+          sessionId: journalSessionId,
+          timestamp: message.receivedAtIso,
+          type: "handoff",
+          payload: {
+            channel: "whatsapp",
+            customerId: message.customerId,
+            channelMessageId: message.channelMessageId,
+            handoffId,
+            responseId: bridge.output.responseId,
+            resolvedIntentId: bridge.output.resolvedIntentId,
+            stage: bridge.output.stage,
+            status: bridge.output.status,
+            handoffReasonCode: bridge.output.handoffReasonCode,
+            handoffQueue: bridge.output.handoffQueue,
+          },
+          metadata: {
+            requestId: requestId ?? null,
+          },
+        });
       }
 
       await options.store.markMessageProcessed(message.channelMessageId);
     }
+
+    await appendJournalEvent(options.journal, {
+      eventId: "journal:" + message.customerId + ":" + message.channelMessageId + ":processed",
+      sessionId: journalSessionId,
+      timestamp: message.receivedAtIso,
+      type: "message_processed",
+      payload: {
+        channel: "whatsapp",
+        customerId: message.customerId,
+        channelMessageId: message.channelMessageId,
+        duplicate: false,
+        deliveryStatus: delivery.deliveryStatus,
+        responseId: bridge.output.responseId,
+        resolvedIntentId: bridge.output.resolvedIntentId,
+        stage: bridge.output.stage,
+        status: bridge.output.status,
+        humanInterventionRequired: bridge.output.humanInterventionRequired,
+      },
+      metadata: {
+        requestId: requestId ?? null,
+      },
+    });
 
     results.push({
       message,
