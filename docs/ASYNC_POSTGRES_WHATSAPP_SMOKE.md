@@ -24,7 +24,19 @@ server.ts
 - A reachable Postgres database.
 - `DATABASE_URL` pointing at that database.
 
-Example using Docker:
+Example using Docker Compose:
+
+```powershell
+docker compose up -d postgres
+```
+
+Then set:
+
+```powershell
+$env:DATABASE_URL = "postgres://det_agent:det_agent@localhost:5432/deterministic_agent_system"
+```
+
+Alternative one-off Docker command:
 
 ```powershell
 docker run --name deterministic-agent-postgres `

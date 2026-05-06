@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16
+    container_name: deterministic-agent-system-postgres
+    environment:
+      POSTGRES_USER: det_agent
+      POSTGRES_PASSWORD: det_agent
+      POSTGRES_DB: deterministic_agent_system
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U det_agent -d deterministic_agent_system"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   payment-audit-demo:
     build:
       context: .
@@ -12,5 +29,20 @@ services:
       dockerfile: Dockerfile
     container_name: deterministic-agent-system-api
     command: npm run start:api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      WHATSAPP_VERIFY_TOKEN: local-compose-token
+      WHATSAPP_RUNTIME_MODE: async
+      DATABASE_URL: postgres://det_agent:det_agent@postgres:5432/deterministic_agent_system
+      WHATSAPP_DELIVERY_MODE: skipped
+      WHATSAPP_BUSINESS_CONTEXT_ID: customer-service-core-v2
+      WHATSAPP_SESSION_ID_PREFIX: whatsapp-session
     ports:
       - "3000:3000"
+
+volumes:
+  postgres_data:
