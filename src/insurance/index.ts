@@ -10,3 +10,8 @@ export {
   type AccountManagerAlertSeverity,
   type AccountManagerAlertType,
 } from "../verticals/insurance-brokerage/account-manager-alerts";
+export {
+  queryAccountManagerAlerts,
+  type AccountManagerAlertQuery,
+  type AccountManagerAlertQueryResult,
+} from "../verticals/insurance-brokerage/account-manager-alert-query-facade";
