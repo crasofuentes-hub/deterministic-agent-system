@@ -13,7 +13,7 @@ import {
   listPaymentAuditRecordsByPolicyId,
 } from "../data-layer/payment-audit-repository";
 import { findProductByName } from "../data-layer/product-repository";
-import { askInsuranceCoverageQuestion } from "../insurance/coverage-query-facade";
+import { askInsuranceCoverageQuestion } from "../insurance";
 import { extractEntitiesFromText } from "../entity-extractor/entity-extractor";
 import { resolveIntentFromTextForContext } from "../intent-resolver/intent-resolver";
 import type { SessionState } from "../session-state/session-state";
