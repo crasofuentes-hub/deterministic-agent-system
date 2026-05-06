@@ -75,4 +75,5 @@ ASYNC POSTGRES WHATSAPP SMOKE PASSED
 
 - Delivery mode is `skipped`, so no external WhatsApp message is sent.
 - Migrations are applied automatically by the async runtime path.
+- The smoke sets WHATSAPP_STORE_MODE=postgres explicitly, but the async runtime also prefers Postgres when WHATSAPP_RUNTIME_MODE=async is enabled and store mode is omitted.
 - Re-running the smoke is safe. It uses a unique webhook message id per run.

@@ -1,86 +1,160 @@
 # WhatsApp Runtime
 
-## Estado actual
+This document describes the current WhatsApp runtime persistence and delivery modes.
 
-La línea WhatsApp del proyecto ya soporta:
+## Current status
 
-- webhook real montado en el servidor HTTP
-- verificación GET /webhooks/whatsapp
-- recepción POST /webhooks/whatsapp
-- normalización inbound a CustomerMessage
-- bridge hacia customer-service-agent
-- respuesta canónica
-- payload outbound para WhatsApp
-- delivery configurable: skipped, mock, http
-- store configurable: memory, sqlite
-- persistencia de sesión
-- idempotencia por channelMessageId
+The WhatsApp runtime supports:
 
----
+- WhatsApp webhook verification.
+- WhatsApp webhook POST handling.
+- Inbound message normalization into the customer-message contract.
+- Bridge execution through the customer-service agent.
+- Canonical outbound response generation.
+- Configurable delivery mode: `skipped`, `mock`, or `http`.
+- Configurable store mode: `memory`, `sqlite`, or `postgres`.
+- Session persistence.
+- Idempotency by `channelMessageId`.
+- Conversation evidence persistence.
+- Conversation event persistence.
+- Handoff persistence.
+- Async Postgres-backed runtime for production-like operation.
 
-## Variables de entorno
+## Runtime modes
 
-- WHATSAPP_VERIFY_TOKEN
-- WHATSAPP_DELIVERY_MODE = skipped | mock | http
-- WHATSAPP_API_VERSION
-- WHATSAPP_PHONE_NUMBER_ID
-- WHATSAPP_ACCESS_TOKEN
-- WHATSAPP_STORE_MODE = memory | sqlite
-- WHATSAPP_SQLITE_PATH
-- WHATSAPP_BUSINESS_CONTEXT_ID
-- WHATSAPP_SESSION_ID_PREFIX
+The server can run the WhatsApp path in two runtime modes:
 
----
+- Synchronous runtime: default local path.
+- Async runtime: required for Postgres-backed persistence.
 
-## Ejemplo local con SQLite
+The synchronous runtime keeps the local zero-config default and uses the in-memory store unless `WHATSAPP_STORE_MODE` is set explicitly.
+
+The async runtime is the recommended production-like path. When `WHATSAPP_RUNTIME_MODE=async` is enabled and `WHATSAPP_STORE_MODE` is omitted, the async runtime prefers the Postgres-backed store.
+
+## Environment variables
+
+Required for all WhatsApp runtime modes:
+
+    WHATSAPP_VERIFY_TOKEN
+
+Runtime selection:
+
+    WHATSAPP_RUNTIME_MODE=async
+
+Delivery mode:
+
+    WHATSAPP_DELIVERY_MODE=skipped | mock | http
+
+Store mode:
+
+    WHATSAPP_STORE_MODE=memory | sqlite | postgres
+
+For async Postgres-backed persistence:
+
+    DATABASE_URL=postgres://user:password@localhost:5432/deterministic_agent_system
+
+Optional Postgres pool tuning:
+
+    POSTGRES_POOL_MAX=10
+    POSTGRES_IDLE_TIMEOUT_MS=30000
+    POSTGRES_CONNECTION_TIMEOUT_MS=5000
+    POSTGRES_STATEMENT_TIMEOUT_MS=15000
+
+Optional deterministic timestamp overrides:
+
+    POSTGRES_MIGRATION_APPLIED_AT_ISO=2026-03-24T00:00:00.000Z
+    WHATSAPP_PROCESSED_AT_ISO=2026-03-24T00:00:00.000Z
+
+For SQLite local or legacy operation:
+
+    WHATSAPP_SQLITE_PATH=C:\repos\deterministic-agent-system\.runtime-data\whatsapp-runtime.sqlite
+
+For HTTP delivery mode:
+
+    WHATSAPP_API_VERSION=v23.0
+    WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
+    WHATSAPP_ACCESS_TOKEN=your-access-token
+
+## Recommended async Postgres configuration
 
 PowerShell:
-$env:WHATSAPP_VERIFY_TOKEN = "verify-token-001"
-$env:WHATSAPP_DELIVERY_MODE = "skipped"
-$env:WHATSAPP_STORE_MODE = "sqlite"
-$env:WHATSAPP_SQLITE_PATH = "C:\repos\deterministic-agent-system\.runtime-data\whatsapp-runtime.sqlite"
-$env:WHATSAPP_BUSINESS_CONTEXT_ID = "customer-service-core-v2"
-$env:WHATSAPP_SESSION_ID_PREFIX = "whatsapp-session"
-node .\dist\src\index.js serve
 
----
+    $env:WHATSAPP_VERIFY_TOKEN = "verify-token-001"
+    $env:WHATSAPP_RUNTIME_MODE = "async"
+    $env:DATABASE_URL = "postgres://user:password@localhost:5432/deterministic_agent_system"
+    $env:WHATSAPP_DELIVERY_MODE = "skipped"
+    $env:WHATSAPP_BUSINESS_CONTEXT_ID = "customer-service-core-v2"
+    $env:WHATSAPP_SESSION_ID_PREFIX = "whatsapp-session"
 
-## Verificación del webhook
+    node .\dist\src\index.js serve
+
+In this mode:
+
+- The async runtime selects the Postgres store by default.
+- `DATABASE_URL` is required.
+- Postgres migrations are applied automatically by the async store factory.
+- Delivery mode `skipped` processes the webhook without sending an external WhatsApp message.
+
+## Explicit local memory override
+
+For local async development without Postgres:
+
+    $env:WHATSAPP_VERIFY_TOKEN = "verify-token-001"
+    $env:WHATSAPP_RUNTIME_MODE = "async"
+    $env:WHATSAPP_STORE_MODE = "memory"
+    $env:WHATSAPP_DELIVERY_MODE = "skipped"
+
+    node .\dist\src\index.js serve
+
+This keeps local development lightweight while preserving Postgres as the recommended async runtime persistence path.
+
+## Legacy local SQLite configuration
+
+SQLite remains available for local or legacy workflows that need file-backed persistence without Postgres.
+
+PowerShell:
+
+    $env:WHATSAPP_VERIFY_TOKEN = "verify-token-001"
+    $env:WHATSAPP_DELIVERY_MODE = "skipped"
+    $env:WHATSAPP_STORE_MODE = "sqlite"
+    $env:WHATSAPP_SQLITE_PATH = "C:\repos\deterministic-agent-system\.runtime-data\whatsapp-runtime.sqlite"
+    $env:WHATSAPP_BUSINESS_CONTEXT_ID = "customer-service-core-v2"
+    $env:WHATSAPP_SESSION_ID_PREFIX = "whatsapp-session"
+
+    node .\dist\src\index.js serve
+
+## Webhook verification
 
 GET:
-/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=verify-token-001&hub.challenge=abc123
 
-Resultado esperado:
-- status 200
-- body abc123
+    /webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=verify-token-001&hub.challenge=abc123
 
----
+Expected result:
 
-## Prueba operativa recomendada
+- Status 200.
+- Body `abc123`.
 
-Flujo validado:
-1. iniciar servidor con WHATSAPP_STORE_MODE=sqlite
-2. enviar un primer mensaje que deje la conversación en missing-entity
-3. reiniciar el servidor
-4. enviar un segundo mensaje que complete la entidad faltante
-5. reenviar exactamente el mismo segundo mensaje
+## Recommended operational check
 
-Resultado esperado:
-- la sesión sobrevive al reinicio
-- el segundo mensaje resuelve correctamente
-- el replay del mismo channelMessageId se marca como duplicado
+Validated flow:
 
----
+1. Start the server with async Postgres persistence.
+2. Send a first message that leaves the conversation waiting for a missing entity.
+3. Restart the server.
+4. Send a second message that completes the missing entity.
+5. Re-send the same second message.
 
-## Nota sobre SQLite
+Expected result:
 
-La implementación actual usa node:sqlite.
-Node sigue mostrando un warning experimental, así que esta capa ya es funcional para persistencia local, pero todavía conviene tratarla como dependiente de una API experimental.
+- The session survives restart.
+- The second message resolves correctly.
+- The replay of the same `channelMessageId` is marked as duplicate.
+- Conversation evidence remains persisted in Postgres.
 
----
+## Operational recommendation
 
-## Recomendación operativa
-
-- Para trabajo local serio: usar WHATSAPP_STORE_MODE=sqlite
-- Para pruebas sin red: usar WHATSAPP_DELIVERY_MODE=skipped o mock
-- Para integración real: usar WHATSAPP_DELIVERY_MODE=http con credenciales reales
+- For production-like or live-pilot operation: use `WHATSAPP_RUNTIME_MODE=async` with Postgres.
+- For async local development without Postgres: explicitly set `WHATSAPP_STORE_MODE=memory`.
+- For legacy local file-backed operation: explicitly set `WHATSAPP_STORE_MODE=sqlite`.
+- For tests without external delivery: use `WHATSAPP_DELIVERY_MODE=skipped` or `mock`.
+- For real integration: use `WHATSAPP_DELIVERY_MODE=http` with configured WhatsApp credentials.

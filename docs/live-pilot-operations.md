@@ -9,7 +9,7 @@ The live pilot supports:
 - WhatsApp webhook verification.
 - Signed WhatsApp webhook POST validation when WHATSAPP_APP_SECRET is configured.
 - Mock, skipped, or HTTP WhatsApp delivery modes.
-- SQLite-backed session persistence.
+- Postgres-backed session persistence for async production-like operation.
 - Conversation evidence persistence.
 - Conversation event log persistence.
 - Handoff queue persistence.
@@ -18,7 +18,7 @@ The live pilot supports:
 - Operational endpoint protection with x-ops-token.
 - Configurable HTTP rate limiting.
 - Operational readiness checks.
-- SQLite backup with checksum manifest.
+- Legacy SQLite backup with checksum manifest for local SQLite pilots.
 
 ## Local files that must not be committed
 
@@ -40,7 +40,30 @@ Create the local environment file from the example if it does not exist:
       Copy-Item ".\scripts\live-pilot.env.ps1.example" ".\scripts\live-pilot.env.ps1" -Force
     }
 
-For a local mock pilot, scripts/live-pilot.env.ps1 should define:
+For a production-like async Postgres pilot, scripts/live-pilot.env.ps1 should define:
+
+    $env:HOST = "127.0.0.1"
+    $env:PORT = "3000"
+
+    $env:WHATSAPP_VERIFY_TOKEN = "test-token-2024"
+
+    $env:WHATSAPP_RUNTIME_MODE = "async"
+    $env:DATABASE_URL = "postgres://det_agent:det_agent@localhost:5432/deterministic_agent_system"
+
+    $env:WHATSAPP_DELIVERY_MODE = "mock"
+
+    $env:WHATSAPP_BUSINESS_CONTEXT_ID = "customer-service-core-v2"
+    $env:WHATSAPP_SESSION_ID_PREFIX = "whatsapp-session"
+
+    $env:OPS_API_TOKEN = "ops-token-123"
+    $env:WHATSAPP_APP_SECRET = "app-secret-123"
+
+    $env:HTTP_RATE_LIMIT_WINDOW_MS = "60000"
+    $env:HTTP_RATE_LIMIT_MAX = "120"
+
+When `WHATSAPP_RUNTIME_MODE=async` is enabled and `WHATSAPP_STORE_MODE` is omitted, the async runtime prefers Postgres. `DATABASE_URL` is required and migrations are applied automatically by the async store factory.
+
+For a legacy local mock pilot without Postgres, scripts/live-pilot.env.ps1 can define:
 
     $env:HOST = "127.0.0.1"
     $env:PORT = "3000"
@@ -192,7 +215,8 @@ Before exposing beyond local development:
 - Enable rate limiting with production values.
 - Use WHATSAPP_DELIVERY_MODE=http only after configuring WHATSAPP_API_VERSION, WHATSAPP_PHONE_NUMBER_ID, and WHATSAPP_ACCESS_TOKEN.
 - Store secrets in the deployment secret manager, not in Git.
-- Keep SQLite backups outside the repository.
+- Prefer WHATSAPP_RUNTIME_MODE=async with DATABASE_URL for production-like persistence.
+- Keep SQLite backups outside the repository when using the legacy SQLite local path.
 - Keep scripts/live-pilot.env.ps1 local and uncommitted.
 
 ## GitHub repository
