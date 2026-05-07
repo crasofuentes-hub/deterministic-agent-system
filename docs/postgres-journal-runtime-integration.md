@@ -64,18 +64,6 @@ Journal table:
 
     execution_journal_events
 
-The migration stores:
-
-    session_id
-    sequence
-    event_id
-    timestamp_iso
-    event_type
-    payload_json
-    metadata_json
-    hash_prev
-    hash_self
-
 This preserves the tamper-evident hash chain in durable storage.
 
 ## Shared pool behavior
@@ -85,24 +73,6 @@ The async WhatsApp store factory exposes the Postgres pool used by the Postgres 
 The runtime uses that same pool for the Postgres execution journal.
 
 This avoids creating a second independent Postgres connection path for the journal and keeps runtime lifecycle management centralized.
-
-## Close behavior
-
-The async runtime still closes through the store factory close path.
-
-Because the Postgres store and journal share the same pool, closing the runtime closes the underlying pool once through the store lifecycle.
-
-## Journal session strategy
-
-WhatsApp journal events use this session id pattern:
-
-    whatsapp:<customerId>
-
-Example:
-
-    whatsapp:5215512345678
-
-This allows all inbound and processed WhatsApp events for a customer to be verified and replayed as one journal session.
 
 ## Replay compatibility
 
@@ -114,7 +84,7 @@ The replay engine verifies integrity before replay and returns a deterministic r
 
 ## Investor-facing capability summary
 
-This runtime path now supports:
+This runtime path supports:
 
 - durable journal persistence
 - tamper-evident hash-chain integrity
