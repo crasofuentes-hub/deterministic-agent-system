@@ -207,6 +207,32 @@ function getWhatsAppConversationReplayRoute(url: string): { customerId: string }
   };
 }
 
+function readOptionalPositiveIntegerQueryParam(
+  rawUrl: string,
+  name: string
+): number | undefined {
+  const queryIndex = rawUrl.indexOf("?");
+
+  if (queryIndex < 0) {
+    return undefined;
+  }
+
+  const params = new URLSearchParams(rawUrl.slice(queryIndex + 1));
+  const value = params.get(name);
+
+  if (value === null || value.trim().length === 0) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(name + " must be a positive integer");
+  }
+
+  return parsed;
+}
+
 function readRequestBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -840,10 +866,25 @@ export async function routeRequest(
       }
 
       withRequestId(res, requestId);
+      let untilSequence: number | undefined;
+
+      try {
+        untilSequence = readOptionalPositiveIntegerQueryParam(rawUrl, "untilSequence");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        withRequestId(res, requestId);
+        sendInvalidRequest(res, message);
+        logEnd(req, res, requestId, startedAt, { error: message });
+        return;
+      }
+
       await handleGetWhatsAppConversationReplay(
         res,
         runtimeOptions.asyncWhatsAppRuntime.journal,
-        whatsappConversationReplayRoute.customerId
+        whatsappConversationReplayRoute.customerId,
+        {
+          untilSequence,
+        }
       );
       logEnd(req, res, requestId, startedAt);
       return;

@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 import type { ExecutionJournal } from "../../journal";
-import { replaySession } from "../../replay";
+import { replaySession, replayUntilSequence } from "../../replay";
 import { sendJson } from "../responses";
 
 function isNonEmptyString(value: unknown): value is string {
@@ -11,10 +11,15 @@ function buildWhatsAppJournalSessionId(customerId: string): string {
   return "whatsapp:" + customerId;
 }
 
+export interface WhatsAppConversationReplayOptions {
+  readonly untilSequence?: number;
+}
+
 export async function handleGetWhatsAppConversationReplay(
   res: ServerResponse,
   journal: ExecutionJournal,
   customerId: string,
+  options: WhatsAppConversationReplayOptions = {},
 ): Promise<void> {
   if (!isNonEmptyString(customerId)) {
     sendJson(res, 400, {
@@ -26,7 +31,10 @@ export async function handleGetWhatsAppConversationReplay(
 
   const normalizedCustomerId = customerId.trim();
   const sessionId = buildWhatsAppJournalSessionId(normalizedCustomerId);
-  const replay = await replaySession(journal, sessionId);
+  const replay =
+    typeof options.untilSequence === "number"
+      ? await replayUntilSequence(journal, sessionId, options.untilSequence)
+      : await replaySession(journal, sessionId);
 
   if (!replay.ok) {
     sendJson(res, 409, {

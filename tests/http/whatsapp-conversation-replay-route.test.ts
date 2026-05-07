@@ -16,6 +16,9 @@ function createMockResponse() {
     setHeader(name: string, value: string) {
       headers[name.toLowerCase()] = value;
     },
+    getHeader(name: string) {
+      return headers[name.toLowerCase()];
+    },
     end(value?: string) {
       body = value ?? "";
     },
@@ -166,6 +169,90 @@ describe("whatsapp conversation replay ops route", () => {
     });
   });
 
+  it("returns deterministic replay summary until a specific sequence", async () => {
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const asyncRuntime = createAsyncRuntimeWithJournal();
+    await seedReplayJournal(asyncRuntime);
+
+    const res = createMockResponse();
+
+    await routeRequest(
+      createMockRequest({
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/replay?untilSequence=1",
+        headers: {
+          "x-ops-token": "ops-token-123",
+        },
+      }) as any,
+      res as any,
+      {
+        asyncWhatsAppRuntime: asyncRuntime,
+      },
+    );
+
+    expect(res.statusCode).toBe(200);
+
+    const json = JSON.parse(res.getBody());
+
+    expect(json).toEqual({
+      ok: true,
+      customerId: "5215512345678",
+      sessionId: "whatsapp:5215512345678",
+      integrityOk: true,
+      replayedUntilSequence: 1,
+      eventsReplayed: 1,
+      finalState: {
+        sessionId: "whatsapp:5215512345678",
+        eventCount: 1,
+        eventTypes: {
+          message_received: 1,
+        },
+        lastEventId: "journal:5215512345678:wamid.ops.replay.001:received",
+        lastEventType: "message_received",
+        lastSequence: 1,
+        lastTimestamp: "2026-05-06T01:00:00.000Z",
+        appliedOverrides: [],
+      },
+      replayHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+  });
+
+  it("rejects invalid replay untilSequence query parameter", async () => {
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const asyncRuntime = createAsyncRuntimeWithJournal();
+    await seedReplayJournal(asyncRuntime);
+
+    const res = createMockResponse();
+
+    await routeRequest(
+      createMockRequest({
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/replay?untilSequence=0",
+        headers: {
+          "x-ops-token": "ops-token-123",
+        },
+      }) as any,
+      res as any,
+      {
+        asyncWhatsAppRuntime: asyncRuntime,
+      },
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: {
+        code: "INVALID_REQUEST",
+        message: "untilSequence must be a positive integer",
+        retryable: false,
+      },
+      meta: {
+        requestId: expect.any(String),
+      },
+    });
+  });
   it("rejects whatsapp replay route without ops token", async () => {
     process.env.OPS_API_TOKEN = "ops-token-123";
 
