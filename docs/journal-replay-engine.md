@@ -37,6 +37,10 @@ Operational replay endpoint:
     docs/whatsapp-session-replay-ops-endpoint.md
     tests/http/whatsapp-conversation-replay-route.test.ts
 
+The WhatsApp replay ops endpoint supports bounded replay through:
+
+    untilSequence
+
 ## Public API
 
 Replay full session:

@@ -71,7 +71,7 @@ Example:
 
 ## Replay behavior
 
-The endpoint calls:
+By default, the endpoint calls:
 
     replaySession(journal, sessionId)
 
@@ -86,6 +86,35 @@ If journal integrity fails, the endpoint returns:
     409
 
 with the deterministic replay error payload.
+
+## Bounded replay with untilSequence
+
+The endpoint supports bounded replay through:
+
+    untilSequence
+
+Example:
+
+    GET /whatsapp/conversations/5215512345678/replay?untilSequence=2
+
+When `untilSequence` is provided, the endpoint calls:
+
+    replayUntilSequence(journal, sessionId, untilSequence)
+
+This replays only journal events with:
+
+    sequence <= untilSequence
+
+Invalid values return:
+
+    400
+
+with contractual error shape:
+
+    error:
+      code: INVALID_REQUEST
+      message: untilSequence must be a positive integer
+      retryable: false
 
 ## Successful response shape
 
@@ -152,6 +181,8 @@ The test suite verifies:
 - ops token rejection
 - deterministic configuration error when journal is missing
 - deterministic replay summary
+- bounded replay with `untilSequence`
+- contractual invalid `untilSequence` errors
 - deterministic replay hash format
 
 ## Related docs
