@@ -35,8 +35,9 @@ function createMockRequest(options: {
   readonly method: string;
   readonly url: string;
   readonly headers?: Record<string, string>;
+  readonly body?: string;
 }) {
-  const req = Readable.from([""]) as unknown as {
+  const req = Readable.from([options.body ?? ""]) as unknown as {
     method: string;
     url: string;
     headers: Record<string, string>;
@@ -253,6 +254,147 @@ describe("whatsapp conversation replay ops route", () => {
       },
     });
   });
+  it("returns deterministic replay summary with a controlled payload override", async () => {
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const asyncRuntime = createAsyncRuntimeWithJournal();
+    await seedReplayJournal(asyncRuntime);
+
+    const res = createMockResponse();
+
+    await routeRequest(
+      createMockRequest({
+        method: "POST",
+        url: "/whatsapp/conversations/5215512345678/replay",
+        headers: {
+          "x-ops-token": "ops-token-123",
+        },
+        body: JSON.stringify({
+          overrides: [
+            {
+              sequence: 2,
+              payload: {
+                channel: "whatsapp",
+                customerId: "5215512345678",
+                channelMessageId: "wamid.ops.replay.001",
+                duplicate: false,
+                deliveryStatus: "skipped",
+                responseId: "override-response",
+                resolvedIntentId: "override-intent",
+                stage: "override-stage",
+                status: "resolved",
+                humanInterventionRequired: false,
+              },
+            },
+          ],
+        }),
+      }) as any,
+      res as any,
+      {
+        asyncWhatsAppRuntime: asyncRuntime,
+      },
+    );
+
+    expect(res.statusCode).toBe(200);
+
+    const json = JSON.parse(res.getBody());
+
+    expect(json).toEqual({
+      ok: true,
+      customerId: "5215512345678",
+      sessionId: "whatsapp:5215512345678",
+      integrityOk: true,
+      replayedUntilSequence: 2,
+      eventsReplayed: 2,
+      finalState: {
+        sessionId: "whatsapp:5215512345678",
+        eventCount: 2,
+        eventTypes: {
+          message_received: 1,
+          message_processed: 1,
+        },
+        lastEventId: "journal:5215512345678:wamid.ops.replay.001:processed",
+        lastEventType: "message_processed",
+        lastSequence: 2,
+        lastTimestamp: "2026-05-06T01:00:01.000Z",
+        appliedOverrides: [
+          {
+            sequence: 2,
+            eventId: "journal:5215512345678:wamid.ops.replay.001:processed",
+            changedPayload: true,
+            changedMetadata: false,
+          },
+        ],
+      },
+      replayHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+
+    const normalReplay = createMockResponse();
+
+    await routeRequest(
+      createMockRequest({
+        method: "GET",
+        url: "/whatsapp/conversations/5215512345678/replay",
+        headers: {
+          "x-ops-token": "ops-token-123",
+        },
+      }) as any,
+      normalReplay as any,
+      {
+        asyncWhatsAppRuntime: asyncRuntime,
+      },
+    );
+
+    const normalJson = JSON.parse(normalReplay.getBody());
+
+    expect(normalJson.finalState.appliedOverrides).toEqual([]);
+    expect(normalJson.replayHash).not.toBe(json.replayHash);
+  });
+
+  it("rejects invalid replay override request body contractually", async () => {
+    process.env.OPS_API_TOKEN = "ops-token-123";
+
+    const asyncRuntime = createAsyncRuntimeWithJournal();
+    await seedReplayJournal(asyncRuntime);
+
+    const res = createMockResponse();
+
+    await routeRequest(
+      createMockRequest({
+        method: "POST",
+        url: "/whatsapp/conversations/5215512345678/replay",
+        headers: {
+          "x-ops-token": "ops-token-123",
+        },
+        body: JSON.stringify({
+          overrides: [
+            {
+              sequence: 0,
+              payload: {},
+            },
+          ],
+        }),
+      }) as any,
+      res as any,
+      {
+        asyncWhatsAppRuntime: asyncRuntime,
+      },
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.getBody())).toEqual({
+      ok: false,
+      error: {
+        code: "INVALID_REQUEST",
+        message: "overrides[0].sequence must be a positive integer",
+        retryable: false,
+      },
+      meta: {
+        requestId: expect.any(String),
+      },
+    });
+  });
+
   it("rejects whatsapp replay route without ops token", async () => {
     process.env.OPS_API_TOKEN = "ops-token-123";
 

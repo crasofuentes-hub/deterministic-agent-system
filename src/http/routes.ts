@@ -41,7 +41,7 @@ import { requireOpsToken } from "./handlers/ops-auth";
 import { handleListWhatsAppConversationEvents } from "./handlers/whatsapp-conversation-events";
 import { handleGetWhatsAppConversationEvidence } from "./handlers/whatsapp-conversation-evidence";
 import { handleGetWhatsAppConversationJournal } from "./handlers/whatsapp-conversation-journal";
-import { handleGetWhatsAppConversationReplay } from "./handlers/whatsapp-conversation-replay";
+import { handleGetWhatsAppConversationReplay, handlePostWhatsAppConversationReplayOverride } from "./handlers/whatsapp-conversation-replay";
 import { handleReadiness } from "./handlers/readiness";
 import { enforceRateLimit, resolveRateLimitConfig } from "./handlers/rate-limit";
 import { handleMetrics, recordHttpMetric } from "./handlers/metrics";
@@ -915,6 +915,41 @@ export async function routeRequest(
       withRequestId(res, requestId);
       sendMalformedRequest(res);
       logEnd(req, res, requestId, startedAt, { error: "Malformed JSON" });
+      return;
+    }
+
+    if (whatsappConversationReplayRoute && method === "POST") {
+      if (!enforceConfiguredRateLimit(req, res, "whatsapp-ops")) {
+        logEnd(req, res, requestId, startedAt, { error: "rate limit exceeded" });
+        return;
+      }
+
+      if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
+        logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
+        return;
+      }
+
+      if (!runtimeOptions.asyncWhatsAppRuntime?.journal) {
+        withRequestId(res, requestId);
+        sendJson(res, 500, {
+          ok: false,
+          error: "whatsapp journal is not configured",
+          meta: {
+            requestId,
+          },
+        });
+        logEnd(req, res, requestId, startedAt, { error: "whatsapp journal is not configured" });
+        return;
+      }
+
+      withRequestId(res, requestId);
+      await handlePostWhatsAppConversationReplayOverride(
+        res,
+        runtimeOptions.asyncWhatsAppRuntime.journal,
+        whatsappConversationReplayRoute.customerId,
+        parsed
+      );
+      logEnd(req, res, requestId, startedAt);
       return;
     }
 
