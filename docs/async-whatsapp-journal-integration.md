@@ -26,6 +26,11 @@ Current tests:
 
     tests/http/whatsapp-webhook-async-journal.test.ts
 
+Durable Postgres runtime integration:
+
+    docs/postgres-journal-runtime-integration.md
+    tests/channels/whatsapp.runtime-async-postgres-journal.test.ts
+
 ## Session ID strategy
 
 Journal events for WhatsApp are stored under this session id format:

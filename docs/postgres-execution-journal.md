@@ -32,6 +32,10 @@ Related replay support:
     src/replay/journal-replay-engine.ts
     tests/replay/journal-replay-engine.test.ts
 
+Runtime integration:
+
+    docs/postgres-journal-runtime-integration.md
+
 ## Public API
 
 Apply migrations:

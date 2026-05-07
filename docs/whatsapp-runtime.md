@@ -29,6 +29,12 @@ See:
 
     docs/async-whatsapp-journal-integration.md
 
+When async WhatsApp uses the Postgres store backend, those journal events are stored through the durable Postgres Execution Journal.
+
+See:
+
+    docs/postgres-journal-runtime-integration.md
+
 ## Runtime modes
 
 The server can run the WhatsApp path in two runtime modes:
