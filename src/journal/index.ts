@@ -16,3 +16,10 @@ export {
   type SessionJournal,
   type StoredJournalEvent,
 } from "./types";
+export {
+  POSTGRES_EXECUTION_JOURNAL_MIGRATIONS,
+  applyPostgresExecutionJournalMigrations,
+  createPostgresExecutionJournal,
+  type PostgresExecutionJournalMigration,
+  type PostgresExecutionJournalOptions,
+} from "./postgres-execution-journal";
