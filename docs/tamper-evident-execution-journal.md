@@ -46,6 +46,10 @@ Replay support:
 
     docs/journal-replay-engine.md
 
+Durable Postgres adapter:
+
+    docs/postgres-execution-journal.md
+
 ## Event model
 
 Input event shape:

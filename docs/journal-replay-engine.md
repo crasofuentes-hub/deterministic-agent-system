@@ -26,6 +26,11 @@ Current implementation files:
 Current tests:
 
     tests/replay/journal-replay-engine.test.ts
+    tests/journal/postgres-execution-journal.test.ts
+
+Durable journal adapter:
+
+    docs/postgres-execution-journal.md
 
 ## Public API
 
