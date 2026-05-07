@@ -1,4 +1,9 @@
-import { createInMemoryExecutionJournal, type ExecutionJournal } from "../../journal";
+import {
+  applyPostgresExecutionJournalMigrations,
+  createInMemoryExecutionJournal,
+  createPostgresExecutionJournal,
+  type ExecutionJournal,
+} from "../../journal";
 import type { PostgresPoolConfig } from "../../storage/postgres-config";
 import type { DeterministicPostgresPool } from "../../storage/postgres-pool";
 import { createMockWhatsAppSender, type WhatsAppSender } from "./client";
@@ -61,6 +66,33 @@ function readDeliveryMode(env: Record<string, string | undefined>): WhatsAppDeli
   return deliveryMode;
 }
 
+interface RuntimeExecutionJournalParams {
+  readonly storeMode: WhatsAppStoreBackend;
+  readonly postgresPool?: DeterministicPostgresPool;
+  readonly migrationAppliedAtIso?: string;
+}
+
+async function createRuntimeExecutionJournal(
+  params: RuntimeExecutionJournalParams,
+): Promise<ExecutionJournal> {
+  if (params.storeMode !== "postgres") {
+    return createInMemoryExecutionJournal();
+  }
+
+  if (!params.postgresPool) {
+    throw new Error("postgres execution journal requires postgres pool");
+  }
+
+  await applyPostgresExecutionJournalMigrations(
+    params.postgresPool,
+    params.migrationAppliedAtIso ?? "2026-05-06T00:00:00.000Z",
+  );
+
+  return createPostgresExecutionJournal({
+    pool: params.postgresPool,
+  });
+}
+
 export async function resolveAsyncWhatsAppRuntime(
   params: ResolveAsyncWhatsAppRuntimeParams
 ): Promise<AsyncWhatsAppRuntimeConfig> {
@@ -86,6 +118,11 @@ export async function resolveAsyncWhatsAppRuntime(
     throw new Error("WHATSAPP_SQLITE_PATH is required for sqlite store mode");
   }
 
+  const migrationAppliedAtIso = readTrimmedNonEmpty(
+    params.env,
+    "POSTGRES_MIGRATION_APPLIED_AT_ISO",
+  );
+
   const createdStore = await createAsyncWhatsAppStore({
     backend: storeMode,
     businessContextId,
@@ -104,7 +141,7 @@ export async function resolveAsyncWhatsAppRuntime(
         "POSTGRES_STATEMENT_TIMEOUT_MS"
       ),
     },
-    migrationAppliedAtIso: readTrimmedNonEmpty(params.env, "POSTGRES_MIGRATION_APPLIED_AT_ISO"),
+    migrationAppliedAtIso,
     processedAtIso: readTrimmedNonEmpty(params.env, "WHATSAPP_PROCESSED_AT_ISO"),
     createPool: params.createPostgresPool,
   });
@@ -113,12 +150,25 @@ export async function resolveAsyncWhatsAppRuntime(
     await createdStore.close();
   };
 
+  let journal: ExecutionJournal;
+
+  try {
+    journal = await createRuntimeExecutionJournal({
+      storeMode,
+      postgresPool: createdStore.postgresPool,
+      migrationAppliedAtIso,
+    });
+  } catch (error) {
+    await close();
+    throw error;
+  }
+
   if (deliveryMode === "skipped") {
     return {
       verifyToken,
       deliveryMode,
       store: createdStore.store,
-      journal: createInMemoryExecutionJournal(),
+      journal,
       close,
     };
   }
@@ -129,7 +179,7 @@ export async function resolveAsyncWhatsAppRuntime(
       deliveryMode,
       sender: createMockWhatsAppSender(),
       store: createdStore.store,
-      journal: createInMemoryExecutionJournal(),
+      journal,
       close,
     };
   }
@@ -170,7 +220,7 @@ export async function resolveAsyncWhatsAppRuntime(
       fetchImpl: params.fetchImpl,
     }),
     store: createdStore.store,
-    journal: createInMemoryExecutionJournal(),
+    journal,
     close,
   };
 }

@@ -109,6 +109,7 @@ export interface AsyncWhatsAppStoreFactoryOptions extends WhatsAppStoreFactoryOp
 export interface CreatedAsyncWhatsAppStore {
   readonly backend: WhatsAppStoreBackend;
   readonly store: AsyncWhatsAppStore;
+  readonly postgresPool?: DeterministicPostgresPool;
   close(): Promise<void>;
 }
 
@@ -153,6 +154,7 @@ export async function createAsyncWhatsAppStore(
   return {
     backend,
     store,
+    postgresPool: pool,
     async close(): Promise<void> {
       await store.close();
     },

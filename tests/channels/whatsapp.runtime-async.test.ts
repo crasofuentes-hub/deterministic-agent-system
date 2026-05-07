@@ -41,6 +41,7 @@ function createFakePostgresPool(): DeterministicPostgresPool & {
       values?: readonly unknown[]
     ): Promise<PostgresQueryResult<Row>> {
       queries.push({ sql, values });
+      const normalized = sql.replace(/\s+/g, " ").trim().toLowerCase();
 
       if (sql.startsWith("CREATE TABLE IF NOT EXISTS det_agent_schema_migrations")) {
         return { rows: [] as Row[], rowCount: 0 };
@@ -63,6 +64,21 @@ function createFakePostgresPool(): DeterministicPostgresPool & {
         return { rows: [] as Row[], rowCount: 1 };
       }
 
+      if (normalized.startsWith("create table if not exists det_agent_schema_migrations")) {
+        return { rows: [], rowCount: 0 };
+      }
+
+      if (normalized.includes("select id from det_agent_schema_migrations")) {
+        return { rows: [], rowCount: 0 };
+      }
+
+      if (normalized.includes("insert into det_agent_schema_migrations")) {
+        return { rows: [], rowCount: 1 };
+      }
+
+      if (normalized.includes("create table if not exists execution_journal_events")) {
+        return { rows: [], rowCount: 0 };
+      }
       throw new Error("Unexpected SQL: " + sql);
     },
 
