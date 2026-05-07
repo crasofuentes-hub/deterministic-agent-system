@@ -40,6 +40,7 @@ import { handleCloseWhatsAppHandoff } from "./handlers/whatsapp-handoff-close";
 import { requireOpsToken } from "./handlers/ops-auth";
 import { handleListWhatsAppConversationEvents } from "./handlers/whatsapp-conversation-events";
 import { handleGetWhatsAppConversationEvidence } from "./handlers/whatsapp-conversation-evidence";
+import { handleGetWhatsAppConversationJournal } from "./handlers/whatsapp-conversation-journal";
 import { handleReadiness } from "./handlers/readiness";
 import { enforceRateLimit, resolveRateLimitConfig } from "./handlers/rate-limit";
 import { handleMetrics, recordHttpMetric } from "./handlers/metrics";
@@ -149,6 +150,25 @@ function getWhatsAppConversationEventsRoute(url: string): { customerId: string }
 }
 function getWhatsAppConversationEvidenceRoute(url: string): { customerId: string } | undefined {
   if (!url.startsWith("/whatsapp/conversations/") || !url.endsWith("/evidence")) {
+    return undefined;
+  }
+
+  const parts = url.split("/");
+  if (parts.length !== 5) {
+    return undefined;
+  }
+
+  const customerId = parts[3];
+  if (typeof customerId !== "string" || customerId.length === 0) {
+    return undefined;
+  }
+
+  return {
+    customerId: decodeURIComponent(customerId),
+  };
+}
+function getWhatsAppConversationJournalRoute(url: string): { customerId: string } | undefined {
+  if (!url.startsWith("/whatsapp/conversations/") || !url.endsWith("/journal")) {
     return undefined;
   }
 
@@ -438,6 +458,7 @@ export async function routeRequest(
     const whatsappHandoffCloseRoute = getWhatsAppHandoffCloseRoute(url);
     const whatsappConversationEventsRoute = getWhatsAppConversationEventsRoute(url);
     const whatsappConversationEvidenceRoute = getWhatsAppConversationEvidenceRoute(url);
+    const whatsappConversationJournalRoute = getWhatsAppConversationJournalRoute(url);
 
     if (url === "/health") {
       if (method !== "GET") {
@@ -491,6 +512,7 @@ export async function routeRequest(
       !whatsappHandoffCloseRoute &&
       !whatsappConversationEventsRoute &&
       !whatsappConversationEvidenceRoute &&
+      !whatsappConversationJournalRoute &&
       !ALLOWED_PUBLIC_PATHS.has(url)
     ) {
       withRequestId(res, requestId);
@@ -734,6 +756,39 @@ export async function routeRequest(
         res,
         runtimeOptions.whatsappStore,
         whatsappConversationEvidenceRoute.customerId
+      );
+      logEnd(req, res, requestId, startedAt);
+      return;
+    }
+    if (whatsappConversationJournalRoute && method === "GET") {
+      if (!enforceConfiguredRateLimit(req, res, "whatsapp-ops")) {
+        logEnd(req, res, requestId, startedAt, { error: "rate limit exceeded" });
+        return;
+      }
+
+      if (!requireOpsToken(req, res, process.env.OPS_API_TOKEN)) {
+        logEnd(req, res, requestId, startedAt, { error: "ops token validation failed" });
+        return;
+      }
+
+      if (!runtimeOptions.asyncWhatsAppRuntime?.journal) {
+        withRequestId(res, requestId);
+        sendJson(res, 500, {
+          ok: false,
+          error: "whatsapp journal is not configured",
+          meta: {
+            requestId,
+          },
+        });
+        logEnd(req, res, requestId, startedAt, { error: "whatsapp journal is not configured" });
+        return;
+      }
+
+      withRequestId(res, requestId);
+      await handleGetWhatsAppConversationJournal(
+        res,
+        runtimeOptions.asyncWhatsAppRuntime.journal,
+        whatsappConversationJournalRoute.customerId
       );
       logEnd(req, res, requestId, startedAt);
       return;
