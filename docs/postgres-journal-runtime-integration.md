@@ -86,6 +86,11 @@ The replay engine verifies integrity before replay and returns a deterministic r
 
 This runtime path supports:
 
+Operational API access:
+
+    docs/whatsapp-session-journal-ops-endpoint.md
+
+
 - durable journal persistence
 - tamper-evident hash-chain integrity
 - per-session verification

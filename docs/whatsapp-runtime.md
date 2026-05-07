@@ -35,6 +35,12 @@ See:
 
     docs/postgres-journal-runtime-integration.md
 
+The session journal can also be queried through the protected operational endpoint.
+
+See:
+
+    docs/whatsapp-session-journal-ops-endpoint.md
+
 ## Runtime modes
 
 The server can run the WhatsApp path in two runtime modes:

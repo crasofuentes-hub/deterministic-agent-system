@@ -21,6 +21,7 @@ This repository currently tracks a contractual baseline that is verified locally
 - [Journal Replay Engine](docs/journal-replay-engine.md)
 - [Postgres Execution Journal](docs/postgres-execution-journal.md)
 - [Postgres Journal Runtime Integration](docs/postgres-journal-runtime-integration.md)
+- [WhatsApp Session Journal Ops Endpoint](docs/whatsapp-session-journal-ops-endpoint.md)
 
 <!-- ASYNC_POSTGRES_WHATSAPP_RUNTIME_START -->
 

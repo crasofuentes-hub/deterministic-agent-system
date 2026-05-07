@@ -31,6 +31,11 @@ Durable Postgres runtime integration:
     docs/postgres-journal-runtime-integration.md
     tests/channels/whatsapp.runtime-async-postgres-journal.test.ts
 
+Operational journal endpoint:
+
+    docs/whatsapp-session-journal-ops-endpoint.md
+    tests/http/whatsapp-conversation-journal-route.test.ts
+
 ## Session ID strategy
 
 Journal events for WhatsApp are stored under this session id format:
