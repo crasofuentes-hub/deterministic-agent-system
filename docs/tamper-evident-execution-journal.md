@@ -42,6 +42,10 @@ Current runtime integrations:
 
     docs/async-whatsapp-journal-integration.md
 
+Replay support:
+
+    docs/journal-replay-engine.md
+
 ## Event model
 
 Input event shape:
