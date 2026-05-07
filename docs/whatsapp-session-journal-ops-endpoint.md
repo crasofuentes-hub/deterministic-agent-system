@@ -135,6 +135,10 @@ The test suite verifies:
     docs/postgres-journal-runtime-integration.md
     docs/journal-replay-engine.md
 
+Related replay endpoint:
+
+    docs/whatsapp-session-replay-ops-endpoint.md
+
 ## Investor-facing capability summary
 
 This endpoint demonstrates:

@@ -41,6 +41,12 @@ See:
 
     docs/whatsapp-session-journal-ops-endpoint.md
 
+The session replay summary can also be queried through the protected operational endpoint.
+
+See:
+
+    docs/whatsapp-session-replay-ops-endpoint.md
+
 ## Runtime modes
 
 The server can run the WhatsApp path in two runtime modes:

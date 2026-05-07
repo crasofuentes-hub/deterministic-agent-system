@@ -32,6 +32,11 @@ Durable journal adapter:
 
     docs/postgres-execution-journal.md
 
+Operational replay endpoint:
+
+    docs/whatsapp-session-replay-ops-endpoint.md
+    tests/http/whatsapp-conversation-replay-route.test.ts
+
 ## Public API
 
 Replay full session:

@@ -90,6 +90,10 @@ Operational API access:
 
     docs/whatsapp-session-journal-ops-endpoint.md
 
+Operational replay API access:
+
+    docs/whatsapp-session-replay-ops-endpoint.md
+
 
 - durable journal persistence
 - tamper-evident hash-chain integrity
