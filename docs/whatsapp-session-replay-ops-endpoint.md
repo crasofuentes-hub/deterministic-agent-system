@@ -213,3 +213,65 @@ The endpoint is WhatsApp-specific.
 The replay engine remains domain-agnostic.
 
 The endpoint depends on the generic `ExecutionJournal` contract and the generic Journal Replay Engine.
+
+## Replay override with POST
+
+The endpoint also supports controlled replay overrides through:
+
+    POST /whatsapp/conversations/:customerId/replay
+
+Example:
+
+    POST /whatsapp/conversations/5215512345678/replay
+
+Body:
+
+    {
+      "overrides": [
+        {
+          "sequence": 2,
+          "payload": {
+            "status": "override"
+          }
+        }
+      ]
+    }
+
+The override request does not mutate the original journal.
+
+It produces an alternate deterministic replay result with:
+
+    finalState.appliedOverrides
+    replayHash
+
+The replay hash changes when the replay override changes.
+
+Supported override targets:
+
+    sequence
+    eventId
+
+Each override must specify exactly one target.
+
+Supported override values:
+
+    payload
+    metadata
+
+Each override must provide at least one of:
+
+    payload
+    metadata
+
+Invalid override requests return:
+
+    400
+
+with contractual error shape:
+
+    error:
+      code: INVALID_REQUEST
+      message: <validation message>
+      retryable: false
+
+Replay override is intended for deterministic what-if analysis, not for modifying audit history.

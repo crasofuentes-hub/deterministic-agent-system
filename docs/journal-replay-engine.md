@@ -180,3 +180,30 @@ It must not depend on:
 - LLM provider implementations
 
 Runtime-specific replay reports may be built above this layer, but the core replay engine must remain domain-agnostic.
+
+## Operational replay override endpoint
+
+The WhatsApp replay ops endpoint exposes replay override through:
+
+    POST /whatsapp/conversations/:customerId/replay
+
+Related test:
+
+    tests/http/whatsapp-conversation-replay-route.test.ts
+
+The endpoint calls:
+
+    replayWithOverride(journal, sessionId, overrides)
+
+The original journal remains unchanged.
+
+The replay result includes:
+
+    finalState.appliedOverrides
+    replayHash
+
+This completes the operational replay API surface:
+
+- full replay
+- bounded replay with untilSequence
+- controlled replay override
