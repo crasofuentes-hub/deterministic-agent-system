@@ -26,3 +26,9 @@ export {
   type PlannerStep,
   type PlannerToolDefinition,
 } from "./planner/planner-contract";
+
+export {
+  PLANNER_PROMPT_SCHEMA_NAME_V1_1,
+  PLANNER_PROMPT_VERSION_V1_1,
+  deterministicPlannerPromptContractV1_1,
+} from "./planner/planner-contract-v1-1";

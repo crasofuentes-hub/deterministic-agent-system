@@ -173,3 +173,10 @@ Current implementation:
 Current tests:
 
     tests/agent-run/llm-live-planner-contract.test.ts
+## Prompt v1.1
+
+The stronger planner prompt v1.1 is documented here:
+
+    docs/deterministic-planner-prompt-v1.1.md
+
+It keeps the same output schema while adding stronger role framing, delimiters, full JSON examples, and a private final self-check.
