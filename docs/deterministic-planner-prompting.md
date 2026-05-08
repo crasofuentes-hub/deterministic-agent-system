@@ -157,3 +157,19 @@ Expected flow:
     verify deterministic plan
     reject invalid plan deterministically
     execute only verified plans
+
+## LLM-live boundary
+
+The LLM-live planner contract boundary validates planner-style LLM output before it is bridged into deterministic agent plans.
+
+See:
+
+    docs/llm-live-planner-contract-boundary.md
+
+Current implementation:
+
+    src/agent-run/llm-live-planner-contract.ts
+
+Current tests:
+
+    tests/agent-run/llm-live-planner-contract.test.ts
