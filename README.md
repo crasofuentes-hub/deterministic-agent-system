@@ -1157,3 +1157,7 @@ See the LICENSE file for details.
 **Oscar Fuentes Fernandez**
 
 Independent builder focused on deterministic systems, auditable artificial intelligence execution, bounded autonomous behavior, reproducible verification workflows, and enterprise-grade engineering rigor.
+
+## Deterministic prompting and planning
+
+- [Deterministic Planner Prompting](docs/deterministic-planner-prompting.md)
