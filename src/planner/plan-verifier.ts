@@ -305,6 +305,18 @@ export function verifyDeterministicPlan(
   for (let index = 0; index < plan.steps.length; index += 1) {
     const step = plan.steps[index];
     const path = "$.steps[" + index + "]";
+
+    if (typeof step === "undefined") {
+      issues.push(
+        issue(
+          "PLAN_SCHEMA_INVALID",
+          "step must be present",
+          path,
+        ),
+      );
+      continue;
+    }
+
     const tool = toolMap.get(step.tool);
 
     if (!tool) {
