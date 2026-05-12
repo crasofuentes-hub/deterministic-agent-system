@@ -85,9 +85,32 @@ function parseAgentRunInput(
   const llmTemperature = body.llmTemperature;
   const llmMaxTokens = body.llmMaxTokens;
   const llmPlanText = body.llmPlanText;
+  const llmPlanTextFormat = body.llmPlanTextFormat;
+  const llmPlannerAvailableTools = body.llmPlannerAvailableTools;
+  const llmVerifiedPlanId = body.llmVerifiedPlanId;
 
   if (typeof llmPlanText !== "undefined" && !isNonEmptyString(llmPlanText)) {
     return { ok: false, message: "llmPlanText must be a non-empty string when provided" };
+  }
+
+  if (
+    typeof llmPlanTextFormat !== "undefined" &&
+    llmPlanTextFormat !== "deterministic-agent-plan" &&
+    llmPlanTextFormat !== "planner-prompt-output"
+  ) {
+    return {
+      ok: false,
+      message:
+        'llmPlanTextFormat must be "deterministic-agent-plan" or "planner-prompt-output" when provided',
+    };
+  }
+
+  if (typeof llmPlannerAvailableTools !== "undefined" && !Array.isArray(llmPlannerAvailableTools)) {
+    return { ok: false, message: "llmPlannerAvailableTools must be an array when provided" };
+  }
+
+  if (typeof llmVerifiedPlanId !== "undefined" && !isNonEmptyString(llmVerifiedPlanId)) {
+    return { ok: false, message: "llmVerifiedPlanId must be a non-empty string when provided" };
   }
 
   return {
@@ -107,6 +130,16 @@ function parseAgentRunInput(
       llmTemperature: typeof llmTemperature === "number" ? llmTemperature : undefined,
       llmMaxTokens: typeof llmMaxTokens === "number" ? llmMaxTokens : undefined,
       llmPlanText: typeof llmPlanText === "string" ? llmPlanText : undefined,
+      llmPlanTextFormat:
+        llmPlanTextFormat === "deterministic-agent-plan" ||
+        llmPlanTextFormat === "planner-prompt-output"
+          ? llmPlanTextFormat
+          : undefined,
+      llmPlannerAvailableTools: Array.isArray(llmPlannerAvailableTools)
+        ? llmPlannerAvailableTools
+        : undefined,
+      llmVerifiedPlanId:
+        typeof llmVerifiedPlanId === "string" ? llmVerifiedPlanId : undefined,
     },
   };
 }

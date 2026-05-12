@@ -39,7 +39,13 @@ export async function handleSchemaAgentRun(res: ServerResponse): Promise<void> {
           llmModel: { type: "string" },
           llmTemperature: { type: "number" },
           llmMaxTokens: { type: "integer", minimum: 1 },
-          llmPlanText: { type: "string", minLength: 1 }
+          llmPlanText: { type: "string", minLength: 1 },
+          llmPlanTextFormat: {
+            type: "string",
+            enum: ["deterministic-agent-plan", "planner-prompt-output"]
+          },
+          llmPlannerAvailableTools: { type: "array" },
+          llmVerifiedPlanId: { type: "string", minLength: 1 }
         }
       },
       response: {

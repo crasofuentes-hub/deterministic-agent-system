@@ -305,17 +305,27 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
       throw new Error("llm_live_verified_planner_prompt_tools_required");
     }
 
-    return bridgeVerifiedLlmLivePlannerPromptTextToAgentPlan({
-      text: planText,
-      availableTools,
-      maxSteps: input.maxSteps,
-      planId:
-        typeof input.llmVerifiedPlanId === "string" && input.llmVerifiedPlanId.trim().length > 0
-          ? input.llmVerifiedPlanId.trim()
-          : "agent-run-llm-live-verified-planner-v1",
-      stepIdPrefix: "llm_tool",
-      outputKeyPrefix: "llm_step",
-    });
+    try {
+      return bridgeVerifiedLlmLivePlannerPromptTextToAgentPlan({
+        text: planText,
+        availableTools,
+        maxSteps: input.maxSteps,
+        planId:
+          typeof input.llmVerifiedPlanId === "string" && input.llmVerifiedPlanId.trim().length > 0
+            ? input.llmVerifiedPlanId.trim()
+            : "agent-run-llm-live-verified-planner-v1",
+        stepIdPrefix: "llm_tool",
+        outputKeyPrefix: "llm_step",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (message.startsWith("LLM_LIVE_PLANNER_CONTRACT_INVALID:")) {
+        throw new Error("llm_live_invalid_plan_text: " + message);
+      }
+
+      throw error;
+    }
   }
 
   if (format !== "deterministic-agent-plan") {
