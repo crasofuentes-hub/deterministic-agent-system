@@ -192,3 +192,15 @@ Run it with:
 
     npm run build
     npm run demo:agent:llm-live:verified-planner
+
+## Architecture guard
+
+The verified planner prompt mode is protected by an architecture guard to ensure it remains explicit.
+
+See:
+
+    docs/architecture-verified-planner-prompt-mode-guard.md
+
+Guard test:
+
+    tests/architecture/verified-planner-prompt-mode-explicit.test.ts

@@ -1166,3 +1166,4 @@ Independent builder focused on deterministic systems, auditable artificial intel
 - [LLM Live Verified Planner Bridge](docs/llm-live-verified-planner-bridge.md)
 - [LLM Live Verified Planner Prompt Input Mode](docs/llm-live-verified-planner-input-mode.md)
 - [Verified Planner Prompt LLM-live Demo](docs/demo-verified-planner-llm-live.md)
+- [Verified Planner Prompt Mode Architecture Guard](docs/architecture-verified-planner-prompt-mode-guard.md)

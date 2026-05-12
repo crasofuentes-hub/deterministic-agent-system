@@ -183,3 +183,13 @@ Current tests:
 The verified planner bridge is exercised through the HTTP runtime demo:
 
     docs/demo-verified-planner-llm-live.md
+
+## Explicit mode guard
+
+The verified planner bridge is only reachable from LLM-live when the request explicitly sets:
+
+    llmPlanTextFormat: "planner-prompt-output"
+
+See:
+
+    docs/architecture-verified-planner-prompt-mode-guard.md
