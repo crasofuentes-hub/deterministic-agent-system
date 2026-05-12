@@ -1163,3 +1163,4 @@ Independent builder focused on deterministic systems, auditable artificial intel
 - [Deterministic Planner Prompting](docs/deterministic-planner-prompting.md)
 - [Deterministic Planner Prompt v1.1](docs/deterministic-planner-prompt-v1.1.md)
 - [LLM Live Planner Contract Boundary](docs/llm-live-planner-contract-boundary.md)
+- [LLM Live Verified Planner Bridge](docs/llm-live-verified-planner-bridge.md)

@@ -168,3 +168,19 @@ This boundary does not yet:
 - call a live LLM provider
 - infer tools not provided in the tool surface
 - mutate the existing deterministic agent plan contract
+
+## Verified planner bridge
+
+The verified planner bridge converts accepted planner prompt output into the existing deterministic agent plan format.
+
+See:
+
+    docs/llm-live-verified-planner-bridge.md
+
+Current implementation:
+
+    src/agent-run/llm-live-planner-bridge.ts
+
+Current tests:
+
+    tests/agent-run/llm-live-planner-bridge.test.ts

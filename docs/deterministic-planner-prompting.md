@@ -180,3 +180,11 @@ The stronger planner prompt v1.1 is documented here:
     docs/deterministic-planner-prompt-v1.1.md
 
 It keeps the same output schema while adding stronger role framing, delimiters, full JSON examples, and a private final self-check.
+
+## Verified planner bridge
+
+Verified planner output can now be bridged into the runtime's deterministic agent plan format.
+
+See:
+
+    docs/llm-live-verified-planner-bridge.md
