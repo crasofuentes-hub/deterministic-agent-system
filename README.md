@@ -1221,3 +1221,32 @@ Contractual proof:
 
     npm run test:llm-live:contractual
     npm run test:baseline:contractual
+
+## Current platform status
+
+This repository now includes a deterministic, auditable agent runtime with visible hardening across vertical isolation, journal/replay, Postgres-oriented production paths, async queue contracts, and verified LLM-live planner prompting.
+
+Key review documents:
+
+- [Current Platform Capabilities](docs/current-platform-capabilities.md)
+- [Red Flags Status](docs/red-flags-status.md)
+
+Current high-value proof points:
+
+- domain-agnostic core with vertical extension boundaries
+- insurance brokerage vertical extension
+- tamper-evident journal and replay engine
+- Postgres execution journal and production-oriented storage direction
+- async task queue contract
+- planner prompt v1.1 with versioned prompt contracts
+- deterministic planner verifier
+- LLM-live verified planner prompt boundary
+- bridge from verified planner output to `DeterministicAgentPlan`
+- explicit `planner-prompt-output` mode through `/agent/run`
+- contractual tests for LLM-live and baseline behavior
+
+Verification commands:
+
+    npm run build
+    npm run test:llm-live:contractual
+    npm run test:baseline:contractual
