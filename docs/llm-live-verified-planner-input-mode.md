@@ -181,3 +181,14 @@ The mode is included in:
     test:baseline:contractual
 
 This ensures future changes cannot silently break the verified planner path.
+
+## Demo
+
+The verified planner prompt input mode has an executable demo:
+
+    docs/demo-verified-planner-llm-live.md
+
+Run it with:
+
+    npm run build
+    npm run demo:agent:llm-live:verified-planner

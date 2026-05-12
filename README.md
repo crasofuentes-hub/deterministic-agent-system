@@ -1165,3 +1165,4 @@ Independent builder focused on deterministic systems, auditable artificial intel
 - [LLM Live Planner Contract Boundary](docs/llm-live-planner-contract-boundary.md)
 - [LLM Live Verified Planner Bridge](docs/llm-live-verified-planner-bridge.md)
 - [LLM Live Verified Planner Prompt Input Mode](docs/llm-live-verified-planner-input-mode.md)
+- [Verified Planner Prompt LLM-live Demo](docs/demo-verified-planner-llm-live.md)

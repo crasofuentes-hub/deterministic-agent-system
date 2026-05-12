@@ -177,3 +177,9 @@ Current implementation:
 Current tests:
 
     tests/agent-run/llm-live-verified-planner-input-mode.test.ts
+
+## Demo coverage
+
+The verified planner bridge is exercised through the HTTP runtime demo:
+
+    docs/demo-verified-planner-llm-live.md
