@@ -159,3 +159,21 @@ Expected behavior:
 - verified planner text uses the prompt contract boundary and bridge
 - old `test:llm-live:contractual` remains green
 - new tests prove verified planner prompt mode
+
+## Verified planner prompt input mode
+
+LLM-live now exposes the verified planner bridge through an explicit input mode:
+
+    llmPlanTextFormat: "planner-prompt-output"
+
+See:
+
+    docs/llm-live-verified-planner-input-mode.md
+
+Current implementation:
+
+    src/agent-run/planner-llm-live.ts
+
+Current tests:
+
+    tests/agent-run/llm-live-verified-planner-input-mode.test.ts

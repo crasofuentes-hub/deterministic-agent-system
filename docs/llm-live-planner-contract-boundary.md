@@ -184,3 +184,11 @@ Current implementation:
 Current tests:
 
     tests/agent-run/llm-live-planner-bridge.test.ts
+
+## Verified planner input mode
+
+The verified planner boundary is now reachable from LLM-live through an explicit input mode.
+
+See:
+
+    docs/llm-live-verified-planner-input-mode.md
