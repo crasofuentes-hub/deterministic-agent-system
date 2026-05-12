@@ -3,6 +3,7 @@ import { canonicalizePlan } from "../agent/canonical-plan";
 import type { AgentRunInput, Planner, AsyncPlanner } from "./types";
 import type { AsyncModelAdapter } from "../integrations/provider-types";
 import { createModelAdapterSelection } from "../integrations";
+import { bridgeVerifiedLlmLivePlannerPromptTextToAgentPlan } from "./llm-live-planner-bridge";
 import { normalizeGoal, deriveIntent } from "./spec";
 import { resolveToolIdForCapability } from "../agent/tools";
 import { computeLlmLiveCacheKey, loadCachedPlan, saveCachedPlan } from "./llm-live-cache";
@@ -285,9 +286,44 @@ function buildPlanViaStubText(input: AgentRunInput): DeterministicAgentPlan {
   if (planText.trim().length === 0) {
     throw new Error("llm_live_not_configured");
   }
-  return parseDeterministicPlanFromModelText(planText);
+  return materializePlanFromLlmPlanText(input);
 }
 
+export function materializePlanFromLlmPlanText(input: AgentRunInput): DeterministicAgentPlan {
+  const planText = typeof input.llmPlanText === "string" ? input.llmPlanText : "";
+  const format =
+    typeof input.llmPlanTextFormat === "string"
+      ? input.llmPlanTextFormat
+      : "deterministic-agent-plan";
+
+  if (format === "planner-prompt-output") {
+    const availableTools = Array.isArray(input.llmPlannerAvailableTools)
+      ? input.llmPlannerAvailableTools
+      : [];
+
+    if (availableTools.length === 0) {
+      throw new Error("llm_live_verified_planner_prompt_tools_required");
+    }
+
+    return bridgeVerifiedLlmLivePlannerPromptTextToAgentPlan({
+      text: planText,
+      availableTools,
+      maxSteps: input.maxSteps,
+      planId:
+        typeof input.llmVerifiedPlanId === "string" && input.llmVerifiedPlanId.trim().length > 0
+          ? input.llmVerifiedPlanId.trim()
+          : "agent-run-llm-live-verified-planner-v1",
+      stepIdPrefix: "llm_tool",
+      outputKeyPrefix: "llm_step",
+    });
+  }
+
+  if (format !== "deterministic-agent-plan") {
+    throw new Error("llm_live_invalid_plan_text_format: " + format);
+  }
+
+  return parseDeterministicPlanFromModelText(planText);
+}
 function createOpenAICompatibleAdapterFromEnv(input: AgentRunInput): AsyncModelAdapter | undefined {
   const baseUrl = String(process.env.DAS_OPENAI_COMPAT_BASE_URL ?? "").trim();
   const apiKey = String(process.env.DAS_OPENAI_COMPAT_API_KEY ?? "").trim();

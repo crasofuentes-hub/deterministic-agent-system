@@ -1,4 +1,5 @@
 import type { DeterministicAgentPlan, AgentExecutionResult } from "../agent/plan-types";
+import type { PlannerToolDefinition } from "../prompts";
 import type { ExecutionMode, DeterministicResponse } from "../core/contracts";
 
 /**
@@ -24,6 +25,9 @@ export interface AgentRunInput {
   llmTemperature?: number;
   llmMaxTokens?: number;
   llmPlanText?: string;
+  llmPlanTextFormat?: "deterministic-agent-plan" | "planner-prompt-output";
+  llmPlannerAvailableTools?: readonly PlannerToolDefinition[];
+  llmVerifiedPlanId?: string;
 }
 
 /**
