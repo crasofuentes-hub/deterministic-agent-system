@@ -1167,3 +1167,57 @@ Independent builder focused on deterministic systems, auditable artificial intel
 - [LLM Live Verified Planner Prompt Input Mode](docs/llm-live-verified-planner-input-mode.md)
 - [Verified Planner Prompt LLM-live Demo](docs/demo-verified-planner-llm-live.md)
 - [Verified Planner Prompt Mode Architecture Guard](docs/architecture-verified-planner-prompt-mode-guard.md)
+
+## Investor-facing summary: verified planner prompting
+
+The LLM-live planner path now uses a verified prompt-to-plan pipeline instead of trusting free-form model output.
+
+This matters because the system does not simply ask an LLM to produce a plan and execute it.
+
+The current verified planner path is:
+
+    planner prompt v1.1
+    prompt contract validation
+    deterministic plan verifier
+    LLM-live verified boundary
+    bridge to DeterministicAgentPlan
+    canonicalizePlan
+    deterministic executor
+    trace/hash output
+
+The verified planner prompt mode is explicit:
+
+    llmPlanTextFormat: "planner-prompt-output"
+
+Classic deterministic agent plan text remains the default, so existing integrations are not broken.
+
+The verified planner path protects the runtime from:
+
+- invented tools
+- malformed planner JSON
+- hidden reasoning fields
+- missing required tool parameters
+- invalid dependencies
+- clarification outputs being executed as plans
+- silent drift from the deterministic plan contract
+
+The result is an auditable LLM planning layer where model output must pass deterministic validation before it can become an executable agent plan.
+
+Related docs:
+
+    docs/deterministic-planner-prompt-v1.1.md
+    docs/llm-live-planner-contract-boundary.md
+    docs/llm-live-verified-planner-bridge.md
+    docs/llm-live-verified-planner-input-mode.md
+    docs/demo-verified-planner-llm-live.md
+    docs/architecture-verified-planner-prompt-mode-guard.md
+
+Executable proof:
+
+    npm run build
+    npm run demo:agent:llm-live:verified-planner
+
+Contractual proof:
+
+    npm run test:llm-live:contractual
+    npm run test:baseline:contractual
