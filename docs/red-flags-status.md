@@ -159,3 +159,9 @@ Recommended verification:
     npm run build
     npm run test:llm-live:contractual
     npm run test:baseline:contractual
+
+## Current status matrix
+
+See the current evaluator-facing status matrix:
+
+    docs/red-flags-current-status.md
