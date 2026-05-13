@@ -23,3 +23,12 @@ export {
   type PostgresExecutionJournalMigration,
   type PostgresExecutionJournalOptions,
 } from "./postgres-execution-journal";
+
+export {
+  buildVerifiedPlannerJournalEvent,
+  recordVerifiedPlannerJournalEvent,
+  type VerifiedPlannerJournalAppendInput,
+  type VerifiedPlannerJournalEventInput,
+  type VerifiedPlannerJournalEventType,
+  type VerifiedPlannerJournalWriter,
+} from "./verified-planner-journal";
