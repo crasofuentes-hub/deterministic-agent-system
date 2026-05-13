@@ -37,3 +37,8 @@ export {
   mapVerifiedPlannerStructuredEventToJournalEvent,
   type VerifiedPlannerObservabilityJournalMappingInput,
 } from "./verified-planner-observability-journal";
+
+export {
+  createVerifiedPlannerJournalEventSink,
+  type VerifiedPlannerJournalEventSinkOptions,
+} from "./verified-planner-journal-sink";
