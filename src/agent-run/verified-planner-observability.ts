@@ -18,14 +18,66 @@ export interface VerifiedPlannerStructuredEvent {
   readonly stepCount?: number;
 }
 
+export interface VerifiedPlannerStructuredEventEnvelope extends VerifiedPlannerStructuredEvent {
+  readonly ts: string;
+  readonly subsystem: "llm-live";
+}
+
+export type VerifiedPlannerStructuredEventSink = (
+  event: VerifiedPlannerStructuredEventEnvelope,
+) => void;
+
+let configuredVerifiedPlannerStructuredEventSink:
+  | VerifiedPlannerStructuredEventSink
+  | undefined;
+
+export function setVerifiedPlannerStructuredEventSink(
+  sink: VerifiedPlannerStructuredEventSink | undefined,
+): () => void {
+  const previous = configuredVerifiedPlannerStructuredEventSink;
+
+  configuredVerifiedPlannerStructuredEventSink = sink;
+
+  return () => {
+    configuredVerifiedPlannerStructuredEventSink = previous;
+  };
+}
+
+export function clearVerifiedPlannerStructuredEventSink(): void {
+  configuredVerifiedPlannerStructuredEventSink = undefined;
+}
+
+function emitSinkFailure(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+
+  process.stderr.write(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      subsystem: "llm-live",
+      event: "llm_live.planner_event_sink.error",
+      error: message,
+    }) + "\n",
+  );
+}
+
 export function emitVerifiedPlannerStructuredEvent(event: VerifiedPlannerStructuredEvent): void {
-  const line = {
+  const envelope: VerifiedPlannerStructuredEventEnvelope = {
     ts: new Date().toISOString(),
     subsystem: "llm-live",
     ...event,
   };
 
-  process.stdout.write(JSON.stringify(line) + "\n");
+  process.stdout.write(JSON.stringify(envelope) + "\n");
+
+  if (typeof configuredVerifiedPlannerStructuredEventSink === "undefined") {
+    return;
+  }
+
+  try {
+    configuredVerifiedPlannerStructuredEventSink(envelope);
+  } catch (error) {
+    emitSinkFailure(error);
+  }
 }
 
 export function normalizeVerifiedPlannerToolNames(
