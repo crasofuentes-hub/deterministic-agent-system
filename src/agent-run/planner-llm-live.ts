@@ -4,6 +4,7 @@ import type { AgentRunInput, Planner, AsyncPlanner } from "./types";
 import type { AsyncModelAdapter } from "../integrations/provider-types";
 import { createModelAdapterSelection } from "../integrations";
 import { bridgeVerifiedLlmLivePlannerPromptTextToAgentPlan } from "./llm-live-planner-bridge";
+import { emitVerifiedPlannerStructuredEvent, normalizeVerifiedPlannerToolNames } from "./verified-planner-observability";
 import { normalizeGoal, deriveIntent } from "./spec";
 import { resolveToolIdForCapability } from "../agent/tools";
 import { computeLlmLiveCacheKey, loadCachedPlan, saveCachedPlan } from "./llm-live-cache";
@@ -300,13 +301,33 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
     const availableTools = Array.isArray(input.llmPlannerAvailableTools)
       ? input.llmPlannerAvailableTools
       : [];
+    const toolNames = normalizeVerifiedPlannerToolNames(availableTools);
+
+    emitVerifiedPlannerStructuredEvent({
+      event: "llm_live.planner_prompt.received",
+      traceId: input.traceId,
+      llmPlanTextFormat: "planner-prompt-output",
+      promptContractId: "planner.deterministic",
+      promptContractVersion: "1.1.0",
+      toolNames,
+    });
 
     if (availableTools.length === 0) {
+      emitVerifiedPlannerStructuredEvent({
+        event: "llm_live.planner_prompt.rejected",
+        traceId: input.traceId,
+        llmPlanTextFormat: "planner-prompt-output",
+        promptContractId: "planner.deterministic",
+        promptContractVersion: "1.1.0",
+        errorCode: "llm_live_verified_planner_prompt_tools_required",
+        issueCount: 1,
+      });
+
       throw new Error("llm_live_verified_planner_prompt_tools_required");
     }
 
     try {
-      return bridgeVerifiedLlmLivePlannerPromptTextToAgentPlan({
+      const plan = bridgeVerifiedLlmLivePlannerPromptTextToAgentPlan({
         text: planText,
         availableTools,
         maxSteps: input.maxSteps,
@@ -317,10 +338,43 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
         stepIdPrefix: "llm_tool",
         outputKeyPrefix: "llm_step",
       });
+
+      emitVerifiedPlannerStructuredEvent({
+        event: "llm_live.planner_prompt.verified",
+        traceId: input.traceId,
+        planId: plan.planId,
+        llmPlanTextFormat: "planner-prompt-output",
+        promptContractId: "planner.deterministic",
+        promptContractVersion: "1.1.0",
+        toolNames,
+        executable: true,
+      });
+
+      emitVerifiedPlannerStructuredEvent({
+        event: "llm_live.planner_bridge.created_plan",
+        traceId: input.traceId,
+        planId: plan.planId,
+        llmPlanTextFormat: "planner-prompt-output",
+        stepCount: plan.steps.length,
+      });
+
+      return plan;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const contractError = message.startsWith("LLM_LIVE_PLANNER_CONTRACT_INVALID:");
 
-      if (message.startsWith("LLM_LIVE_PLANNER_CONTRACT_INVALID:")) {
+      emitVerifiedPlannerStructuredEvent({
+        event: "llm_live.planner_prompt.rejected",
+        traceId: input.traceId,
+        llmPlanTextFormat: "planner-prompt-output",
+        promptContractId: "planner.deterministic",
+        promptContractVersion: "1.1.0",
+        toolNames,
+        errorCode: contractError ? "LLM_LIVE_PLANNER_CONTRACT_INVALID" : "LLM_LIVE_PLANNER_UNKNOWN_ERROR",
+        issueCount: contractError ? 1 : undefined,
+      });
+
+      if (contractError) {
         throw new Error("llm_live_invalid_plan_text: " + message);
       }
 
