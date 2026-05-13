@@ -1250,3 +1250,7 @@ Verification commands:
     npm run build
     npm run test:llm-live:contractual
     npm run test:baseline:contractual
+
+## Storage
+
+- [Storage Mode Strategy](docs/storage-mode-strategy.md)
