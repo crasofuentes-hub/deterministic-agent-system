@@ -32,3 +32,8 @@ export {
   type VerifiedPlannerJournalEventType,
   type VerifiedPlannerJournalWriter,
 } from "./verified-planner-journal";
+
+export {
+  mapVerifiedPlannerStructuredEventToJournalEvent,
+  type VerifiedPlannerObservabilityJournalMappingInput,
+} from "./verified-planner-observability-journal";
