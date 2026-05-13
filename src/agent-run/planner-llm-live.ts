@@ -424,15 +424,20 @@ export class LlmLivePlanner implements Planner, AsyncPlanner {
     const provider = providerFromInput(input);
     const { keyHash, cacheDir } = computeKey(input);
 
+    if (
+      provider === "openai-compatible" &&
+      typeof input.llmPlanText === "string" &&
+      input.llmPlanText.trim().length > 0
+    ) {
+      const plan = buildPlanViaStubText(input);
+      saveCachedPlan(cacheDir, keyHash, plan);
+      return plan;
+    }
+
     const cached = loadCachedPlan(cacheDir, keyHash);
     if (cached) return cached;
 
     if (provider === "openai-compatible") {
-      if (typeof input.llmPlanText === "string" && input.llmPlanText.trim().length > 0) {
-        const plan = buildPlanViaStubText(input);
-        saveCachedPlan(cacheDir, keyHash, plan);
-        return plan;
-      }
       throw new Error("llm_live_requires_async_planner");
     }
 
@@ -445,15 +450,20 @@ export class LlmLivePlanner implements Planner, AsyncPlanner {
     const provider = providerFromInput(input);
     const { keyHash, cacheDir } = computeKey(input);
 
+    if (
+      provider === "openai-compatible" &&
+      typeof input.llmPlanText === "string" &&
+      input.llmPlanText.trim().length > 0
+    ) {
+      const plan = buildPlanViaStubText(input);
+      saveCachedPlan(cacheDir, keyHash, plan);
+      return plan;
+    }
+
     const cached = loadCachedPlan(cacheDir, keyHash);
     if (cached) return cached;
 
     if (provider === "openai-compatible") {
-      if (typeof input.llmPlanText === "string" && input.llmPlanText.trim().length > 0) {
-        const plan = buildPlanViaStubText(input);
-        saveCachedPlan(cacheDir, keyHash, plan);
-        return plan;
-      }
 
       const adapter = this.asyncAdapter ?? createOpenAICompatibleAdapterFromEnv(input);
       if (!adapter) {

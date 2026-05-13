@@ -27,24 +27,41 @@ export type VerifiedPlannerStructuredEventSink = (
   event: VerifiedPlannerStructuredEventEnvelope,
 ) => void;
 
-let configuredVerifiedPlannerStructuredEventSink:
-  | VerifiedPlannerStructuredEventSink
-  | undefined;
+interface VerifiedPlannerStructuredEventRegistry {
+  sink?: VerifiedPlannerStructuredEventSink;
+}
+
+const VERIFIED_PLANNER_STRUCTURED_EVENT_REGISTRY_KEY = Symbol.for(
+  "deterministic-agent-system.verified-planner-structured-event-registry",
+);
+
+function getVerifiedPlannerStructuredEventRegistry(): VerifiedPlannerStructuredEventRegistry {
+  const globalWithRegistry = globalThis as typeof globalThis & {
+    [VERIFIED_PLANNER_STRUCTURED_EVENT_REGISTRY_KEY]?: VerifiedPlannerStructuredEventRegistry;
+  };
+
+  if (!globalWithRegistry[VERIFIED_PLANNER_STRUCTURED_EVENT_REGISTRY_KEY]) {
+    globalWithRegistry[VERIFIED_PLANNER_STRUCTURED_EVENT_REGISTRY_KEY] = {};
+  }
+
+  return globalWithRegistry[VERIFIED_PLANNER_STRUCTURED_EVENT_REGISTRY_KEY];
+}
 
 export function setVerifiedPlannerStructuredEventSink(
   sink: VerifiedPlannerStructuredEventSink | undefined,
 ): () => void {
-  const previous = configuredVerifiedPlannerStructuredEventSink;
+  const registry = getVerifiedPlannerStructuredEventRegistry();
+  const previous = registry.sink;
 
-  configuredVerifiedPlannerStructuredEventSink = sink;
+  registry.sink = sink;
 
   return () => {
-    configuredVerifiedPlannerStructuredEventSink = previous;
+    registry.sink = previous;
   };
 }
 
 export function clearVerifiedPlannerStructuredEventSink(): void {
-  configuredVerifiedPlannerStructuredEventSink = undefined;
+  delete getVerifiedPlannerStructuredEventRegistry().sink;
 }
 
 function emitSinkFailure(error: unknown): void {
@@ -69,12 +86,14 @@ export function emitVerifiedPlannerStructuredEvent(event: VerifiedPlannerStructu
 
   process.stdout.write(JSON.stringify(envelope) + "\n");
 
-  if (typeof configuredVerifiedPlannerStructuredEventSink === "undefined") {
+  const sink = getVerifiedPlannerStructuredEventRegistry().sink;
+
+  if (typeof sink === "undefined") {
     return;
   }
 
   try {
-    configuredVerifiedPlannerStructuredEventSink(envelope);
+    sink(envelope);
   } catch (error) {
     emitSinkFailure(error);
   }

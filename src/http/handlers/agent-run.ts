@@ -1,6 +1,5 @@
 import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
-import { sendJson, sendInvalidRequest, sendInternalError } from "../responses";
 import { runAgent } from "../../agent-run/run";
 import { MockPlanner } from "../../agent-run/planner-mock";
 import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
@@ -8,8 +7,8 @@ import { DetToolsPlanner } from "../../agent-run/planner-det-tools";
 import { LlmMockPlanner } from "../../agent-run/planner-llm-mock";
 import { LlmLivePlanner } from "../../agent-run/planner-llm-live";
 import type { AgentRunInput, Planner } from "../../agent-run/types";
-import { withOptionalAgentRunVerifiedPlannerJournalSink, type AgentRunHandlerOptions } from "./agent-run-verified-planner-journal";
-
+import { sendJson, sendInvalidRequest, sendInternalError } from "../responses";
+import { withOptionalAgentRunVerifiedPlannerJournalSinkFromBody, type AgentRunHandlerOptions } from "./agent-run-verified-planner-journal";
 type UnknownRecord = Record<string, unknown>;
 
 function isObject(value: unknown): value is UnknownRecord {
@@ -237,28 +236,20 @@ function normalizeLlmLivePlannerError(error: unknown): JsonObject | undefined {
 
   return undefined;
 }
+
 export async function handleAgentRun(
   res: ServerResponse,
   body: JsonObject,
   options: AgentRunHandlerOptions = {},
 ): Promise<void> {
-  const parsedForJournalSink = parseAgentRunInput(body);
-
-  if (parsedForJournalSink.ok) {
-    await withOptionalAgentRunVerifiedPlannerJournalSink(
-      parsedForJournalSink.value,
-      options,
-      async () => {
-        await handleAgentRunCore(res, body);
-      },
-    );
-    return;
-  }
-
-  await handleAgentRunCore(res, body);
+  await handleAgentRunCore(res, body, options);
 }
 
-async function handleAgentRunCore(res: ServerResponse, body: JsonObject): Promise<void> {
+async function handleAgentRunCore(
+  res: ServerResponse,
+  body: JsonObject,
+  options: AgentRunHandlerOptions = {},
+): Promise<void> {
   const parsed = parseAgentRunInput(body);
   if (!parsed.ok) {
     sendInvalidRequest(res, "Request validation failed: " + parsed.message);
@@ -290,7 +281,11 @@ async function handleAgentRunCore(res: ServerResponse, body: JsonObject): Promis
 
   try {
     const planner = selectPlanner(parsed.value.planner);
-    const result = await runAgent(parsed.value, planner);
+    const result = await withOptionalAgentRunVerifiedPlannerJournalSinkFromBody(
+      body,
+      options,
+      async () => runAgent(parsed.value, planner),
+    );
     sendJson(res, 200, attachDomainResult(result) as JsonObject);
   } catch (err) {
     const llmLiveError =
