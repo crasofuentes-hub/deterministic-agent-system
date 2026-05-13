@@ -8,6 +8,7 @@ import { DetToolsPlanner } from "../../agent-run/planner-det-tools";
 import { LlmMockPlanner } from "../../agent-run/planner-llm-mock";
 import { LlmLivePlanner } from "../../agent-run/planner-llm-live";
 import type { AgentRunInput, Planner } from "../../agent-run/types";
+import { withOptionalAgentRunVerifiedPlannerJournalSink, type AgentRunHandlerOptions } from "./agent-run-verified-planner-journal";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -236,7 +237,28 @@ function normalizeLlmLivePlannerError(error: unknown): JsonObject | undefined {
 
   return undefined;
 }
-export async function handleAgentRun(res: ServerResponse, body: JsonObject): Promise<void> {
+export async function handleAgentRun(
+  res: ServerResponse,
+  body: JsonObject,
+  options: AgentRunHandlerOptions = {},
+): Promise<void> {
+  const parsedForJournalSink = parseAgentRunInput(body);
+
+  if (parsedForJournalSink.ok) {
+    await withOptionalAgentRunVerifiedPlannerJournalSink(
+      parsedForJournalSink.value,
+      options,
+      async () => {
+        await handleAgentRunCore(res, body);
+      },
+    );
+    return;
+  }
+
+  await handleAgentRunCore(res, body);
+}
+
+async function handleAgentRunCore(res: ServerResponse, body: JsonObject): Promise<void> {
   const parsed = parseAgentRunInput(body);
   if (!parsed.ok) {
     sendInvalidRequest(res, "Request validation failed: " + parsed.message);
