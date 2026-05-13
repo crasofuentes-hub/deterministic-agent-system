@@ -42,3 +42,8 @@ export {
   createVerifiedPlannerJournalEventSink,
   type VerifiedPlannerJournalEventSinkOptions,
 } from "./verified-planner-journal-sink";
+
+export {
+  withVerifiedPlannerJournalEventSink,
+  withVerifiedPlannerJournalEventSinkAsync,
+} from "./verified-planner-journal-sink-scope";
