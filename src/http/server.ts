@@ -8,11 +8,13 @@ import {
 import type { PostgresPoolConfig } from "../storage/postgres-config";
 import type { DeterministicPostgresPool } from "../storage/postgres-pool";
 import { routeRequest } from "./routes";
+import { emitHttpStorageModeStartupStatus } from "./storage-mode-startup";
 
 export interface StartServerOptions {
   port?: number;
   host?: string;
   createPostgresPool?: (config: PostgresPoolConfig) => DeterministicPostgresPool;
+  emitStorageModeStartupStatus?: boolean;
 }
 
 export interface RunningServer {
@@ -73,6 +75,10 @@ async function tryResolveWhatsAppRuntimes(options: Pick<StartServerOptions, "cre
 }
 
 export async function startServer(options: StartServerOptions = {}): Promise<RunningServer> {
+
+  if (options.emitStorageModeStartupStatus !== false) {
+    emitHttpStorageModeStartupStatus({ env: process.env });
+  }
   const host = options.host ?? "127.0.0.1";
   const port = typeof options.port === "number" ? options.port : 3000;
 
