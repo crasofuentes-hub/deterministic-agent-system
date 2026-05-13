@@ -23,8 +23,11 @@ Representative areas:
 
 Remaining work:
 
-- continue auditing new core files to prevent vertical imports
 - keep insurance-specific behavior behind public vertical boundaries
+
+Final audit guard:
+
+    tests/architecture/core-vertical-import-audit.test.ts
 
 ## Red Flag 2: Postgres is not production-recommended
 
