@@ -17,3 +17,11 @@ export {
   type StorageModeResolution,
   type StorageModeResolutionError,
 } from "./storage-mode";
+
+export {
+  assertRuntimeStorageMode,
+  formatStorageModeStartupMessage,
+  readRuntimeStorageModeEnvironment,
+  resolveRuntimeStorageMode,
+  type RuntimeStorageModeInput,
+} from "./runtime-storage-mode";

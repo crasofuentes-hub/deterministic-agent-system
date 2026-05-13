@@ -60,3 +60,37 @@ If missing, resolution fails with:
 
     npm run build
     npm run test:baseline:contractual
+
+## Runtime resolver
+
+The runtime storage resolver bridges process environment variables into the global storage mode strategy.
+
+Implementation:
+
+    src/storage/runtime-storage-mode.ts
+
+Exports:
+
+    readRuntimeStorageModeEnvironment(...)
+    resolveRuntimeStorageMode(...)
+    assertRuntimeStorageMode(...)
+    formatStorageModeStartupMessage(...)
+
+The resolver reads only these environment fields:
+
+    NODE_ENV
+    STORAGE_MODE
+    DATABASE_URL
+    SQLITE_PATH
+
+Startup messages are deterministic and can be surfaced by future runtime startup paths.
+
+Examples:
+
+    storage.mode mode=postgres productionRecommended=true reason="postgres storage is recommended for production and live pilots."
+
+    storage.mode.error code=PRODUCTION_POSTGRES_REQUIRED requestedMode=auto production=true message="storage mode auto detected production. Configure DATABASE_URL so Postgres can be used for production."
+
+Tests:
+
+    tests/storage/runtime-storage-mode.test.ts
