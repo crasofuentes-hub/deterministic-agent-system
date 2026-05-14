@@ -1,5 +1,6 @@
 import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
+import { createTenantContext } from "../../core/tenant-context";
 import { runAgent } from "../../agent-run/run";
 import { runAgentThroughInlineTaskQueue } from "../../agent-run/run-queue";
 import { MockPlanner } from "../../agent-run/planner-mock";
@@ -283,6 +284,15 @@ async function handleAgentRunCore(
     return;
   }
 
+  const tenantContext = createTenantContext({
+    tenantId: body.tenantId,
+    allowLocalDevFallback: true,
+  });
+  if (!tenantContext.ok) {
+    sendInvalidRequest(res, "Request validation failed: " + tenantContext.error.message);
+    return;
+  }
+
   if (parsed.value.planner === "det-replan2") {
     const first = await runAgent({ ...parsed.value, planner: "llm-mock" }, new LlmMockPlanner());
 
@@ -308,18 +318,23 @@ async function handleAgentRunCore(
 
   try {
     const planner = selectPlanner(parsed.value.planner);
+    const inputWithTenant = {
+      ...parsed.value,
+      tenantId: tenantContext.value.tenantId,
+    };
+
     const result = await withOptionalAgentRunVerifiedPlannerJournalSinkFromBody(
       body,
       options,
       async () => {
         if (executionMode.value === "inline-queue") {
           return runAgentThroughInlineTaskQueue({
-            input: parsed.value,
+            input: inputWithTenant,
             planner,
           });
         }
 
-        return runAgent(parsed.value, planner);
+        return runAgent(inputWithTenant, planner);
       },
     );
     sendJson(res, 200, attachDomainResult(result) as JsonObject);

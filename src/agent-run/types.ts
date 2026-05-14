@@ -12,6 +12,7 @@ export interface AgentRunInput {
   maxSteps: number;
   planner?: "mock" | "deterministic" | "det-tools" | "det-replan" | "det-replan2" | "llm-mock" | "llm-live";
   traceId?: string;
+  tenantId?: string;
   sandboxUrl?: string;
 
 
@@ -65,6 +66,7 @@ export interface AgentRunDeterminism {
   finalTraceLinkHash?: string;
   traceSchemaVersion?: number;
   traceId?: string;
+  tenantId?: string;
 }
 
 export interface AgentRunRecord {
@@ -110,6 +112,7 @@ export interface CreateAgentRunInput {
   traceSchemaVersion: number;
 
   traceId?: string;
+  tenantId?: string;
 
   planHash?: string;
   executionHash?: string;
