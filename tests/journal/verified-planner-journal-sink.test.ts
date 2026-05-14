@@ -44,6 +44,7 @@ describe("verified planner journal event sink", () => {
       makeEnvelope({
         event: "llm_live.planner_prompt.verified",
         traceId: "trace-sink-journal-001",
+        tenantId: "tenant-sink-journal-001",
         planId: "verified-plan-v1",
         toolNames: ["policy.coverage.get", "math/add"],
         executable: true,
@@ -59,6 +60,7 @@ describe("verified planner journal event sink", () => {
         type: "planner_prompt_verified",
         payload: {
           traceId: "trace-sink-journal-001",
+          tenantId: "tenant-sink-journal-001",
           planId: "verified-plan-v1",
           llmPlanTextFormat: "planner-prompt-output",
           promptContractId: "planner.deterministic",

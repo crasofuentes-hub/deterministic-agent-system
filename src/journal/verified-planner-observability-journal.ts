@@ -65,6 +65,8 @@ export function mapVerifiedPlannerStructuredEventToJournalEvent(
     sessionId,
     type: mapStructuredEventName(input.event.event),
     traceId: input.event.traceId,
+
+    tenantId: input.event.tenantId,
     planId: input.event.planId,
     llmPlanTextFormat: input.event.llmPlanTextFormat,
     promptContractId: input.event.promptContractId,

@@ -8,6 +8,7 @@ describe("verified planner observability to journal mapper", () => {
       event: {
         event: "llm_live.planner_prompt.received",
         traceId: "trace-001",
+        tenantId: "tenant-observability-001",
         llmPlanTextFormat: "planner-prompt-output",
         promptContractId: "planner.deterministic",
         promptContractVersion: "1.1.0",
@@ -21,6 +22,7 @@ describe("verified planner observability to journal mapper", () => {
       type: "planner_prompt_received",
       payload: {
         traceId: "trace-001",
+        tenantId: "tenant-observability-001",
         llmPlanTextFormat: "planner-prompt-output",
         promptContractId: "planner.deterministic",
         promptContractVersion: "1.1.0",

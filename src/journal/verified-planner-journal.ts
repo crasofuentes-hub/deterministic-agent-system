@@ -9,6 +9,7 @@ export interface VerifiedPlannerJournalEventInput {
   readonly sessionId: string;
   readonly type: VerifiedPlannerJournalEventType;
   readonly traceId?: string;
+  readonly tenantId?: string;
   readonly planId?: string;
   readonly llmPlanTextFormat?: "planner-prompt-output";
   readonly promptContractId?: string;
@@ -61,6 +62,7 @@ export function buildVerifiedPlannerJournalEvent(
 
   const payload: Record<string, unknown> = {
     traceId: input.traceId,
+    tenantId: input.tenantId,
     planId: input.planId,
     llmPlanTextFormat: input.llmPlanTextFormat,
     promptContractId: input.promptContractId,

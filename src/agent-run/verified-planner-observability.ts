@@ -7,6 +7,7 @@ export type VerifiedPlannerStructuredEventName =
 export interface VerifiedPlannerStructuredEvent {
   readonly event: VerifiedPlannerStructuredEventName;
   readonly traceId?: string;
+  readonly tenantId?: string;
   readonly planId?: string;
   readonly llmPlanTextFormat?: "planner-prompt-output";
   readonly promptContractId?: string;

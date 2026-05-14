@@ -94,6 +94,7 @@ describe("agent run verified planner journal sink integration", () => {
         }),
         maxSteps: 12,
         traceId: "trace-agent-run-verified-planner-journal-001",
+        tenantId: "tenant-verified-planner-http",
       },
       {
         journal,
@@ -119,6 +120,7 @@ describe("agent run verified planner journal sink integration", () => {
       sessionId: "agent-run:trace-agent-run-verified-planner-journal-001",
       payload: {
         traceId: "trace-agent-run-verified-planner-journal-001",
+        tenantId: "tenant-verified-planner-http",
         llmPlanTextFormat: "planner-prompt-output",
         promptContractId: "planner.deterministic",
         promptContractVersion: "1.1.0",
@@ -132,6 +134,7 @@ describe("agent run verified planner journal sink integration", () => {
       sessionId: "agent-run:trace-agent-run-verified-planner-journal-001",
       payload: {
         traceId: "trace-agent-run-verified-planner-journal-001",
+        tenantId: "tenant-verified-planner-http",
         planId: "verified-planner-journal-http-v1",
         executable: true,
       },
@@ -143,6 +146,7 @@ describe("agent run verified planner journal sink integration", () => {
       sessionId: "agent-run:trace-agent-run-verified-planner-journal-001",
       payload: {
         traceId: "trace-agent-run-verified-planner-journal-001",
+        tenantId: "tenant-verified-planner-http",
         planId: "verified-planner-journal-http-v1",
         stepCount: 1,
       },

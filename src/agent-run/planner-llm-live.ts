@@ -306,6 +306,7 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
     emitVerifiedPlannerStructuredEvent({
       event: "llm_live.planner_prompt.received",
       traceId: input.traceId,
+      tenantId: input.tenantId,
       llmPlanTextFormat: "planner-prompt-output",
       promptContractId: "planner.deterministic",
       promptContractVersion: "1.1.0",
@@ -316,6 +317,7 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
       emitVerifiedPlannerStructuredEvent({
         event: "llm_live.planner_prompt.rejected",
         traceId: input.traceId,
+        tenantId: input.tenantId,
         llmPlanTextFormat: "planner-prompt-output",
         promptContractId: "planner.deterministic",
         promptContractVersion: "1.1.0",
@@ -342,6 +344,7 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
       emitVerifiedPlannerStructuredEvent({
         event: "llm_live.planner_prompt.verified",
         traceId: input.traceId,
+        tenantId: input.tenantId,
         planId: plan.planId,
         llmPlanTextFormat: "planner-prompt-output",
         promptContractId: "planner.deterministic",
@@ -353,6 +356,7 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
       emitVerifiedPlannerStructuredEvent({
         event: "llm_live.planner_bridge.created_plan",
         traceId: input.traceId,
+        tenantId: input.tenantId,
         planId: plan.planId,
         llmPlanTextFormat: "planner-prompt-output",
         stepCount: plan.steps.length,
@@ -366,6 +370,7 @@ export function materializePlanFromLlmPlanText(input: AgentRunInput): Determinis
       emitVerifiedPlannerStructuredEvent({
         event: "llm_live.planner_prompt.rejected",
         traceId: input.traceId,
+        tenantId: input.tenantId,
         llmPlanTextFormat: "planner-prompt-output",
         promptContractId: "planner.deterministic",
         promptContractVersion: "1.1.0",

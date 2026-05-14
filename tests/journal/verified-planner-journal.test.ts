@@ -13,6 +13,7 @@ describe("verified planner journal metadata adapter", () => {
       sessionId: "agent-run:trace-001",
       type: "planner_prompt_verified",
       traceId: "trace-001",
+      tenantId: "tenant-journal-001",
       planId: "verified-plan-v1",
       llmPlanTextFormat: "planner-prompt-output",
       promptContractId: "planner.deterministic",
@@ -28,6 +29,7 @@ describe("verified planner journal metadata adapter", () => {
       type: "planner_prompt_verified",
       payload: {
         traceId: "trace-001",
+        tenantId: "tenant-journal-001",
         planId: "verified-plan-v1",
         llmPlanTextFormat: "planner-prompt-output",
         promptContractId: "planner.deterministic",
