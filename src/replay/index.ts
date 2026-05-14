@@ -9,3 +9,8 @@ export {
   type JournalReplayState,
   type JournalReplaySuccess,
 } from "./journal-replay-engine";
+export {
+  checkReplayTenantOwnership,
+  type ReplayTenantOwnershipCheckInput,
+  type ReplayTenantOwnershipCheckResult,
+} from "./tenant-replay-ownership";
