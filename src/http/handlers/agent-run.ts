@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
 import { runAgent } from "../../agent-run/run";
+import { runAgentThroughInlineTaskQueue } from "../../agent-run/run-queue";
 import { MockPlanner } from "../../agent-run/planner-mock";
 import { DeterministicPlanner } from "../../agent-run/planner-deterministic";
 import { DetToolsPlanner } from "../../agent-run/planner-det-tools";
@@ -17,6 +18,26 @@ function isObject(value: unknown): value is UnknownRecord {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+type AgentRunHttpExecutionMode = "direct" | "inline-queue";
+
+function parseAgentRunHttpExecutionMode(
+  body: UnknownRecord
+): { ok: true; value: AgentRunHttpExecutionMode } | { ok: false; message: string } {
+  const executionMode = body.executionMode;
+
+  if (typeof executionMode === "undefined") {
+    return { ok: true, value: "direct" };
+  }
+
+  if (executionMode === "direct" || executionMode === "inline-queue") {
+    return { ok: true, value: executionMode };
+  }
+
+  return {
+    ok: false,
+    message: 'executionMode must be "direct" or "inline-queue" when provided',
+  };
 }
 
 function parseAgentRunInput(
@@ -256,6 +277,12 @@ async function handleAgentRunCore(
     return;
   }
 
+  const executionMode = parseAgentRunHttpExecutionMode(body);
+  if (!executionMode.ok) {
+    sendInvalidRequest(res, "Request validation failed: " + executionMode.message);
+    return;
+  }
+
   if (parsed.value.planner === "det-replan2") {
     const first = await runAgent({ ...parsed.value, planner: "llm-mock" }, new LlmMockPlanner());
 
@@ -284,7 +311,16 @@ async function handleAgentRunCore(
     const result = await withOptionalAgentRunVerifiedPlannerJournalSinkFromBody(
       body,
       options,
-      async () => runAgent(parsed.value, planner),
+      async () => {
+        if (executionMode.value === "inline-queue") {
+          return runAgentThroughInlineTaskQueue({
+            input: parsed.value,
+            planner,
+          });
+        }
+
+        return runAgent(parsed.value, planner);
+      },
     );
     sendJson(res, 200, attachDomainResult(result) as JsonObject);
   } catch (err) {
