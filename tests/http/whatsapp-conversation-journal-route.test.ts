@@ -87,6 +87,7 @@ describe("whatsapp conversation journal ops route", () => {
       timestamp: "2026-05-06T01:00:00.000Z",
       type: "message_received",
       payload: {
+        tenantId: "local-dev",
         channel: "whatsapp",
         customerId: "5215512345678",
         channelMessageId: "wamid.ops.journal.001",
@@ -103,6 +104,7 @@ describe("whatsapp conversation journal ops route", () => {
       timestamp: "2026-05-06T01:00:01.000Z",
       type: "message_processed",
       payload: {
+        tenantId: "local-dev",
         channel: "whatsapp",
         customerId: "5215512345678",
         channelMessageId: "wamid.ops.journal.001",
@@ -153,6 +155,7 @@ describe("whatsapp conversation journal ops route", () => {
           type: "message_received",
           hashPrev: null,
           payload: {
+        tenantId: "local-dev",
             channel: "whatsapp",
             customerId: "5215512345678",
             channelMessageId: "wamid.ops.journal.001",
@@ -168,6 +171,7 @@ describe("whatsapp conversation journal ops route", () => {
           sequence: 2,
           type: "message_processed",
           payload: {
+        tenantId: "local-dev",
             channel: "whatsapp",
             customerId: "5215512345678",
             channelMessageId: "wamid.ops.journal.001",
