@@ -74,6 +74,7 @@ async function seedReplayJournal(asyncRuntime: AsyncWhatsAppRuntimeConfig): Prom
     timestamp: "2026-05-06T01:00:00.000Z",
     type: "message_received",
     payload: {
+        tenantId: "local-dev",
       channel: "whatsapp",
       customerId: "5215512345678",
       channelMessageId: "wamid.ops.replay.001",
@@ -90,6 +91,7 @@ async function seedReplayJournal(asyncRuntime: AsyncWhatsAppRuntimeConfig): Prom
     timestamp: "2026-05-06T01:00:01.000Z",
     type: "message_processed",
     payload: {
+        tenantId: "local-dev",
       channel: "whatsapp",
       customerId: "5215512345678",
       channelMessageId: "wamid.ops.replay.001",
@@ -274,6 +276,7 @@ describe("whatsapp conversation replay ops route", () => {
             {
               sequence: 2,
               payload: {
+        tenantId: "local-dev",
                 channel: "whatsapp",
                 customerId: "5215512345678",
                 channelMessageId: "wamid.ops.replay.001",

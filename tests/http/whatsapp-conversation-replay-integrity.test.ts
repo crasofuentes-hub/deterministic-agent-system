@@ -67,6 +67,7 @@ function createBrokenJournal(): ExecutionJournal {
     timestamp: "2026-05-06T01:00:00.000Z",
     type: "message_processed",
     payload: {
+        tenantId: "local-dev",
       status: "tampered",
     },
     hashPrev: null,
@@ -171,6 +172,7 @@ describe("whatsapp replay ops route integrity failures", () => {
             {
               sequence: 1,
               payload: {
+        tenantId: "local-dev",
                 status: "override",
               },
             },

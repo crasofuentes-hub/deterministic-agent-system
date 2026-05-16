@@ -4,10 +4,12 @@ import {
   replaySession,
   replayUntilSequence,
   replayWithOverride,
+  checkReplayTenantOwnership,
   type JournalReplayOverride,
   type JournalReplayResult,
 } from "../../replay";
 import { sendInvalidRequest, sendJson } from "../responses";
+import { createTenantContext } from "../../core/tenant-context";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -49,6 +51,7 @@ function readOptionalRecord(value: unknown, name: string): Record<string, unknow
 
 export interface WhatsAppConversationReplayOptions {
   readonly untilSequence?: number;
+  readonly tenantId?: unknown;
 }
 
 interface ReplayOverrideRequest {
@@ -124,6 +127,48 @@ function validateReplayOverrideRequest(input: unknown): { ok: true; value: Repla
   }
 }
 
+function parseReplayTenantContext(input: unknown) {
+  if (!isObject(input)) {
+    return createTenantContext({
+      allowLocalDevFallback: true,
+    });
+  }
+
+  return createTenantContext({
+    tenantId: input.tenantId,
+    allowLocalDevFallback: true,
+  });
+}
+
+async function ensureReplayTenantOwnership(
+  journal: ExecutionJournal,
+  sessionId: string,
+  expectedTenantId: string,
+): Promise<{ ok: true } | { ok: false; statusCode: number; body: Record<string, unknown> }> {
+  const session = await journal.getSessionJournal(sessionId, {
+    integrityCheck: true,
+  });
+
+  const ownership = checkReplayTenantOwnership({
+    events: session.events,
+    expectedTenantId,
+  });
+
+  if (!ownership.ok) {
+    return {
+      ok: false,
+      statusCode: 403,
+      body: {
+        ok: false,
+        sessionId,
+        integrityOk: session.integrityOk,
+        error: ownership.error,
+      },
+    };
+  }
+
+  return { ok: true };
+}
 function sendReplayResult(
   res: ServerResponse,
   customerId: string,
@@ -169,6 +214,23 @@ export async function handleGetWhatsAppConversationReplay(
 
   const normalizedCustomerId = customerId.trim();
   const sessionId = buildWhatsAppJournalSessionId(normalizedCustomerId);
+
+  const tenantContext = parseReplayTenantContext(options);
+  if (!tenantContext.ok) {
+    sendInvalidRequest(res, "Request validation failed: " + tenantContext.error.message);
+    return;
+  }
+
+  const ownership = await ensureReplayTenantOwnership(
+    journal,
+    sessionId,
+    tenantContext.value.tenantId,
+  );
+  if (!ownership.ok) {
+    sendJson(res, ownership.statusCode, ownership.body);
+    return;
+  }
+
   const replay =
     typeof options.untilSequence === "number"
       ? await replayUntilSequence(journal, sessionId, options.untilSequence)
@@ -200,6 +262,23 @@ export async function handlePostWhatsAppConversationReplayOverride(
 
   const normalizedCustomerId = customerId.trim();
   const sessionId = buildWhatsAppJournalSessionId(normalizedCustomerId);
+
+  const postTenantContext = parseReplayTenantContext(input);
+  if (!postTenantContext.ok) {
+    sendInvalidRequest(res, "Request validation failed: " + postTenantContext.error.message);
+    return;
+  }
+
+  const postOwnership = await ensureReplayTenantOwnership(
+    journal,
+    sessionId,
+    postTenantContext.value.tenantId,
+  );
+  if (!postOwnership.ok) {
+    sendJson(res, postOwnership.statusCode, postOwnership.body);
+    return;
+  }
+
   const replay = await replayWithOverride(journal, sessionId, validation.value.overrides);
 
   sendReplayResult(res, normalizedCustomerId, sessionId, replay);
