@@ -211,3 +211,26 @@ Candidate request field:
 Why:
 
     This closes the AsyncTaskQueue Red Flag from "contract plus direct wrapper" to "reachable from an actual HTTP runtime path."
+## Tenant Security Update
+
+Tenant ownership is now documented here:
+
+    docs/tenant-security-model.md
+
+Current tenant-related improvements include:
+
+    - TenantContext foundation.
+    - Tenant-aware /agent/run.
+    - Tenant ownership in verified planner journal events.
+    - Tenant ownership guard for replay.
+    - Cross-tenant rejection for WhatsApp replay.
+    - Cross-tenant rejection for WhatsApp journal reads.
+
+Remaining gaps:
+
+    - authentication,
+    - authorization,
+    - RBAC,
+    - tenant-scoped API keys,
+    - tenant-scoped rate limits,
+    - storage-adapter-wide tenant enforcement.

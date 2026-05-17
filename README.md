@@ -1231,6 +1231,7 @@ Key review documents:
 - [Current Platform Capabilities](docs/current-platform-capabilities.md)
 - [Red Flags Status](docs/red-flags-status.md)
 - [Current Red Flags Status](docs/red-flags-current-status.md)
+- [Tenant Security Model](docs/tenant-security-model.md)
 
 Current high-value proof points:
 
