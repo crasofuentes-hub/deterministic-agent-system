@@ -1,8 +1,8 @@
 import type { ServerResponse } from "node:http";
 import type { ExecutionJournal } from "../../journal";
-import { createTenantContext } from "../../core/tenant-context";
+import { createRequestIdentity } from "../../core/request-identity";
 import { checkReplayTenantOwnership } from "../../replay";
-import { sendJson } from "../responses";
+import { sendInvalidRequest, sendJson } from "../responses";
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -13,11 +13,15 @@ function buildWhatsAppJournalSessionId(customerId: string): string {
 }
 export interface WhatsAppConversationJournalOptions {
   readonly tenantId?: unknown;
+  readonly subjectId?: unknown;
+  readonly scopes?: unknown;
 }
 
-function parseJournalTenantContext(options: WhatsAppConversationJournalOptions) {
-  return createTenantContext({
+function parseJournalRequestIdentity(options: WhatsAppConversationJournalOptions) {
+  return createRequestIdentity({
     tenantId: options.tenantId,
+    subjectId: options.subjectId,
+    scopes: options.scopes,
     allowLocalDevFallback: true,
   });
 }
@@ -42,12 +46,9 @@ export async function handleGetWhatsAppConversationJournal(
     integrityCheck: true,
   });
 
-  const tenantContext = parseJournalTenantContext(options);
+  const tenantContext = parseJournalRequestIdentity(options);
   if (!tenantContext.ok) {
-    sendJson(res, 400, {
-      ok: false,
-      error: "Request validation failed: " + tenantContext.error.message,
-    });
+    sendInvalidRequest(res, "Request validation failed: " + tenantContext.error.message);
     return;
   }
 

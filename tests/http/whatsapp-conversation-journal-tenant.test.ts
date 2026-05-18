@@ -47,6 +47,8 @@ describe("whatsapp conversation journal tenant ownership", () => {
       "customer-001",
       {
         tenantId: "tenant-b",
+        subjectId: "api-key-tenant-b",
+        scopes: ["journal:read"],
       },
     );
 
@@ -60,6 +62,45 @@ describe("whatsapp conversation journal tenant ownership", () => {
         code: "REPLAY_TENANT_MISMATCH",
         expectedTenantId: "tenant-b",
         actualTenantId: "tenant-a",
+      },
+    });
+  });
+
+  it("rejects explicit journal tenant id without request identity fields", async () => {
+    const journal = createInMemoryExecutionJournal();
+
+    await journal.appendEvent({
+      eventId: "journal:customer-003:message-001:received",
+      sessionId: "whatsapp:customer-003",
+      timestamp: "2026-05-14T00:00:00.000Z",
+      type: "message_received",
+      payload: {
+        tenantId: "tenant-a",
+        customerId: "customer-003",
+        text: "hello",
+      },
+    });
+
+    const response = createMockResponse();
+
+    await handleGetWhatsAppConversationJournal(
+      response as any,
+      journal,
+      "customer-003",
+      {
+        tenantId: "tenant-a",
+      },
+    );
+
+    expect(response.statusCode).toBe(400);
+
+    const body = JSON.parse(response.getBody());
+    expect(body).toMatchObject({
+      ok: false,
+      error: {
+        code: "INVALID_REQUEST",
+        message: "Request validation failed: subjectId must be provided as a string",
+        retryable: false,
       },
     });
   });
@@ -87,6 +128,8 @@ describe("whatsapp conversation journal tenant ownership", () => {
       "customer-002",
       {
         tenantId: "tenant-a",
+        subjectId: "api-key-tenant-a",
+        scopes: ["journal:read"],
       },
     );
 

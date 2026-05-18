@@ -9,7 +9,7 @@ import {
   type JournalReplayResult,
 } from "../../replay";
 import { sendInvalidRequest, sendJson } from "../responses";
-import { createTenantContext } from "../../core/tenant-context";
+import { createRequestIdentity } from "../../core/request-identity";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -52,6 +52,8 @@ function readOptionalRecord(value: unknown, name: string): Record<string, unknow
 export interface WhatsAppConversationReplayOptions {
   readonly untilSequence?: number;
   readonly tenantId?: unknown;
+  readonly subjectId?: unknown;
+  readonly scopes?: unknown;
 }
 
 interface ReplayOverrideRequest {
@@ -127,15 +129,17 @@ function validateReplayOverrideRequest(input: unknown): { ok: true; value: Repla
   }
 }
 
-function parseReplayTenantContext(input: unknown) {
+function parseReplayRequestIdentity(input: unknown) {
   if (!isObject(input)) {
-    return createTenantContext({
+    return createRequestIdentity({
       allowLocalDevFallback: true,
     });
   }
 
-  return createTenantContext({
+  return createRequestIdentity({
     tenantId: input.tenantId,
+    subjectId: input.subjectId,
+    scopes: input.scopes,
     allowLocalDevFallback: true,
   });
 }
@@ -215,7 +219,7 @@ export async function handleGetWhatsAppConversationReplay(
   const normalizedCustomerId = customerId.trim();
   const sessionId = buildWhatsAppJournalSessionId(normalizedCustomerId);
 
-  const tenantContext = parseReplayTenantContext(options);
+  const tenantContext = parseReplayRequestIdentity(options);
   if (!tenantContext.ok) {
     sendInvalidRequest(res, "Request validation failed: " + tenantContext.error.message);
     return;
@@ -263,7 +267,7 @@ export async function handlePostWhatsAppConversationReplayOverride(
   const normalizedCustomerId = customerId.trim();
   const sessionId = buildWhatsAppJournalSessionId(normalizedCustomerId);
 
-  const postTenantContext = parseReplayTenantContext(input);
+  const postTenantContext = parseReplayRequestIdentity(input);
   if (!postTenantContext.ok) {
     sendInvalidRequest(res, "Request validation failed: " + postTenantContext.error.message);
     return;
