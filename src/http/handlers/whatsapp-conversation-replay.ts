@@ -10,6 +10,7 @@ import {
 } from "../../replay";
 import { sendInvalidRequest, sendJson } from "../responses";
 import { createRequestIdentity } from "../../core/request-identity";
+import { checkRequestScope } from "../../core/request-scope";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -225,6 +226,18 @@ export async function handleGetWhatsAppConversationReplay(
     return;
   }
 
+  const getReplayScope = checkRequestScope({
+    identity: tenantContext.value,
+    requiredScope: "replay:read",
+  });
+  if (!getReplayScope.ok) {
+    sendJson(res, 403, {
+      ok: false,
+      sessionId,
+      error: getReplayScope.error,
+    });
+    return;
+  }
   const ownership = await ensureReplayTenantOwnership(
     journal,
     sessionId,
@@ -270,6 +283,18 @@ export async function handlePostWhatsAppConversationReplayOverride(
   const postTenantContext = parseReplayRequestIdentity(input);
   if (!postTenantContext.ok) {
     sendInvalidRequest(res, "Request validation failed: " + postTenantContext.error.message);
+    return;
+  }
+  const postReplayScope = checkRequestScope({
+    identity: postTenantContext.value,
+    requiredScope: "replay:read",
+  });
+  if (!postReplayScope.ok) {
+    sendJson(res, 403, {
+      ok: false,
+      sessionId,
+      error: postReplayScope.error,
+    });
     return;
   }
 

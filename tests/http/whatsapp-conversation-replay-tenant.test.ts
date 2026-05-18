@@ -105,6 +105,49 @@ describe("whatsapp conversation replay tenant ownership", () => {
     });
   });
 
+  it("rejects replay access without replay read scope", async () => {
+    const journal = createInMemoryExecutionJournal();
+
+    await journal.appendEvent({
+      eventId: "journal:customer-004:message-001:received",
+      sessionId: "whatsapp:customer-004",
+      timestamp: "2026-05-14T00:00:00.000Z",
+      type: "message_received",
+      payload: {
+        tenantId: "tenant-a",
+        customerId: "customer-004",
+        text: "hello",
+      },
+    });
+
+    const response = createMockResponse();
+
+    await handleGetWhatsAppConversationReplay(
+      response as any,
+      journal,
+      "customer-004",
+      {
+        tenantId: "tenant-a",
+        subjectId: "api-key-tenant-a",
+        scopes: ["journal:read"],
+      },
+    );
+
+    expect(response.statusCode).toBe(403);
+
+    const body = JSON.parse(response.getBody());
+    expect(body).toMatchObject({
+      ok: false,
+      sessionId: "whatsapp:customer-004",
+      error: {
+        code: "REQUEST_SCOPE_DENIED",
+        message: "Request identity does not have the required scope",
+        requiredScope: "replay:read",
+        subjectId: "api-key-tenant-a",
+        tenantId: "tenant-a",
+      },
+    });
+  });
   it("allows replay access for the owning tenant", async () => {
     const journal = createInMemoryExecutionJournal();
 
