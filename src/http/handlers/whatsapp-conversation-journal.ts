@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import type { ExecutionJournal } from "../../journal";
 import { createRequestIdentity } from "../../core/request-identity";
+import { checkRequestScope } from "../../core/request-scope";
 import { checkReplayTenantOwnership } from "../../replay";
 import { sendInvalidRequest, sendJson } from "../responses";
 
@@ -52,6 +53,18 @@ export async function handleGetWhatsAppConversationJournal(
     return;
   }
 
+  const journalReadScope = checkRequestScope({
+    identity: tenantContext.value,
+    requiredScope: "journal:read",
+  });
+  if (!journalReadScope.ok) {
+    sendJson(res, 403, {
+      ok: false,
+      sessionId,
+      error: journalReadScope.error,
+    });
+    return;
+  }
   const ownership = checkReplayTenantOwnership({
     events: sessionJournal.events,
     expectedTenantId: tenantContext.value.tenantId,
