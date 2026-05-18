@@ -74,6 +74,33 @@ describe("http agent run tenant context", () => {
     expect(JSON.parse(response.getBody()).ok).toBe(true);
   });
 
+  it("rejects authenticated request identity without agent run scope", async () => {
+    const response = createMockResponse();
+
+    await handleAgentRun(
+      response as any,
+      baseRequest({
+        tenantId: "tenant-acme-prod",
+        subjectId: "api-key-main",
+        scopes: ["journal:read"],
+      }),
+    );
+
+    expect(response.statusCode).toBe(403);
+
+    const body = JSON.parse(response.getBody());
+    expect(body).toMatchObject({
+      ok: false,
+      error: {
+        code: "REQUEST_SCOPE_DENIED",
+        message: "Request identity does not have the required scope",
+        requiredScope: "agent:run",
+        subjectId: "api-key-main",
+        tenantId: "tenant-acme-prod",
+      },
+      meta: {},
+    });
+  });
   it("rejects explicit tenant identity without subject id", async () => {
     const response = createMockResponse();
 

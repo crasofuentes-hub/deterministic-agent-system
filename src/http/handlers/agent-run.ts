@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
 import { createRequestIdentity } from "../../core/request-identity";
+import { checkRequestScope } from "../../core/request-scope";
 import { runAgent } from "../../agent-run/run";
 import { runAgentThroughInlineTaskQueue } from "../../agent-run/run-queue";
 import { MockPlanner } from "../../agent-run/planner-mock";
@@ -292,6 +293,18 @@ async function handleAgentRunCore(
   });
   if (!requestIdentity.ok) {
     sendInvalidRequest(res, "Request validation failed: " + requestIdentity.error.message);
+    return;
+  }
+  const agentRunScope = checkRequestScope({
+    identity: requestIdentity.value,
+    requiredScope: "agent:run",
+  });
+  if (!agentRunScope.ok) {
+    sendJson(res, 403, {
+      ok: false,
+      error: agentRunScope.error,
+      meta: {},
+    });
     return;
   }
 
