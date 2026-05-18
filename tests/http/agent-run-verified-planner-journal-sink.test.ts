@@ -95,6 +95,8 @@ describe("agent run verified planner journal sink integration", () => {
         maxSteps: 12,
         traceId: "trace-agent-run-verified-planner-journal-001",
         tenantId: "tenant-verified-planner-http",
+        subjectId: "api-key-verified-planner-http",
+        scopes: ["agent:run", "journal:write"],
       },
       {
         journal,

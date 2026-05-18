@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 import type { JsonObject } from "../../tools";
-import { createTenantContext } from "../../core/tenant-context";
+import { createRequestIdentity } from "../../core/request-identity";
 import { runAgent } from "../../agent-run/run";
 import { runAgentThroughInlineTaskQueue } from "../../agent-run/run-queue";
 import { MockPlanner } from "../../agent-run/planner-mock";
@@ -284,12 +284,14 @@ async function handleAgentRunCore(
     return;
   }
 
-  const tenantContext = createTenantContext({
+  const requestIdentity = createRequestIdentity({
     tenantId: body.tenantId,
+    subjectId: body.subjectId,
+    scopes: body.scopes,
     allowLocalDevFallback: true,
   });
-  if (!tenantContext.ok) {
-    sendInvalidRequest(res, "Request validation failed: " + tenantContext.error.message);
+  if (!requestIdentity.ok) {
+    sendInvalidRequest(res, "Request validation failed: " + requestIdentity.error.message);
     return;
   }
 
@@ -320,7 +322,7 @@ async function handleAgentRunCore(
     const planner = selectPlanner(parsed.value.planner);
     const inputWithTenant = {
       ...parsed.value,
-      tenantId: tenantContext.value.tenantId,
+      tenantId: requestIdentity.value.tenantId,
     };
 
     const result = await withOptionalAgentRunVerifiedPlannerJournalSinkFromBody(
