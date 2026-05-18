@@ -103,3 +103,34 @@ Not yet status:
     full production-grade multi-tenant SaaS security.
 
 This distinction is intentional. The current implementation closes major direct journal/replay leakage risks but does not replace authentication, authorization, RBAC, or storage-level tenant isolation.
+## Identity and Scope Enforcement Update
+
+The selected HTTP paths now use `RequestIdentity` and `RequestScope` enforcement.
+
+Implemented:
+
+- `/agent/run` derives tenant ownership from `RequestIdentity`.
+- WhatsApp replay derives tenant ownership from `RequestIdentity`.
+- WhatsApp journal reads derive tenant ownership from `RequestIdentity`.
+- `/agent/run` requires `agent:run`.
+- WhatsApp replay requires `replay:read`.
+- WhatsApp journal reads require `journal:read`.
+- Local development remains supported through the explicit `local-dev` fallback identity with wildcard scope `*`.
+
+Current protected HTTP paths:
+
+| Path area | Tenant ownership | Scope required |
+|---|---:|---:|
+| Agent run | Yes | `agent:run` |
+| WhatsApp replay | Yes | `replay:read` |
+| WhatsApp journal read | Yes | `journal:read` |
+
+Important remaining gaps:
+
+- API keys are not yet resolved from real request headers.
+- Request identities are still passed through explicit handler/body/options fields in tests.
+- There is no persisted API key registry.
+- There is no key rotation, revocation, or lifecycle model.
+- There is no organization/user/RBAC model.
+- Storage adapters are not yet globally tenant-enforcing.
+- Tenant-scoped rate limiting and quotas are not implemented.

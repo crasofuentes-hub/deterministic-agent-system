@@ -234,3 +234,34 @@ Remaining gaps:
     - tenant-scoped API keys,
     - tenant-scoped rate limits,
     - storage-adapter-wide tenant enforcement.
+## Security / Multi-Tenancy Update
+
+Current status: partially closed, with important production gaps still open.
+
+Closed in this phase:
+
+- Tenant context foundation.
+- Request identity contract.
+- Request scope guard.
+- Agent run tenant binding through `RequestIdentity`.
+- WhatsApp replay tenant binding through `RequestIdentity`.
+- WhatsApp journal tenant binding through `RequestIdentity`.
+- Agent run scope enforcement: `agent:run`.
+- WhatsApp replay scope enforcement: `replay:read`.
+- WhatsApp journal scope enforcement: `journal:read`.
+- Cross-tenant denial tests for replay.
+- Cross-tenant denial tests for journal reads.
+
+Still open:
+
+- Real API key extraction from headers.
+- API key verification against a configured or persisted registry.
+- API key lifecycle: creation, revocation, rotation.
+- RBAC / organization / user model.
+- Storage-adapter-wide tenant isolation.
+- Tenant-scoped rate limiting and quotas.
+- Security audit event stream for authentication and authorization decisions.
+
+Conclusion:
+
+The project now has a defensible identity + tenant + scope foundation for selected HTTP paths, but it is not yet a complete production SaaS security model.
